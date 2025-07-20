@@ -9,24 +9,60 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 <html lang="fr">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			body {
+				margin: 0;
+				font-family: 'Comic Sans MS', cursive, sans-serif;
+				background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a1c4fd, #c2e9fb);
+				background-size: 400% 400%;
+				animation: gradientBG 15s ease infinite;
+				color: white;
+				text-align: center;
+				padding: 2rem;
+			}
+
+			main {
+				max-width: 600px;
+				margin: 0 auto;
+				background: rgba(255, 255, 255, 0.1);
+				border-radius: 20px;
+				padding: 2rem;
+				backdrop-filter: blur(10px);
+			}
+
+			h1 {
+				font-size: 2.5rem;
+				margin-bottom: 1rem;
+			}
+
+			p {
+				font-size: 1.2rem;
+				line-height: 1.5;
+			}
+
+			@keyframes gradientBG {
+				0% { background-position: 0% 50%; }
+				50% { background-position: 100% 50%; }
+				100% { background-position: 0% 50%; }
+			}
+		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
 			<h1>🌺 Ia ora na !</h1>
 			<p>
-				Bienvenue sur cette petite page venue tout droit de Tahiti 🏝️.
+				Un petit coin du web, made in Tahiti 🏝️.
 			</p>
 			<p>
-				Pas de site compliqué ici, juste un coin simple, cool et ensoleillé pour te souhaiter une bonne journée 🌞.
+				Ici, pas de complications : juste un instant de soleil, un souffle d’air chaud, et un soupçon de bonne humeur 🌞.
 			</p>
 			<p>
-				Prends une noix de coco 🥥, écoute le bruit des vagues 🌊 et détends-toi.
+				Prends une noix de coco 🥥, allonge-toi sous un palmier 🌴, et profite du calme.
 			</p>
 			<p>
-				Merci d’être passé, et à bientôt peut-être quelque part entre deux lagons !
+				Mauruuru pour ta visite ! 🌊
 			</p>
-			<p>🌴🌺 Mauruuru !</p>
 		</main>
 		<Footer />
 	</body>
