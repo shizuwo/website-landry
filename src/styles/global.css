@@ -31,23 +31,24 @@
   font-display: swap;
 }
 html, body {
-  min-height: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
-  background: linear-gradient(135deg, rgba(var(--gray-light), 0.5) 0%, #fff 100%);
+  background: linear-gradient(135deg, rgba(var(--gray-light), 0.4) 0%, #fff 100%);
   background-repeat: no-repeat;
   background-attachment: fixed;
+  background-size: cover;
 }
+
 body {
   font-family: "Atkinson", sans-serif;
   text-align: left;
-  background-size: 100% 600px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
   color: rgb(var(--gray-dark));
   font-size: 20px;
   line-height: 1.7;
+  /* on enlève le background-size précédent */
 }
+
 main {
   width: 720px;
   max-width: calc(100% - 2em);
