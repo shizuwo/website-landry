@@ -7,63 +7,102 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 <!doctype html>
 <html lang="fr">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			body {
-				margin: 0;
-				font-family: 'Comic Sans MS', cursive, sans-serif;
-				background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a1c4fd, #c2e9fb);
-				background-size: 400% 400%;
-				animation: gradientBG 15s ease infinite;
-				color: white;
-				text-align: center;
-				padding: 2rem;
-			}
+<head>
+  <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a1c4fd, #c2e9fb);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: white;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main {
+      max-width: 700px;
+      margin: 2rem auto;
+      background: rgba(255 255 255 / 0.1);
+      border-radius: 20px;
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 15px rgba(255 255 255 / 0.15);
+      flex-grow: 1;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    svg {
+      max-width: 150px;
+      margin: 2rem auto 0;
+      display: block;
+      cursor: pointer;
+      transition: fill 0.3s ease;
+      fill: white;
+      stroke: #ff5e5e;
+      stroke-width: 2;
+    }
+    svg:hover {
+      fill: #ffb347;
+    }
+    @media (min-width: 768px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+      p {
+        font-size: 1.3rem;
+      }
+      svg {
+        max-width: 200px;
+      }
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body>
+  <Header />
+  <main>
+    <h1>🌺 Ia ora na, e maeva !</h1>
+    <p>
+      Bienvenue sur cette petite page née sous le soleil de Tahiti 🏝️. Pas de site complexe, pas de mille onglets à ouvrir… juste une pause tranquille sur un coin du web.
+    </p>
+    <p>
+      Ici, on prend le temps. Comme quand tu regardes un coucher de soleil 🌅, assis sur le sable chaud, avec le bruit des vagues en fond 🌊. Alors prends un instant, respire, détends-toi.
+    </p>
+    <p>
+      Je n’ai pas grand-chose à te vendre, ni de secrets cachés… C’est juste un endroit simple, fait pour dire : “Salut ! Tu es le bienvenu”.
+    </p>
+    <p>
+      Un peu comme croiser un copain au marché, sous le fare, autour d’une noix de coco 🥥 ou d’un poisson cru. Simple, authentique, sans chichi.
+    </p>
+    <p>
+      Merci d’être passé par ici. Profite bien de ta journée, que tu sois au bord d’un lagon ou perdu dans les embouteillages 😄. Et souviens-toi : le soleil brille toujours quelque part 🌞.
+    </p>
+    <p>
+      Mauruuru roa ! 🌴🌺
+    </p>
 
-			main {
-				max-width: 600px;
-				margin: 0 auto;
-				background: rgba(255, 255, 255, 0.1);
-				border-radius: 20px;
-				padding: 2rem;
-				backdrop-filter: blur(10px);
-			}
-
-			h1 {
-				font-size: 2.5rem;
-				margin-bottom: 1rem;
-			}
-
-			p {
-				font-size: 1.2rem;
-				line-height: 1.5;
-			}
-
-			@keyframes gradientBG {
-				0% { background-position: 0% 50%; }
-				50% { background-position: 100% 50%; }
-				100% { background-position: 0% 50%; }
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🌺 Ia ora na !</h1>
-			<p>
-				Un petit coin du web, made in Tahiti 🏝️.
-			</p>
-			<p>
-				Ici, pas de complications : juste un instant de soleil, un souffle d’air chaud, et un soupçon de bonne humeur 🌞.
-			</p>
-			<p>
-				Prends une noix de coco 🥥, allonge-toi sous un palmier 🌴, et profite du calme.
-			</p>
-			<p>
-				Mauruuru pour ta visite ! 🌊
-			</p>
-		</main>
-		<Footer />
-	</body>
+    <!-- Carte stylisée de Tahiti en SVG -->
+    <svg viewBox="0 0 200 200" aria-label="Carte stylisée de Tahiti" role="img" tabindex="0" >
+      <!-- Contour simplifié de Tahiti, forme abstraite -->
+      <path d="M100,10 C140,30 160,80 130,130 C100,180 60,160 40,120 C20,80 40,40 80,20 Z"/>
+    </svg>
+  </main>
+  <Footer />
+</body>
 </html>
