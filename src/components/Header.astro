@@ -5,7 +5,7 @@ import { SITE_TITLE } from '../consts';
 
 <header>
   <nav>
-    <a href="/" class="home-link">Home</a>
+    <h2><a href="/">{SITE_TITLE}</a></h2>
     <div class="social-links">
       <a href="https://landrypf.com/discord" target="_blank" aria-label="Discord" rel="noopener noreferrer">
         <!-- Icône Discord SVG mise à jour -->
@@ -23,3 +23,37 @@ import { SITE_TITLE } from '../consts';
   </nav>
 </header>
 
+<style>
+  header {
+    padding: 1em 1.5em;
+    background-color: #222;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  h2 a {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: white;
+    text-decoration: none;
+  }
+  .social-links {
+    display: flex;
+    gap: 1em;
+  }
+  .social-links a {
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  .social-links a:hover {
+    color: #9146FF;
+  }
+</style>
