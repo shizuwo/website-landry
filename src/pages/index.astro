@@ -7,52 +7,27 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 <!doctype html>
 <html lang="fr">
-<head>
-  <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #4ab3a5; /* vert d'eau doux */
-      color: white;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    main {
-      flex: 1;
-      padding: 2rem 1rem;
-      max-width: 700px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-    p {
-      font-size: 1.2rem;
-      line-height: 1.5;
-      margin-bottom: 1rem;
-    }
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 2rem;
-      }
-      p {
-        font-size: 1rem;
-      }
-    }
-  </style>
-</head>
-<body>
-  <Header />
-  <main>
-    <h1>🌺 Ia ora na, e maeva !</h1>
-    <p>Bienvenue sur ce site simple, tout droit de Tahiti 🏝️.</p>
-    <p>Un petit coin pour te souhaiter une belle journée, pleine de soleil et de sourires.</p>
-    <p>Merci d’être passé, et à bientôt ! Mauruuru roa ! 🌴</p>
-  </main>
-  <Footer />
-</body>
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>🌺 Ia ora na !</h1>
+			<p>
+				Bienvenue sur cette petite page venue tout droit de Tahiti 🏝️.
+			</p>
+			<p>
+				Pas de site compliqué ici, juste un coin simple, cool et ensoleillé pour te souhaiter une bonne journée 🌞.
+			</p>
+			<p>
+				Prends une noix de coco 🥥, écoute le bruit des vagues 🌊 et détends-toi.
+			</p>
+			<p>
+				Merci d’être passé, et à bientôt peut-être quelque part entre deux lagons !
+			</p>
+			<p>🌴🌺 Mauruuru !</p>
+		</main>
+		<Footer />
+	</body>
 </html>
