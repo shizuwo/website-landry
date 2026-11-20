@@ -10,7 +10,7 @@ const erreur = (msg, status = 400) => json({ erreur: msg }, { status });
 const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Codes de liens courts interdits (déjà utilisés par le site)
-const RESERVES = new Set(['bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
+const RESERVES = new Set(['404', 'cadre', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun', 'album', 'mentions']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
@@ -104,6 +104,33 @@ async function tropTot(env, cle, ms) {
   return false;
 }
 
+// Protection de l'admin : 5 mauvais mots de passe en 15 min → bloqué 15 min (et une notification)
+const ESSAIS_MAX = 5, BLOCAGE_MS = 15 * 60e3;
+async function gardeAdmin(request, env, ctx) {
+  const fp = await empreinte(request, env), now = Date.now();
+  const [kb, kn, kt] = ['xb:', 'xn:', 'xt:'].map(p => p + fp);
+  const lignes = Object.fromEntries((await env.DB.prepare('SELECT cle, dernier FROM limites WHERE cle IN (?, ?, ?)').bind(kb, kn, kt).all()).results.map(r => [r.cle, r.dernier]));
+  if (lignes[kb] > now) {
+    const min = Math.ceil((lignes[kb] - now) / 60e3);
+    return erreur(`Trop d'essais ratés. Réessaie dans ${min} min.`, 429);
+  }
+  if (autorise(request, env)) {
+    if (lignes[kn]) await env.DB.prepare('DELETE FROM limites WHERE cle IN (?, ?, ?)').bind(kb, kn, kt).run();
+    return null;
+  }
+  const debut = lignes[kt] && now - lignes[kt] < BLOCAGE_MS ? lignes[kt] : now;
+  const essais = (debut === lignes[kt] ? (lignes[kn] || 0) : 0) + 1;
+  const ecrire = (k, v) => env.DB.prepare('INSERT INTO limites (cle, dernier) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET dernier = excluded.dernier').bind(k, v);
+  if (essais >= ESSAIS_MAX) {
+    await env.DB.batch([ecrire(kb, now + BLOCAGE_MS), env.DB.prepare('DELETE FROM limites WHERE cle IN (?, ?)').bind(kn, kt)]);
+    notifier(env, ctx, '🔒 Admin bloqué 15 min', `${ESSAIS_MAX} mauvais mots de passe d'affilée sur l'admin. Si ce n'était pas toi, rien à faire : l'accès est bloqué pour cet appareil.`);
+    return erreur("Trop d'essais ratés. Réessaie dans 15 min.", 429);
+  }
+  await env.DB.batch([ecrire(kn, essais), ecrire(kt, debut)]);
+  const reste = ESSAIS_MAX - essais;
+  return erreur(`Mot de passe incorrect. Encore ${reste} essai${reste > 1 ? 's' : ''} avant un blocage de 15 min.`, 401);
+}
+
 function autorise(request, env) {
   const cle = request.headers.get('x-cle') || '';
   if (!env.ADMIN_KEY || cle.length !== env.ADMIN_KEY.length) return false;
@@ -146,6 +173,15 @@ function notifier(env, ctx, titre, message) {
   }).catch(() => {}));
 }
 
+// Recadrage d'une photo : point visé (x, y en %), zoom z (1 à 4), format a (galerie uniquement)
+const FORMATS = new Set(['orig', '1', '4/5', '4/3']);
+function lireCadre(v) {
+  const c = lireJSON(v, null); if (!c) return null;
+  const n = (x, min, max, d) => { x = Number(x); return Number.isFinite(x) ? Math.min(max, Math.max(min, Math.round(x * 100) / 100)) : d; };
+  const r = { x: n(c.x, 0, 100, 50), y: n(c.y, 0, 100, 50), z: n(c.z, 1, 4, 1) };
+  if (FORMATS.has(c.a)) r.a = c.a;
+  return r;
+}
 const urlFichier = (f) => `/f/${f.id}/${encodeURIComponent(f.nom)}`;
 const urlCourte = (f) => `/f/${f.id}`;
 const actif = (v, defaut = true) => (v === null || v === undefined || v === '' ? defaut : v === '1');
@@ -157,7 +193,7 @@ const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.ex
 async function infos(env) {
   const [mauruuru, { results }] = await Promise.all([
     compteur(env, 'mauruuru'),
-    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email')").all()
+    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email','disposition')").all()
   ]);
   const r = Object.fromEntries(results.map(x => [x.cle, x.valeur]));
   const d = +r.evt_date || 0;
@@ -191,7 +227,7 @@ async function infos(env) {
     mauruuru: mauruuru || 0, statut: r.statut || '', evenement, banniere, musique,
     statuts: actif(r.statut_hasard, false) ? lireJSON(r.statuts, []).filter(Boolean) : null,
     livre: actif(r.livre_actif), contact: actif(r.contact_actif),
-    live, theme, blocs, legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
+    live, theme, blocs, disposition: r.disposition === 'liens' ? 'liens' : 'infos', legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
   }, { headers: { 'cache-control': 'public, max-age=15' } });
 }
 
@@ -270,7 +306,9 @@ async function galerie(env) {
   const { results } = await env.DB.prepare(
     'SELECT id, nom, legende, type FROM fichiers WHERE galerie = 1 AND album = 0 AND mdp IS NULL AND (expire IS NULL OR expire > ?) ORDER BY ordre, cree DESC'
   ).bind(now).all();
-  return json({ photos: results.map(f => ({ ...f, url: urlFichier(f) })) }, { headers: { 'cache-control': 'public, max-age=30' } });
+  const { results: cadres } = await env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle LIKE 'cadre:f:%'").all();
+  const parId = Object.fromEntries(cadres.map(c => [c.cle.slice(8), lireCadre(c.valeur)]));
+  return json({ photos: results.map(f => ({ ...f, url: urlFichier(f), cadre: parId[f.id] || null })) }, { headers: { 'cache-control': 'public, max-age=30' } });
 }
 
 async function photosAccueil(env) {
@@ -279,7 +317,10 @@ async function photosAccueil(env) {
   ).all();
   const now = Date.now(), photos = {};
   for (const r of results) if (fichierPublic(r, now) && !r.album) photos[r.cle.slice(6)] = urlFichier(r);
-  return json({ photos }, { headers: { 'cache-control': 'public, max-age=30' } });
+  const { results: cs } = await env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle LIKE 'cadre:%' AND cle NOT LIKE 'cadre:f:%'").all();
+  const cadres = {};
+  for (const c of cs) { const k = c.cle.slice(6); if (photos[k]) cadres[k] = lireCadre(c.valeur); }
+  return json({ photos, cadres }, { headers: { 'cache-control': 'public, max-age=30' } });
 }
 
 async function ouvrirLienBio(id, env, ctx, origine) {
@@ -422,6 +463,27 @@ async function nettoyerExpires(env) {
   return { supprimes: results.length };
 }
 
+/* ================= Google : robots.txt et plan du site ================= */
+
+const ROBOTS = `User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+Disallow: /album
+Disallow: /f/
+
+Sitemap: https://landrypf.com/sitemap.xml
+`;
+async function planDuSite(env) {
+  const pages = [['/', '1.0', 'weekly'], ['/bio', '0.9', 'weekly'], ['/galerie', '0.7', 'weekly'], ['/mentions', '0.2', 'yearly']];
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${pages.map(([u, p, f]) => `  <url><loc>https://landrypf.com${u}</loc><changefreq>${f}</changefreq><priority>${p}</priority></url>`).join('\n')}
+</urlset>
+`;
+  return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=86400' } });
+}
+
 /* ================= Admin ================= */
 
 async function adminLire(env) {
@@ -441,7 +503,11 @@ async function adminLire(env) {
   const { results: blocs } = await DB.prepare('SELECT id, url, type, ref, ordre, actif FROM blocs ORDER BY ordre, id').all();
   const r = Object.fromEntries(reglages.results.map(x => [x.cle, x.valeur]));
   const photos = {};
-  for (const [k, v] of Object.entries(r)) if (k.startsWith('photo:')) photos[k.slice(6)] = v;
+  const cadres = {};
+  for (const [k, v] of Object.entries(r)) {
+    if (k.startsWith('photo:')) photos[k.slice(6)] = v;
+    if (k.startsWith('cadre:')) cadres[k.slice(6)] = lireCadre(v);
+  }
   return json({
     compteurs: Object.fromEntries(compteurs.results.map(x => [x.nom, x.valeur])),
     statut: r.statut || '',
@@ -454,7 +520,7 @@ async function adminLire(env) {
     blocs,
     playlist: (() => { const p = lireJSON(r.playlist, null); return Array.isArray(p) ? p : (r.musique_id ? [{ id: r.musique_id, titre: r.musique_titre || '', artiste: r.musique_artiste || '' }] : []); })(),
     live: { actif: actif(r.live_actif, false), lien: r.live_lien || '', texte: r.live_texte || '' },
-    theme: r.theme || 'auto', theme_du_jour: themeDuJour(),
+    theme: r.theme || 'auto', theme_du_jour: themeDuJour(), disposition: r.disposition === 'liens' ? 'liens' : 'infos',
     legal: { nom: r.legal_nom || '', email: r.legal_email || '' },
     album_ouvert: !!r.album_mdp,
     accueil_textes: lireJSON(r.accueil_textes, {}),
@@ -464,7 +530,7 @@ async function adminLire(env) {
       banniere_debut: +r.banniere_debut || null, banniere_fin: +r.banniere_fin || null,
       musique_active: actif(r.musique_active, false), musique_id: r.musique_id || '', musique_titre: r.musique_titre || '', musique_artiste: r.musique_artiste || ''
     },
-    contacts: contacts.results, photos, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
+    contacts: contacts.results, photos, cadres, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
   });
 }
 
@@ -619,6 +685,12 @@ async function adminEcrire(request, env) {
       break;
     }
 
+    // --- Disposition de la bio ---
+    case 'disposition':
+      if (!['infos', 'liens'].includes(c.valeur)) return erreur('Disposition inconnue.');
+      await ecrireReglage(env, 'disposition', c.valeur);
+      break;
+
     // --- Thème saisonnier ---
     case 'theme':
       if (!THEMES.has(c.valeur)) return erreur('Thème inconnu.');
@@ -721,14 +793,28 @@ async function adminEcrire(request, env) {
       if (f && env.FICHIERS) await env.FICHIERS.delete(f.cle);
       await DB.batch([
         DB.prepare('DELETE FROM fichiers WHERE id = ?').bind(c.id),
-        DB.prepare("DELETE FROM reglages WHERE cle LIKE 'photo:%' AND valeur = ?").bind(c.id)
+        DB.prepare("DELETE FROM reglages WHERE cle LIKE 'photo:%' AND valeur = ?").bind(c.id),
+        DB.prepare('DELETE FROM reglages WHERE cle = ?').bind('cadre:f:' + c.id)
       ]);
+      break;
+    }
+
+    // --- Recadrage (emplacement de l'accueil ou photo de la galerie) ---
+    case 'cadrage': {
+      const cible = String(c.cible || '');
+      if (!EMPLACEMENTS.has(cible) && !/^f:[\w-]{1,40}$/.test(cible)) return erreur('Photo inconnue.');
+      if (c.effacer) { await DB.prepare('DELETE FROM reglages WHERE cle = ?').bind('cadre:' + cible).run(); break; }
+      const cadre = lireCadre(JSON.stringify(c));
+      if (!cadre) return erreur('Recadrage invalide.');
+      if (!cible.startsWith('f:')) delete cadre.a;
+      await ecrireReglage(env, 'cadre:' + cible, JSON.stringify(cadre));
       break;
     }
 
     // --- Photos de la page d'accueil ---
     case 'photo_accueil': {
       if (!EMPLACEMENTS.has(c.emplacement)) return erreur('Emplacement inconnu.');
+      await DB.prepare('DELETE FROM reglages WHERE cle = ?').bind('cadre:' + c.emplacement).run(); // nouvelle photo : recadrage remis à zéro
       if (!c.id) { await DB.prepare('DELETE FROM reglages WHERE cle = ?').bind('photo:' + c.emplacement).run(); break; }
       const f = await DB.prepare('SELECT type, mdp, expire FROM fichiers WHERE id = ?').bind(c.id).first();
       if (!f || !String(f.type).startsWith('image/')) return erreur('Choisis une image.');
@@ -798,7 +884,7 @@ export default {
         if (pathname === '/api/galerie' && m === 'GET') return await galerie(env);
         if (pathname === '/api/photos-accueil' && m === 'GET') return await photosAccueil(env);
         if (pathname === '/api/admin' || pathname === '/api/fichiers' || pathname.startsWith('/api/admin/')) {
-          if (!autorise(request, env)) return erreur('non autorisé', 401);
+          const refus = await gardeAdmin(request, env, ctx); if (refus) return refus;
           if (pathname === '/api/admin/export' && m === 'GET') return await exporter(env);
           // L'admin peut voir les photos de l'album dans son interface
           if (pathname === '/api/admin/album' && m === 'POST') return json({ ok: true }, { headers: { 'set-cookie': cookieAlbum(await jetonAlbum(env, (await reglage(env, 'album_mdp')) || 'admin', 864e5), 86400) } });
@@ -829,7 +915,15 @@ export default {
       console.error(err);
       return erreur('serveur', 500);
     }
-    return env.ASSETS.fetch(request);
+    if (pathname === '/sitemap.xml') return planDuSite(env);
+    if (pathname === '/robots.txt') return new Response(ROBOTS, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=86400' } });
+    const reponse = await env.ASSETS.fetch(request);
+    // Page introuvable : la jolie page 404 (avec le bon code pour Google)
+    if (reponse.status === 404 && (m === 'GET' || m === 'HEAD')) {
+      const page = await env.ASSETS.fetch(new Request(new URL('/404', request.url)));
+      return new Response(page.body, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+    }
+    return reponse;
   },
 
   // Chaque nuit : suppression des fichiers expirés et des vieilles traces anti-spam

@@ -21,7 +21,8 @@
 <meta property="og:image:alt" content="Landry, Ia ora na depuis Tahiti">
 <meta property="og:site_name" content="Landry">
 <meta property="og:locale" content="fr_FR">
-<meta name="twitter:card" content="summary_large_image"><link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="twitter:card" content="summary_large_image"><noscript><style>.liens li { opacity: 1 !important; }</style></noscript>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -109,7 +110,7 @@
 
   .statut, .musique {
     display: flex; align-items: center; gap: .6rem; text-align: left;
-    padding: .55rem .9rem; border-radius: 14px; margin: 0 0 .75rem; max-width: 100%;
+    padding: .55rem .9rem; border-radius: 14px; margin: 0; max-width: 100%;
     background: color-mix(in srgb, var(--blanc) 13%, transparent);
     font-size: .9375rem; animation: apparait .6s ease 2.2s both;
   }
@@ -123,10 +124,18 @@
   @keyframes monte    { from { transform: translateY(.6em); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes apparait { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
+  /* ---------- Bloc infos (En ce moment, événement, musique, lecteur) ---------- */
+  .infos { width: 100%; display: flex; flex-direction: column; align-items: center; gap: .875rem; margin: 0 0 1.5rem; }
+  .infos:not(:has(> :not([hidden]))) { display: none; }
+  /* Disposition « liens en haut » : les infos passent sous les boutons */
+  main.liens-d-abord .infos { order: 1; margin: 1.5rem 0 0; }
+  main.liens-d-abord .blocs, main.liens-d-abord .partage { order: 2; }
+
   /* ---------- Boutons ---------- */
   .liens { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .875rem; }
-  .liens li { animation: monte .6s cubic-bezier(.2,.9,.3,1) both; }
-  .liens li { animation-delay: calc(2.45s + var(--i, 0) * .15s); }
+  /* Les boutons attendent que la liste soit arrivée, puis apparaissent tous en cascade, dans l'ordre */
+  .liens:not(.pret) li { opacity: 0; }
+  .liens.pret li { animation: monte .6s cubic-bezier(.2,.9,.3,1) both; animation-delay: calc(var(--d0, 0s) + var(--i, 0) * .15s); }
   .liens a {
     display: flex; align-items: center; gap: .9rem;
     min-height: 60px; padding: .9rem 1.25rem;
@@ -155,7 +164,7 @@
 
   /* ---------- Livre d'or ---------- */
   .evenement {
-    display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0 0 .9rem; padding: .8rem 1rem; border-radius: 16px;
+    display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0; padding: .8rem 1rem; border-radius: 16px;
     background: var(--doux); color: var(--btn-texte); text-decoration: none; text-align: left; animation: apparait .6s ease 2.3s both;
   }
   .evenement .cal { flex: none; width: 46px; border-radius: 10px; background: var(--blanc); text-align: center; line-height: 1.1; padding: 4px 0; box-shadow: 0 2px 0 var(--fonce); }
@@ -166,7 +175,7 @@
   a.evenement:hover { filter: brightness(1.04); }
   a.evenement:focus-visible { outline: 3px solid var(--blanc); outline-offset: 3px; }
   .lecteur {
-    display: flex; align-items: center; gap: .85rem; width: 100%; margin: -.75rem 0 1.5rem; padding: .7rem 1rem .7rem .7rem;
+    display: flex; align-items: center; gap: .85rem; width: 100%; margin: 0; padding: .7rem 1rem .7rem .7rem;
     background: var(--blanc); color: var(--btn-texte); border-radius: 16px; box-shadow: 0 4px 0 var(--fonce); text-align: left;
     animation: apparait .6s ease 2.35s both;
   }
@@ -325,6 +334,7 @@
   <h1 id="nom">Landry</h1>
   <a class="direct" id="direct" hidden target="_blank" rel="noopener"><span class="rond" aria-hidden="true"></span><span id="direct-texte">En direct</span></a>
 
+  <div class="infos" id="infos">
   <p class="statut" id="statut" hidden><span class="point" aria-hidden="true"></span><span><b data-t="enCeMoment">En ce moment :</b> <span id="statut-texte"></span></span></p>
   <a class="evenement" id="evenement" hidden>
     <span class="cal" aria-hidden="true"><b id="evt-jour"></b><small id="evt-mois"></small></span>
@@ -348,6 +358,7 @@
       <button type="button" id="piste-suiv" aria-label="Morceau suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM14.5 12 5 18.5v-13z"/></svg></button>
     </div>
     <audio id="lecteur-audio" preload="none"></audio>
+  </div>
   </div>
 
   <!-- ✏️ Ta bio : modifie le texte dans le dictionnaire TEXTES en bas de page (fr, en, ty) -->
@@ -725,6 +736,7 @@
     try {
       const d = await api('/api/infos');
       compte = d.mauruuru || 0;
+      $('main').classList.toggle('liens-d-abord', d.disposition === 'liens');
       const phrase = d.statuts && d.statuts.length ? d.statuts[Math.floor(Math.random() * d.statuts.length)] : d.statut;
       if (phrase) { $('#statut-texte').textContent = phrase; $('#statut').hidden = false; }
       if (d.evenement) afficherEvenement(d.evenement);
@@ -799,20 +811,21 @@
         const icone = (window.ICONES && (ICONES[l.icone] || ICONES.lien)) || { d: '' };
         li.innerHTML = `<a href="/l/${l.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone.d}"/></svg><span class="txt">${echappe(l.titre)}${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}</span></a>`;
         ul.insertBefore(li, ref);
-        li.dataset.nouveau = '1';
       });
     } catch { /* hors ligne ou aperçu : on garde le lien Instagram par défaut */ }
-    numeroter();
+    lancerCascade();
   };
-  const numeroter = () => {
-    const ecoule = performance.now() / 1000;
-    [...$('#liste-liens').children].forEach((li, i) => {
-      li.style.setProperty('--i', i);
-      // un lien ajouté après le chargement démarre son animation plus tard : on compense
-      if (li.dataset.nouveau) li.style.animationDelay = Math.max(0, 2.45 + i * 0.15 - ecoule).toFixed(2) + 's';
-    });
+  // Une seule cascade pour tous les boutons, quand la liste est prête :
+  // au rythme de l'intro si elle arrive vite, tout de suite (mais toujours en cascade) si elle arrive tard
+  let cascadeLancee = false;
+  const lancerCascade = () => {
+    if (cascadeLancee) return; cascadeLancee = true;
+    const ul = $('#liste-liens');
+    [...ul.children].forEach((li, i) => li.style.setProperty('--i', i));
+    ul.style.setProperty('--d0', Math.max(0, 2.45 - performance.now() / 1000).toFixed(2) + 's');
+    ul.classList.add('pret');
   };
-  numeroter();
+  setTimeout(lancerCascade, 6000); // filet de sécurité si le serveur ne répond pas
 
   /* ---------- Spotify via Lanyard ---------- */
   const chargerMusique = async () => {

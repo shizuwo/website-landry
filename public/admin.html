@@ -220,6 +220,19 @@
   /* ---------- Fenêtres ---------- */
   dialog { border: 0; border-radius: 18px; padding: 20px; width: min(400px, 92vw); max-height: 90vh; overflow: auto; }
   dialog::backdrop { background: rgba(0,0,0,.5); }
+  /* Recadrage */
+  #fen-cadre { width: min(520px, 96vw); }
+  .cadre-zone { position: relative; width: 100%; max-height: 60vh; margin: 0 auto 12px; overflow: hidden; border-radius: 8px; background: #222; touch-action: none; cursor: grab; user-select: none; }
+  .cadre-zone:active { cursor: grabbing; }
+  .cadre-zone img { display: block; width: 100%; height: 100%; pointer-events: none; -webkit-user-drag: none; }
+  .cadre-zone::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, transparent calc(33.3% - 1px), rgba(255,255,255,.45) 0 calc(33.3% + 1px), transparent 0 calc(66.6% - 1px), rgba(255,255,255,.45) 0 calc(66.6% + 1px), transparent 0),
+                linear-gradient(transparent calc(33.3% - 1px), rgba(255,255,255,.45) 0 calc(33.3% + 1px), transparent 0 calc(66.6% - 1px), rgba(255,255,255,.45) 0 calc(66.6% + 1px), transparent 0); }
+  .formats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .formats button { min-height: 36px; }
+  .formats button[aria-pressed="true"] { background: var(--rouge); color: #fff; }
+  .zoom { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-weight: 600; }
+  .zoom input { flex: 1; accent-color: var(--rouge); }
   dialog h3 { margin-top: 0; }
   dialog.plein { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; padding: 0; background: #1E1E1E; }
   dialog.plein iframe { width: 100%; height: calc(100% - 56px); border: 0; background: #B3212E; }
@@ -280,6 +293,15 @@
     </section>
 
     <!-- ================= PAGE BIO ================= -->
+    <section data-onglet="bio" data-nom="Disposition" id="s-disposition">
+      <h2>Disposition de la bio</h2>
+      <p class="aide">Ce qui s'affiche juste sous ton nom.</p>
+      <form id="form-disposition" class="boite choix" novalidate>
+        <label><input type="radio" name="disposition" value="liens"><span>Liens en haut<small>Tes boutons d'abord ; En ce moment, l'événement et la musique passent dessous</small></span></label>
+        <label><input type="radio" name="disposition" value="infos"><span>Infos en haut<small>En ce moment, l'événement et la musique d'abord, puis tes boutons</small></span></label>
+      </form>
+    </section>
+
     <section data-onglet="bio" data-nom="Liens" id="s-liens">
       <h2>Liens de la bio</h2>
       <p class="aide">Glisse avec ⠿ pour changer l'ordre. « Découvrir mon monde » reste toujours en dernier.</p>
@@ -525,6 +547,16 @@
   <iframe id="apercu-plein" title="Aperçu de la page bio"></iframe>
 </dialog>
 
+<dialog id="fen-cadre" aria-labelledby="cadre-titre">
+  <h3 id="cadre-titre">Recadrer la photo</h3>
+  <p class="aide" style="margin-top:-6px">Glisse la photo pour la placer, zoome avec le curseur (ou la molette, ou deux doigts).</p>
+  <div class="formats" id="cadre-formats" role="group" aria-label="Format dans la galerie"></div>
+  <div class="cadre-zone" id="cadre-zone"><img id="cadre-img" alt="Photo à recadrer"></div>
+  <label class="zoom">Zoom<input type="range" id="cadre-zoom" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
+  <div class="ligne"><button type="button" id="cadre-ok">Enregistrer</button><button type="button" class="gris" id="cadre-zero">Photo entière</button><button type="button" class="gris" id="cadre-annuler">Annuler</button></div>
+  <p class="erreur" id="err-cadre" role="alert"></p>
+</dialog>
+
 <dialog id="fen-qr" aria-labelledby="qr-titre">
   <h3 id="qr-titre">QR code</h3>
   <div id="qr-zone"></div>
@@ -553,6 +585,7 @@
 <div class="toast" id="toast" role="status"><span id="toast-texte"></span><button type="button" id="toast-annuler" hidden>Annuler</button></div>
 
 <script src="icones.js"></script>
+<script src="cadre.js"></script>
 <script>
 {
   /* =====================================================================
@@ -584,7 +617,7 @@
   const appel = async (methode, corps) => {
     const r = await fetch('/api/admin', { method: methode, headers: { 'x-cle': cle, 'content-type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined });
     const d = await r.json().catch(() => ({}));
-    if (r.status === 401) throw new Error('Mot de passe incorrect.');
+    if (r.status === 401) throw new Error(d.erreur || 'Mot de passe incorrect.');
     if (!r.ok) throw new Error(d.erreur || 'Erreur du serveur (' + r.status + ').');
     return d;
   };
@@ -940,10 +973,17 @@
     const noms = { p1: 'Carte postale 1 (lagon)', p2: 'Carte postale 2 (tiare)', p3: 'Carte postale 3 (coucher)', c1: 'Mot 1', c2: 'Mot 2', c3: 'Mot 3', c4: 'Mot 4', c5: 'Mot 5' };
     $('#emplacements').innerHTML = Object.entries(noms).map(([k, n]) => {
       const choisi = D.fichiers.find(f => f.id === D.photos[k]);
-      return `<div class="emplacement"><b>${n}</b><div class="apercu">${choisi ? `<img src="${choisi.url}" alt="" loading="lazy">` : 'Dessin d\'origine'}</div>
+      return `<div class="emplacement"><b>${n}</b><div class="apercu">${choisi ? `<img src="${choisi.url}" alt="" loading="lazy" data-cadre="${k}">` : 'Dessin d\'origine'}</div>
+        ${choisi ? `<button type="button" class="petit gris" data-recadrer="${k}" style="width:100%;margin-bottom:6px">Recadrer</button>` : ''}
         <select data-emplacement="${k}" aria-label="Photo pour ${n}"><option value="">Dessin d'origine</option>${images.map(f => `<option value="${f.id}" ${f.id === D.photos[k] ? 'selected' : ''}>${echappe(f.legende || f.nom)}</option>`).join('')}</select></div>`;
     }).join('');
+    $$('#emplacements img[data-cadre]').forEach(img => CADRE.appliquer(img, (D.cadres || {})[img.dataset.cadre]));
   };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-recadrer]'); if (!b) return;
+    const k = b.dataset.recadrer, f = D.fichiers.find(x => x.id === D.photos[k]);
+    if (f) recadrer(k, f.url, false);
+  });
   document.addEventListener('change', async (e) => {
     const s = e.target.closest('select[data-emplacement]'); if (!s) return;
     if (await action({ action: 'photo_accueil', emplacement: s.dataset.emplacement, id: s.value || null })) toast("Photo de l'accueil mise à jour");
@@ -1124,6 +1164,66 @@
   /* =====================================================================
      Réglages
      ===================================================================== */
+  /* =====================================================================
+     Recadrage : glisser pour placer, curseur / molette / pincer pour zoomer
+     ===================================================================== */
+  const fenCadre = $('#fen-cadre'), zoneC = $('#cadre-zone'), imgC = $('#cadre-img'), zoomC = $('#cadre-zoom');
+  let cad = null; // { cible, galerie, c: {x, y, z, a} }
+  const NOMS_FORMATS = { orig: "D'origine", '1': 'Carré', '4/5': 'Portrait', '4/3': 'Paysage' };
+  const dessinerCadre = () => {
+    const nw = imgC.naturalWidth, nh = imgC.naturalHeight;
+    const r = cad.galerie ? CADRE.ratio(cad.c, nw, nh) : 4 / 3;
+    // Le cadre garde son format sans dépasser 60 % de la hauteur de l'écran
+    const largeur = Math.min(zoneC.parentNode.clientWidth - 40, innerHeight * .6 * r);
+    zoneC.style.width = largeur + 'px'; zoneC.style.aspectRatio = r;
+    CADRE.appliquer(imgC, cad.c); zoomC.value = cad.c.z;
+    $$('#cadre-formats button').forEach(b => b.setAttribute('aria-pressed', String((cad.c.a || 'orig') === b.dataset.format)));
+  };
+  const recadrer = (cible, url, galerie) => {
+    const existant = (D.cadres || {})[cible];
+    cad = { cible, galerie, c: { x: 50, y: 50, z: 1, ...(existant || {}) } };
+    if (galerie && !cad.c.a) cad.c.a = 'orig';
+    $('#cadre-formats').hidden = !galerie;
+    $('#cadre-formats').innerHTML = Object.entries(NOMS_FORMATS).map(([v, l]) => `<button type="button" class="petit gris" data-format="${v}">${l}</button>`).join('');
+    $('#err-cadre').textContent = '';
+    imgC.onload = dessinerCadre; imgC.src = url;
+    fenCadre.showModal();
+    if (imgC.complete && imgC.naturalWidth) dessinerCadre();
+  };
+  $('#cadre-formats').addEventListener('click', (e) => { const b = e.target.closest('[data-format]'); if (b) { cad.c.a = b.dataset.format; dessinerCadre(); } });
+  // Déplacement : on calcule de combien la photo zoomée dépasse du cadre pour qu'elle suive le doigt
+  const debord = () => {
+    const W = zoneC.clientWidth, H = zoneC.clientHeight, nw = imgC.naturalWidth, nh = imgC.naturalHeight;
+    const s = Math.max(W / nw, H / nh);
+    return { tx: cad.c.z * nw * s - W, ty: cad.c.z * nh * s - H };
+  };
+  const borne = (v, a, b) => Math.min(b, Math.max(a, v));
+  const doigts = new Map(); let ecart0 = 0, zoom0 = 1;
+  zoneC.addEventListener('pointerdown', (e) => { zoneC.setPointerCapture(e.pointerId); doigts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (doigts.size === 2) { const [a, b] = [...doigts.values()]; ecart0 = Math.hypot(a.x - b.x, a.y - b.y); zoom0 = cad.c.z; } });
+  zoneC.addEventListener('pointermove', (e) => {
+    const avant = doigts.get(e.pointerId); if (!avant) return;
+    const p = { x: e.clientX, y: e.clientY }; doigts.set(e.pointerId, p);
+    if (doigts.size === 2) { const [a, b] = [...doigts.values()]; cad.c.z = borne(zoom0 * Math.hypot(a.x - b.x, a.y - b.y) / ecart0, 1, 4); }
+    else {
+      const { tx, ty } = debord();
+      if (tx > 1) cad.c.x = borne(cad.c.x - (p.x - avant.x) * 100 / tx, 0, 100);
+      if (ty > 1) cad.c.y = borne(cad.c.y - (p.y - avant.y) * 100 / ty, 0, 100);
+    }
+    CADRE.appliquer(imgC, cad.c); zoomC.value = cad.c.z;
+  });
+  const lacher = (e) => doigts.delete(e.pointerId);
+  zoneC.addEventListener('pointerup', lacher); zoneC.addEventListener('pointercancel', lacher);
+  zoneC.addEventListener('wheel', (e) => { e.preventDefault(); cad.c.z = borne(cad.c.z * (e.deltaY < 0 ? 1.08 : 1 / 1.08), 1, 4); CADRE.appliquer(imgC, cad.c); zoomC.value = cad.c.z; }, { passive: false });
+  zoomC.addEventListener('input', () => { cad.c.z = +zoomC.value; CADRE.appliquer(imgC, cad.c); });
+  $('#cadre-zero').addEventListener('click', () => { cad.c = { x: 50, y: 50, z: 1, a: cad.galerie ? 'orig' : undefined }; dessinerCadre(); });
+  $('#cadre-annuler').addEventListener('click', () => fenCadre.close());
+  $('#cadre-ok').addEventListener('click', async () => {
+    const c = cad.c, entiere = c.z === 1 && c.x === 50 && c.y === 50 && (!cad.galerie || c.a === 'orig');
+    const corps = entiere ? { action: 'cadrage', cible: cad.cible, effacer: true } : { action: 'cadrage', cible: cad.cible, ...c };
+    if (await action(corps, $('#err-cadre'))) { fenCadre.close(); toast('Recadrage enregistré'); }
+  });
+
   const enregistrerSite = async (changements, message) => {
     const r = D.site;
     const c = { action: 'reglages_site', livre_actif: r.livre_actif, contact_actif: r.contact_actif, banniere_active: r.banniere_active, banniere_texte: r.banniere_texte,
@@ -1158,6 +1258,12 @@
     ftheme.innerHTML = THEMES_LISTE.map(([v, l, d]) => `<label><input type="radio" name="theme" value="${v}" ${D.theme === v ? 'checked' : ''}><span>${l}<small>${v === 'auto' ? d + ' (aujourd\'hui : ' + actuel + ')' : d}</small></span></label>`).join('');
   };
   ftheme.addEventListener('change', async (e) => { if (e.target.name === 'theme' && await action({ action: 'theme', valeur: e.target.value })) toast('Thème enregistré'); });
+
+  const fdispo = $('#form-disposition');
+  fdispo.addEventListener('change', async (e) => {
+    if (e.target.name !== 'disposition') return;
+    if (await action({ action: 'disposition', valeur: e.target.value })) { D.disposition = e.target.value; toast('Disposition enregistrée'); }
+  });
 
   const fleg = $('#form-legal');
   fleg.addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'legal', nom: fleg.nom.value.trim(), email: fleg.email.value.trim() }, $('#err-legal'))) toast('Mentions légales enregistrées'); });
@@ -1211,6 +1317,7 @@
       { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'fichier_supprimer', id: f.id }, el, 'Fichier') }]; },
     galerie: (id) => [
       { l: 'Légende', f: () => reglerFichier(id) },
+      { l: 'Recadrer', f: () => { const f = D.fichiers.find(x => x.id === id); if (f) recadrer('f:' + id, f.url, true); } },
       { l: "Déplacer vers l'album privé", f: () => action({ action: 'fichier_modifier', id, album: true }) },
       { l: 'Retirer de la galerie', f: () => action({ action: 'fichier_modifier', id, galerie: false }) }],
     album: (id) => [
@@ -1307,6 +1414,7 @@
     if (!$('#s-musique').contains(document.activeElement)) playlist = D.playlist.map(p => ({ ...p }));
     afficherTableau(); afficherStats(); afficherLiens(); afficherStatuts(); afficherPlaylist(); afficherBlocs();
     afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme();
+    fdispo.querySelector(`[value="${D.disposition || 'infos'}"]`).checked = true;
     majPastilles();
   };
 
@@ -1316,8 +1424,8 @@
     catch (err) { $('#erreur').textContent = err.message; }
   });
   const demarrer = async () => {
-    await ouvrirAlbumAdmin();   // pour voir les vignettes de l'album privé
     await charger();
+    await ouvrirAlbumAdmin(); afficherFichiers();   // pour voir les vignettes de l'album privé
     let h = location.hash; if (!h) { try { h = localStorage.getItem('admin-onglet') || ''; } catch {} }
     const [o, s] = (h || '#tableau').slice(1).split('/');
     aller(o || 'tableau', s ? 's-' + s : null, false);

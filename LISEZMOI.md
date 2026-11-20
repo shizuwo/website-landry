@@ -15,6 +15,8 @@ Chaque modification fusionnée dans `main` est publiée automatiquement sur land
 | landrypf.com/admin | `public/admin.html` | Ton espace privé |
 | landrypf.com/f/… | — | Les fichiers que tu partages |
 | landrypf.com/ton-code | — | Tes liens courts |
+| (adresse inconnue) | `public/404.html` | Page « perdue dans le lagon » |
+| landrypf.com/sitemap.xml et /robots.txt | — | Pour Google (créés automatiquement) |
 
 ## L'admin (landrypf.com/admin)
 
@@ -22,20 +24,28 @@ Sur téléphone, les onglets sont en bas de l'écran ; sur ordinateur, en haut. 
 L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cherche partout.
 
 - **Tableau de bord** : ce qui est à traiter (messages, mots, photos), jauge de stockage, chiffres sur 30 jours.
-- **Page bio** : liens (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
+- **Page bio** : disposition (liens en haut ou infos en haut), liens (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
   événement, badge « en direct », lecteur de musique avec playlist, blocs intégrés
   (Instagram, TikTok, YouTube, Spotify, SoundCloud). Sur ordinateur, un aperçu en direct de la bio s'affiche à droite.
-- **Page d'accueil** : tes photos à la place des dessins, et tous les textes.
+- **Page d'accueil** : tes photos à la place des dessins (bouton **Recadrer** : glisse et zoome), et tous les textes.
 - **Fichiers** : envoi (100 Mo max, photos optimisées), filtres, lien court, QR code, mot de passe, expiration,
-  renommage ; galerie publique (avec « Photos à valider ») ; **album privé** protégé par mot de passe (landrypf.com/album).
+  renommage ; galerie publique (avec « Photos à valider », et **Recadrer** dans le menu ⋯ : format carré, portrait, paysage ou d'origine) ; **album privé** protégé par mot de passe (landrypf.com/album).
 - **Messages** : formulaire de contact et livre d'or (les visiteurs peuvent mettre un 🌺 aux mots).
 - **Réglages** : livre d'or et contact (activer/couper), bannière programmable, liens courts, thème saisonnier
   (automatique : Heiva en juillet, Noël, Nouvel An), mentions légales, sauvegarde en un clic, nettoyage.
+
+**Sécurité** : après 5 mauvais mots de passe en 15 minutes, l'admin est bloqué 15 minutes pour cet appareil, et tu reçois une notification.
 
 Chaque suppression peut être annulée pendant 5 secondes. Le menu **⋯** de chaque élément regroupe ses actions.
 
 **Installer l'admin comme une appli** : ouvre landrypf.com/admin sur ton téléphone, puis
 « Partager → Sur l'écran d'accueil » (iPhone) ou « ⋮ → Ajouter à l'écran d'accueil » (Android).
+
+## Les petits secrets de l'accueil
+
+- Les cartes postales de « Mon île » se déplacent à la souris (ou au doigt avec un appui long). Double-clic pour les remettre.
+- Dans le lagon du soir, une honu et un banc de poissons nagent.
+- À la nuit tombée, Matari'i (les Pléiades) s'allume, et une étoile filante passe de temps en temps.
 
 ## Entretien automatique
 
