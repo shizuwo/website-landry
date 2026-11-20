@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="fr" data-moment="jour">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mes liens · Landry</title>
+<meta name="description" content="Ia ora na ! Je suis Landry, de Tahiti. Tous mes liens au même endroit.">
+<link rel="canonical" href="https://landrypf.com/bio">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://landrypf.com/bio">
+<meta property="og:title" content="Mes liens · Landry">
+<meta property="og:description" content="Ia ora na ! Tous mes liens au même endroit.">
+<meta name="theme-color" content="#B3212E">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta property="og:image" content="https://landrypf.com/partage.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Landry, Ia ora na depuis Tahiti">
+<meta property="og:site_name" content="Landry">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image"><text y='.9em' font-size='90'>🌺</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /*
+    IDÉE : un tifaifai (couvre-lit tahitien en appliqué) qui se coud sous tes yeux.
+    JOUR/NUIT : rouge tifaifai le jour, bleu nuit de lagon quand il fait nuit à Tahiti.
+    TYPO : Young Serif pour le nom, Instrument Sans pour le reste.
+    MISE EN PAGE : une colonne centrée, pensée pour le téléphone.
+  */
+  :root {
+    --fond: #B3212E; --fonce: #8E1823;
+    --blanc: #FFFFFF; --doux: #F6E3E1;
+    --btn-texte: #B3212E; --btn-sous: #6B4A4D;
+    --menu-fond: #FFFFFF; --menu-texte: var(--btn-texte);
+  }
+  [data-moment="nuit"] {
+    --fond: #10264A; --fonce: #0A1931;
+    --doux: #C9DAF2;
+    --btn-texte: #10264A; --btn-sous: #4A5A75;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0; background: var(--fond); color: var(--blanc);
+    font: 400 1rem/1.55 "Instrument Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh; overflow-x: hidden;
+    transition: background-color 1.2s ease;
+  }
+  button { font: inherit; }
+
+  /* ---------- Barre du haut ---------- */
+  .haut { position: relative; z-index: 2; padding: 14px 150px 0 max(14px, 3vw); display: flex; gap: .5rem; flex-wrap: wrap; }
+  .pastille {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .35rem .8rem; border-radius: 999px;
+    background: color-mix(in srgb, var(--blanc) 14%, transparent);
+    font-size: .875rem; font-weight: 600; white-space: nowrap;
+  }
+
+  /* ---------- Colonne ---------- */
+  main {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 440px; margin: 0 auto;
+    padding: clamp(1.5rem, 5vh, 3rem) 1.25rem 1rem;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+
+  /* ---------- Motif ---------- */
+  .motif {
+    width: min(200px, 50vw); height: auto; margin-bottom: .75rem;
+    cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 50%;
+    touch-action: manipulation;
+  }
+  .motif:focus-visible { outline: 3px solid var(--blanc); outline-offset: 6px; }
+  .tourne { transform-origin: 200px 200px; animation: tourne 80s linear 2.6s infinite; }
+  .tourne-clic { transform-origin: 200px 200px; }
+  .spin .tourne-clic { animation: clic .9s cubic-bezier(.3,1.4,.5,1); }
+  .feuille { transform-origin: 200px 200px; transform-box: view-box; animation: pose .55s cubic-bezier(.2,1.3,.4,1) both; }
+  .nervure { stroke-dasharray: 120; stroke-dashoffset: 120; animation: trace .5s ease-out forwards; }
+  .coeur   { transform-origin: 200px 200px; transform-box: view-box; animation: pose .5s cubic-bezier(.2,1.3,.4,1) 1.5s both; }
+  .petale  { transform-origin: 200px 200px; transform-box: view-box; animation: eclot .5s cubic-bezier(.2,1.4,.4,1) both; }
+  #petales { transform-origin: 200px 200px; transform-box: view-box; transition: transform 1.2s ease; }
+  [data-moment="nuit"] #petales { transform: scale(.72) rotate(-12deg); } /* la tiare se referme la nuit */
+  .cercle-fond { transition: fill 1.2s ease; }
+  @keyframes pose  { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes eclot { from { transform: scale(0) rotate(-40deg); } to { transform: none; } }
+  @keyframes trace { to { stroke-dashoffset: 0; } }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+  @keyframes clic  { to { transform: rotate(180deg); } }
+
+  /* ---------- Compteur Mauruuru ---------- */
+  .merci { display: flex; flex-direction: column; align-items: center; gap: .15rem; margin-bottom: 1.25rem; animation: apparait .6s ease 2.1s both; }
+  .merci .total { font-weight: 600; font-size: 1.0625rem; font-variant-numeric: tabular-nums; }
+  .merci .indice { font-size: .875rem; color: var(--doux); }
+  .plus1 { position: fixed; pointer-events: none; font-weight: 600; font-size: 1.25rem; z-index: 60; animation: plus1 1s ease-out forwards; }
+  @keyframes plus1 { to { transform: translateY(-60px); opacity: 0; } }
+
+  h1 {
+    font-family: "Young Serif", Georgia, serif; font-weight: 400;
+    font-size: clamp(2.2rem, 10vw, 2.9rem); line-height: 1.05; margin: 0 0 .75rem;
+  }
+  h1 span { display: inline-block; animation: monte .6s cubic-bezier(.2,.9,.3,1) both; }
+
+  .statut, .musique {
+    display: flex; align-items: center; gap: .6rem; text-align: left;
+    padding: .55rem .9rem; border-radius: 14px; margin: 0 0 .75rem; max-width: 100%;
+    background: color-mix(in srgb, var(--blanc) 13%, transparent);
+    font-size: .9375rem; animation: apparait .6s ease 2.2s both;
+  }
+  .statut b, .musique b { font-weight: 600; }
+  .point { width: 9px; height: 9px; border-radius: 50%; background: #7CF29A; flex: none; box-shadow: 0 0 0 0 #7CF29A88; animation: pouls 2s infinite; }
+  @keyframes pouls { 70% { box-shadow: 0 0 0 8px #7CF29A00; } 100% { box-shadow: 0 0 0 0 #7CF29A00; } }
+  .musique img { width: 40px; height: 40px; border-radius: 6px; flex: none; }
+  .musique .titre { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+
+  .bio { margin: .25rem 0 1.75rem; max-width: 30ch; font-size: 1.0625rem; color: var(--doux); animation: apparait .7s ease 2.2s both; }
+  @keyframes monte    { from { transform: translateY(.6em); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes apparait { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Boutons ---------- */
+  .liens { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .875rem; }
+  .liens li { animation: monte .6s cubic-bezier(.2,.9,.3,1) both; }
+  .liens li { animation-delay: calc(2.45s + var(--i, 0) * .15s); }
+  .liens a {
+    display: flex; align-items: center; gap: .9rem;
+    min-height: 60px; padding: .9rem 1.25rem;
+    background: var(--blanc); color: var(--btn-texte); border-radius: 16px;
+    font-weight: 600; font-size: 1.0625rem; text-decoration: none; text-align: left;
+    box-shadow: 0 4px 0 var(--fonce);
+    transition: transform .12s ease, box-shadow .12s ease, color 1.2s ease;
+  }
+  .liens a:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--fonce); }
+  .liens a:hover svg { animation: secoue .5s ease; }
+  .liens a:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--fonce); }
+  .liens a:focus-visible, .petit-btn:focus-visible, .form button:focus-visible { outline: 3px solid var(--blanc); outline-offset: 4px; }
+  .liens svg { width: 1.5rem; height: 1.5rem; fill: currentColor; flex: none; }
+  .liens .txt { flex: 1; }
+  .liens small { display: block; font-weight: 400; font-size: .875rem; color: var(--btn-sous); }
+  @keyframes secoue { 25% { transform: rotate(-12deg); } 60% { transform: rotate(10deg); } }
+
+  .partage { display: flex; gap: .75rem; margin-top: 1.25rem; animation: apparait .6s ease 2.9s both; }
+  .petit-btn {
+    display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: .5rem 1.1rem;
+    border-radius: 999px; border: 2px solid color-mix(in srgb, var(--blanc) 55%, transparent);
+    background: transparent; color: var(--blanc); font-weight: 600; cursor: pointer;
+  }
+  .petit-btn:hover { background: color-mix(in srgb, var(--blanc) 12%, transparent); }
+  .petit-btn svg { width: 1.1rem; height: 1.1rem; }
+
+  /* ---------- Livre d'or ---------- */
+  .livre { width: 100%; max-width: 440px; margin: 0 auto; padding: 3rem 1.25rem 2rem; position: relative; z-index: 1; }
+  .livre h2 { font-family: "Young Serif", Georgia, serif; font-weight: 400; font-size: 1.9rem; line-height: 1.1; margin: 0 0 .35rem; text-align: center; }
+  .livre > p { text-align: center; color: var(--doux); margin: 0 0 1.5rem; }
+  .form { display: grid; gap: .75rem; }
+  .form label { font-weight: 600; font-size: .9375rem; display: grid; gap: .35rem; }
+  .form input, .form textarea {
+    font: inherit; font-size: 16px; width: 100%; padding: .75rem .9rem; border-radius: 12px; border: 0;
+    background: var(--blanc); color: #222; resize: vertical;
+  }
+  .form input:focus-visible, .form textarea:focus-visible { outline: 3px solid var(--doux); outline-offset: 2px; }
+  .form .cache { position: absolute; left: -9999px; }
+  .form .bas { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .form .reste { font-size: .8125rem; color: var(--doux); font-variant-numeric: tabular-nums; }
+  .form button {
+    min-height: 48px; padding: .6rem 1.4rem; border-radius: 999px; border: 0; cursor: pointer;
+    background: var(--blanc); color: var(--btn-texte); font-weight: 600; box-shadow: 0 4px 0 var(--fonce);
+  }
+  .form button:disabled { opacity: .6; cursor: wait; }
+  .retour { min-height: 1.5em; font-size: .9375rem; margin: 0; }
+  .mots { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; gap: 1.25rem; }
+  .mots li {
+    position: relative; background: #FFFDF7; color: #2A2A2A; padding: 1.1rem 1.1rem .9rem; border-radius: 4px;
+    box-shadow: 0 6px 14px rgba(0,0,0,.18); transform: rotate(-1.2deg);
+  }
+  .mots li:nth-child(even) { transform: rotate(1.4deg); }
+  .mots li::before { /* bout de scotch */
+    content: ""; position: absolute; top: -10px; left: 50%; width: 70px; height: 20px; translate: -50% 0; rotate: -3deg;
+    background: rgba(236, 222, 186, .9);
+  }
+  .mots .qui { display: block; margin-top: .4rem; font-size: .875rem; color: #6A6A6A; }
+  .mots .vide { transform: none; background: transparent; color: var(--doux); box-shadow: none; text-align: center; }
+  .mots .vide::before { display: none; }
+
+  /* ---------- Bas de page ---------- */
+  footer { position: relative; z-index: 1; padding: 1.5rem 1.25rem 140px; text-align: center; font-size: .875rem; }
+  .langues { display: inline-flex; gap: .25rem; padding: .25rem; border-radius: 999px; background: color-mix(in srgb, var(--blanc) 13%, transparent); margin-bottom: 1rem; }
+  .langues button { min-height: 40px; min-width: 52px; padding: 0 .8rem; border: 0; border-radius: 999px; background: transparent; color: var(--blanc); font-weight: 600; cursor: pointer; }
+  .langues button[aria-pressed="true"] { background: var(--blanc); color: var(--btn-texte); }
+  .apercu { display: block; margin-top: .5rem; color: var(--doux); font-size: .8125rem; }
+
+  /* ---------- Vagues, étoiles, pluie de tiare ---------- */
+  .vagues { position: fixed; left: 0; right: 0; bottom: 0; height: 110px; pointer-events: none; z-index: 0; }
+  .vagues svg { position: absolute; bottom: 0; left: 0; width: 200%; height: 100%; }
+  .vagues path { fill: var(--fonce); transition: fill 1.2s ease; }
+  .v1 { animation: houle 14s linear infinite; opacity: .35; }
+  .v2 { animation: houle 9s linear infinite reverse; opacity: .55; height: 70% !important; }
+  @keyframes houle { to { transform: translateX(-50%); } }
+  .etoiles { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 1.5s ease; }
+  [data-moment="nuit"] .etoiles { opacity: 1; }
+  .etoiles i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #fff; animation: scintille 3s ease-in-out infinite; }
+  @keyframes scintille { 50% { opacity: .25; } }
+  .tombe { position: fixed; top: -40px; width: 30px; height: 30px; pointer-events: none; z-index: 70; animation: tombe linear forwards; }
+  @keyframes tombe { to { transform: translate(var(--dx), 110vh) rotate(var(--rot)); } }
+
+  /* ---------- Fenêtre QR ---------- */
+  dialog { border: 0; border-radius: 20px; padding: 1.5rem; max-width: min(340px, 90vw); text-align: center; color: #222; }
+  dialog::backdrop { background: rgba(0,0,0,.55); }
+  dialog h2 { font-family: "Young Serif", Georgia, serif; font-weight: 400; margin: 0 0 1rem; font-size: 1.5rem; }
+  #qr { display: grid; place-items: center; min-height: 220px; }
+  #qr img, #qr canvas { width: 220px; height: 220px; }
+  dialog p { margin: .75rem 0 1rem; font-weight: 600; }
+  dialog button { min-height: 44px; padding: .5rem 1.4rem; border-radius: 999px; border: 0; background: var(--fond); color: #fff; font-weight: 600; cursor: pointer; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; translate: -50% 0; z-index: 80;
+    background: #fff; color: #222; padding: .7rem 1.1rem; border-radius: 16px; width: max-content; max-width: 88vw; text-align: center; font-weight: 600; font-size: .9375rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25); opacity: 0; transition: opacity .25s, translate .25s; pointer-events: none;
+  }
+  .toast.vu { opacity: 1; translate: -50% -8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .nervure { stroke-dashoffset: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="etoiles" id="etoiles" aria-hidden="true"></div>
+
+<div class="haut">
+  <span class="pastille" id="heure" aria-live="off">🕐 --:--</span>
+</div>
+
+<main>
+  <svg class="motif" id="motif" viewBox="0 0 400 400" role="button" tabindex="0" aria-label="Fleur de tiare : touche-la pour dire mauruuru">
+    <defs>
+      <path id="feuille" d="M200 196 C186 170 168 150 172 118 C160 112 158 96 170 88 C164 72 174 56 186 60 C188 44 196 30 200 22 C204 30 212 44 214 60 C226 56 236 72 230 88 C242 96 240 112 228 118 C232 150 214 170 200 196 Z"/>
+      <path id="petale" d="M200 200 C190 186 188 166 200 148 C212 166 210 186 200 200 Z"/>
+    </defs>
+    <g class="tourne"><g class="tourne-clic">
+      <g id="feuilles" fill="#fff"></g>
+      <g id="nervures" stroke="var(--fond)" stroke-width="3" stroke-linecap="round" fill="none"></g>
+      <g class="coeur">
+        <circle class="cercle-fond" cx="200" cy="200" r="58" fill="var(--fond)"/>
+        <g id="petales" fill="#fff"></g>
+        <circle class="cercle-fond" cx="200" cy="200" r="7" fill="var(--fond)"/>
+      </g>
+    </g></g>
+  </svg>
+
+  <div class="merci">
+    <span class="total">🌺 <span id="compte">…</span> <span data-t="mauruuru">mauruuru</span></span>
+    <span class="indice" data-t="merciIndice">Touche la fleur pour dire merci</span>
+  </div>
+
+  <h1 id="nom">Landry</h1>
+
+  <p class="statut" id="statut" hidden><span class="point" aria-hidden="true"></span><span><b data-t="enCeMoment">En ce moment :</b> <span id="statut-texte"></span></span></p>
+  <p class="musique" id="musique" hidden><img id="musique-img" alt=""><span><b data-t="ecoute">J'écoute</b><span class="titre" id="musique-titre"></span></span></p>
+
+  <!-- ✏️ Ta bio : modifie le texte dans le dictionnaire TEXTES en bas de page (fr, en, ty) -->
+  <p class="bio" data-t="bio">Ia ora na ! Je vis à Tahiti, entre le lagon et la montagne. Retrouve-moi ici 🌺</p>
+
+  <ul class="liens" id="liste-liens">
+    <li id="lien-defaut">
+      <a href="https://landrypf.com/insta">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4ZM21.9 7c-.1-1.6-.4-3-1.6-4.2S17.6 1.2 16 1.1C14.3 1 9.7 1 8 1.1 6.4 1.2 5 1.5 3.8 2.7S2.2 5.4 2.1 7C2 8.7 2 13.3 2.1 15c.1 1.6.4 3 1.6 4.2s2.6 1.5 4.2 1.6c1.7.1 6.3.1 8 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.7.1-6.3.2-8Zm-2.2 10a3.3 3.3 0 0 1-1.8 1.8c-1.3.5-4.3.4-5.9.4s-4.6.1-5.9-.4A3.3 3.3 0 0 1 4.3 17c-.5-1.3-.4-4.3-.4-5.9s-.1-4.6.4-5.9A3.3 3.3 0 0 1 6.1 3.4C7.4 2.9 10.4 3 12 3s4.6-.1 5.9.4a3.3 3.3 0 0 1 1.8 1.8c.5 1.3.4 4.3.4 5.9s.1 4.6-.4 5.9Z"/></svg>
+        <span class="txt"><span data-t="insta">Me suivre sur Instagram</span><small data-t="instaSous">Photos et stories de Tahiti</small></span>
+      </a>
+    </li>
+    <li id="lien-monde">
+      <a href="./">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c1.2 0 2.6 2 3.3 5H8.7C9.4 6 10.8 4 12 4Zm-3.9 1A13 13 0 0 0 6.7 9H4.9a8 8 0 0 1 3.2-4Zm7.8 0a8 8 0 0 1 3.2 4h-1.8a13 13 0 0 0-1.4-4ZM4.3 11h2.2a16 16 0 0 0 0 2H4.3a8 8 0 0 1 0-2Zm4.2 0h7a14 14 0 0 1 0 2h-7a14 14 0 0 1 0-2Zm9 0h2.2a8 8 0 0 1 0 2h-2.2a16 16 0 0 0 0-2ZM4.9 15h1.8a13 13 0 0 0 1.4 4 8 8 0 0 1-3.2-4Zm3.8 0h6.6c-.7 3-2.1 5-3.3 5s-2.6-2-3.3-5Zm8.6 0h1.8a8 8 0 0 1-3.2 4 13 13 0 0 0 1.4-4Z"/></svg>
+        <span class="txt"><span data-t="monde">Découvrir mon monde</span><small data-t="mondeSous">Une balade animée à travers Tahiti</small></span>
+      </a>
+    </li>
+  </ul>
+
+  <div class="partage">
+    <button class="petit-btn" id="btn-partager" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
+      <span data-t="partager">Partager</span>
+    </button>
+    <button class="petit-btn" id="btn-qr" type="button">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 3h8v8H3V3Zm2 2v4h4V5H5Zm8-2h8v8h-8V3Zm2 2v4h4V5h-4ZM3 13h8v8H3v-8Zm2 2v4h4v-4H5Zm8-2h2v2h-2v-2Zm4 0h4v2h-2v2h-2v-4Zm-4 4h2v4h-2v-4Zm4 2h2v2h-2v-2Zm2-2h2v2h-2v-2Z"/></svg>
+      <span>QR code</span>
+    </button>
+  </div>
+</main>
+
+<section class="livre" aria-labelledby="titre-livre">
+  <h2 id="titre-livre" data-t="loTitre">Livre d'or</h2>
+  <p data-t="loIntro">Laisse-moi un petit mot, je le lis toujours.</p>
+  <form class="form" id="form-livre" novalidate>
+    <label><span data-t="loNom">Ton prénom</span>
+      <input name="nom" id="lo-nom" maxlength="30" autocomplete="given-name" required>
+    </label>
+    <label><span data-t="loMsg">Ton message</span>
+      <textarea name="texte" id="lo-texte" rows="3" maxlength="200" required></textarea>
+    </label>
+    <label class="cache" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off"></label>
+    <div class="bas">
+      <span class="reste" id="lo-reste">200</span>
+      <button type="submit" id="lo-envoyer" data-t="loEnvoyer">Laisser mon mot</button>
+    </div>
+    <p class="retour" id="lo-retour" role="status"></p>
+  </form>
+  <ul class="mots" id="mots"></ul>
+</section>
+
+<footer>
+  <div class="langues" role="group" aria-label="Langue">
+    <button type="button" data-langue="fr" aria-pressed="true">FR</button>
+    <button type="button" data-langue="ty" aria-pressed="false">Reo</button>
+    <button type="button" data-langue="en" aria-pressed="false">EN</button>
+  </div>
+  <div>© <span id="annee">2026</span> Landry · Tahiti 🌺</div>
+  <span class="apercu" id="apercu" hidden></span>
+</footer>
+
+<div class="vagues" aria-hidden="true">
+  <svg class="v1" viewBox="0 0 1600 110" preserveAspectRatio="none"><path d="M0 50 C100 20 300 20 400 50 S700 80 800 50 S1100 20 1200 50 S1500 80 1600 50 V110 H0Z"/></svg>
+  <svg class="v2" viewBox="0 0 1600 110" preserveAspectRatio="none"><path d="M0 60 C130 30 270 30 400 60 S670 90 800 60 S1070 30 1200 60 S1470 90 1600 60 V110 H0Z"/></svg>
+</div>
+
+<dialog id="fenetre-qr" aria-labelledby="qr-titre">
+  <h2 id="qr-titre" data-t="qrTitre">Scanne-moi</h2>
+  <div id="qr"></div>
+  <p>landrypf.com/bio</p>
+  <button type="button" id="qr-fermer" data-t="fermer">Fermer</button>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="menu.js"></script>
+<script src="icones.js"></script>
+<script>
+{
+  /* ================= RÉGLAGES (à remplir) ================= */
+  const CONFIG = {
+    // Ton ID Discord perso, pour afficher ta musique Spotify via Lanyard (voir LISEZMOI)
+    discordUtilisateurId: '',
+    adresse: 'https://landrypf.com/bio'
+  };
+
+  /* ================= TEXTES (fr / reo tahiti / en) ================= */
+  const TEXTES = {
+    fr: {
+      bio: "Ia ora na ! Je vis à Tahiti, entre le lagon et la montagne. Retrouve-moi ici 🌺",
+      mauruuru: 'mauruuru', merciIndice: 'Touche la fleur pour dire merci',
+      enCeMoment: 'En ce moment :', ecoute: "J'écoute",
+      insta: 'Me suivre sur Instagram', instaSous: 'Photos et stories de Tahiti',
+      monde: 'Découvrir mon monde', mondeSous: 'Une balade animée à travers Tahiti',
+      partager: 'Partager', lienCopie: 'Lien copié !',
+      aTahiti: 'à Tahiti',
+      loTitre: "Livre d'or", loIntro: 'Laisse-moi un petit mot, je le lis toujours.',
+      loNom: 'Ton prénom', loMsg: 'Ton message', loEnvoyer: 'Laisser mon mot',
+      loMerci: 'Mauruuru ! Ton mot apparaîtra après validation.',
+      loManque: 'Écris ton prénom et un message.', loErreur: "Ça n'a pas marché. Réessaie dans une minute.",
+      loVide: 'Pas encore de mot. Sois le premier !', exemple: 'exemple',
+      qrTitre: 'Scanne-moi', fermer: 'Fermer',
+      merciDit: 'Mauruuru ! 🌺', merciEncore: "Merci encore ! (1 mauruuru par jour compte)",
+      apercu: "Aperçu : les compteurs et le livre d'or s'activeront une fois le site en ligne sur Cloudflare."
+    },
+    // ⚠️ Reo tahiti : fais relire ces phrases par quelqu'un qui parle couramment.
+    ty: {
+      bio: "Ia ora na ! E noho au i Tahiti, i rotopū i te tairoto e te mou'a. 🌺",
+      mauruuru: 'māuruuru', merciIndice: 'Pata i te tiare',
+      enCeMoment: 'I teie nei :', ecoute: "Te fa'aro'o nei au",
+      insta: "Pe'e mai iā'u i Instagram", instaSous: "Te mau hoho'a nō Tahiti",
+      monde: "Tō'u ao", mondeSous: 'Nā Tahiti',
+      partager: "Fa'a'ite", lienCopie: 'Māuruuru !',
+      aTahiti: 'i Tahiti',
+      loTitre: 'Parau a te mau manihini', loIntro: "Pāpa'i mai i te tahi parau na'ina'i.",
+      loNom: "Tō 'oe i'oa", loMsg: "Tā 'oe parau", loEnvoyer: 'Hāpono',
+      loMerci: "Māuruuru ! E fa'a'itehia tā 'oe parau i muri iho.",
+      loManque: "Pāpa'i i tō 'oe i'oa e tā 'oe parau.", loErreur: "Aita i manuia. Tāmata fa'ahou.",
+      loVide: 'Aita ā e parau.', exemple: 'hi\'ora\'a',
+      qrTitre: 'QR code', fermer: 'Opani',
+      merciDit: 'Māuruuru ! 🌺', merciEncore: 'Māuruuru roa !',
+      apercu: "Aperçu : les compteurs et le livre d'or s'activeront une fois le site en ligne."
+    },
+    en: {
+      bio: "Ia ora na! I live in Tahiti, between the lagoon and the mountains. Find me here 🌺",
+      mauruuru: 'mauruuru', merciIndice: 'Tap the flower to say thanks',
+      enCeMoment: 'Right now:', ecoute: 'Listening to',
+      insta: 'Follow me on Instagram', instaSous: 'Photos and stories from Tahiti',
+      monde: 'Explore my world', mondeSous: 'An animated walk through Tahiti',
+      partager: 'Share', lienCopie: 'Link copied!',
+      aTahiti: 'in Tahiti',
+      loTitre: 'Guestbook', loIntro: 'Leave me a little note, I always read them.',
+      loNom: 'Your first name', loMsg: 'Your message', loEnvoyer: 'Leave my note',
+      loMerci: 'Mauruuru! Your note will appear once approved.',
+      loManque: 'Write your name and a message.', loErreur: "That didn't work. Try again in a minute.",
+      loVide: 'No notes yet. Be the first!', exemple: 'example',
+      qrTitre: 'Scan me', fermer: 'Close',
+      merciDit: 'Mauruuru! 🌺', merciEncore: 'Thanks again! (1 mauruuru per day counts)',
+      apercu: 'Preview: counters and the guestbook will work once the site is live on Cloudflare.'
+    }
+  };
+
+  const $ = (s) => document.querySelector(s);
+  let L = 'fr';
+  const t = (k) => (TEXTES[L] && TEXTES[L][k]) || TEXTES.fr[k] || '';
+  const stock = {
+    lire(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    ecrire(k, v) { try { localStorage.setItem(k, v); } catch {} }
+  };
+  const toast = (msg) => {
+    const el = $('#toast'); el.textContent = msg; el.classList.add('vu');
+    clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('vu'), 2200);
+  };
+  const echappe = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- Motif : construction ---------- */
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  for (let i = 0; i < 8; i++) {
+    const g = el('g', { transform: `rotate(${i * 45} 200 200)` });
+    const u = el('use', { href: '#feuille', class: 'feuille' });
+    u.style.animationDelay = (0.15 + i * 0.12) + 's';
+    g.appendChild(u); $('#feuilles').appendChild(g);
+    const n = el('path', { d: 'M200 62 L200 176', class: 'nervure', transform: `rotate(${i * 45} 200 200)` });
+    n.style.animationDelay = (0.6 + i * 0.12) + 's';
+    $('#nervures').appendChild(n);
+  }
+  for (let i = 0; i < 7; i++) {
+    const g = el('g', { transform: `rotate(${(i * 360 / 7).toFixed(2)} 200 200)` });
+    const u = el('use', { href: '#petale', class: 'petale' });
+    u.style.animationDelay = (1.6 + i * 0.06) + 's';
+    g.appendChild(u); $('#petales').appendChild(g);
+  }
+  const nom = $('#nom'); const texteNom = nom.textContent;
+  nom.setAttribute('aria-label', texteNom);
+  nom.innerHTML = [...texteNom].map((c, i) => `<span aria-hidden="true" style="animation-delay:${(1.9 + i * 0.05).toFixed(2)}s">${c}</span>`).join('');
+
+  /* ---------- Heure de Tahiti + jour/nuit ---------- */
+  const forcer = new URLSearchParams(location.search).get('moment'); // ?moment=nuit pour tester
+  const majHeure = () => {
+    const parts = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Pacific/Tahiti', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+    const h = +parts.find(p => p.type === 'hour').value, m = parts.find(p => p.type === 'minute').value;
+    const nuit = forcer ? forcer === 'nuit' : (h < 6 || h >= 18);
+    document.documentElement.dataset.moment = nuit ? 'nuit' : 'jour';
+    document.querySelector('meta[name="theme-color"]').content = nuit ? '#10264A' : '#B3212E';
+    $('#heure').textContent = `${nuit ? '🌙' : '☀️'} ${String(h).padStart(2, '0')}:${m} ${t('aTahiti')}`;
+  };
+  const etoiles = $('#etoiles');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('i');
+    s.style.left = Math.random() * 100 + '%'; s.style.top = Math.random() * 70 + '%';
+    s.style.animationDelay = (Math.random() * 3).toFixed(2) + 's';
+    if (Math.random() > .8) { s.style.width = s.style.height = '3px'; }
+    etoiles.appendChild(s);
+  }
+
+  /* ---------- Langues ---------- */
+  const langue = (l) => {
+    L = TEXTES[l] ? l : 'fr';
+    document.documentElement.lang = L;
+    document.querySelectorAll('[data-t]').forEach(n => { const v = t(n.dataset.t); if (v) n.textContent = v; });
+    document.querySelectorAll('[data-langue]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.langue === L)));
+    window.menuLangue && window.menuLangue(L);
+    stock.ecrire('langue', L);
+    majHeure(); afficherMots();
+    if (demo) $('#apercu').textContent = t('apercu');
+  };
+  document.querySelectorAll('[data-langue]').forEach(b => b.addEventListener('click', () => langue(b.dataset.langue)));
+
+  /* ---------- Données du serveur (Cloudflare) ---------- */
+  let demo = false, compte = 0, mots = [];
+  const api = async (url, opts) => {
+    const r = await fetch(url, opts);
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  };
+  const afficherCompte = () => { $('#compte').textContent = compte.toLocaleString(L === 'en' ? 'en-US' : 'fr-FR'); };
+
+  const chargerInfos = async () => {
+    try {
+      const d = await api('/api/infos');
+      compte = d.mauruuru || 0;
+      if (d.statut) { $('#statut-texte').textContent = d.statut; $('#statut').hidden = false; }
+    } catch {
+      demo = true;
+      compte = +(stock.lire('demo-compte') || 128);
+      $('#statut-texte').textContent = 'Je prépare une nouvelle page pour mon site 🌴';
+      $('#statut').hidden = false;
+      $('#apercu').textContent = t('apercu'); $('#apercu').hidden = false;
+    }
+    afficherCompte();
+  };
+
+  /* ---------- Mauruuru + easter egg ---------- */
+  const motif = $('#motif');
+  let tapes = [];
+  const aujourdhui = () => new Date().toISOString().slice(0, 10);
+  const plus1 = (x, y) => {
+    const p = document.createElement('span'); p.className = 'plus1'; p.textContent = '+1 🌺';
+    p.style.left = x + 'px'; p.style.top = y + 'px';
+    document.body.appendChild(p); p.addEventListener('animationend', () => p.remove());
+  };
+  const tiareSvg = `<svg viewBox="140 140 120 120" width="30" height="30"><g fill="#fff">${[0,1,2,3,4,5,6].map(i => `<use href="#petale" transform="rotate(${(i*360/7).toFixed(1)} 200 200)"/>`).join('')}</g><circle cx="200" cy="200" r="7" fill="#F5C842"/></svg>`;
+  const pluie = (n) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    for (let i = 0; i < n; i++) {
+      const f = document.createElement('div'); f.className = 'tombe'; f.innerHTML = tiareSvg;
+      f.style.left = Math.random() * 100 + 'vw';
+      f.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px');
+      f.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+      f.style.animationDuration = (3 + Math.random() * 3).toFixed(2) + 's';
+      f.style.animationDelay = (Math.random() * 1.5).toFixed(2) + 's';
+      const taille = 18 + Math.random() * 22; f.style.width = f.style.height = taille + 'px';
+      document.body.appendChild(f); f.addEventListener('animationend', () => f.remove());
+    }
+  };
+  const direMerci = async (e) => {
+    motif.classList.remove('spin'); void motif.getBoundingClientRect(); motif.classList.add('spin');
+    const r = motif.getBoundingClientRect();
+    plus1((e && e.clientX) || r.left + r.width / 2, (e && e.clientY) || r.top + 20);
+
+    // Easter egg : 7 touches en moins de 4 secondes = pluie de tiare
+    const now = Date.now(); tapes = tapes.filter(x => now - x < 4000); tapes.push(now);
+    if (tapes.length >= 7) { tapes = []; pluie(45); }
+
+    if (stock.lire('mauruuru-jour') === aujourdhui()) { toast(t('merciEncore')); return; }
+    stock.ecrire('mauruuru-jour', aujourdhui());
+    compte++; afficherCompte(); toast(t('merciDit'));
+    if (demo) { stock.ecrire('demo-compte', compte); return; }
+    try { const d = await api('/api/mauruuru', { method: 'POST' }); compte = d.mauruuru; afficherCompte(); } catch {}
+  };
+  motif.addEventListener('click', direMerci);
+  motif.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); direMerci(); } });
+
+  /* ---------- Liens de la bio (gérés depuis /admin) ---------- */
+  const chargerLiens = async () => {
+    try {
+      const { liens } = await api('/api/liens');
+      const ul = $('#liste-liens'), ref = $('#lien-monde');
+      const defaut = $('#lien-defaut'); if (defaut) defaut.remove();
+      liens.forEach(l => {
+        const li = document.createElement('li');
+        const icone = (window.ICONES && (ICONES[l.icone] || ICONES.lien)) || { d: '' };
+        li.innerHTML = `<a href="/l/${l.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone.d}"/></svg><span class="txt">${echappe(l.titre)}${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}</span></a>`;
+        ul.insertBefore(li, ref);
+        li.dataset.nouveau = '1';
+      });
+    } catch { /* hors ligne ou aperçu : on garde le lien Instagram par défaut */ }
+    numeroter();
+  };
+  const numeroter = () => {
+    const ecoule = performance.now() / 1000;
+    [...$('#liste-liens').children].forEach((li, i) => {
+      li.style.setProperty('--i', i);
+      // un lien ajouté après le chargement démarre son animation plus tard : on compense
+      if (li.dataset.nouveau) li.style.animationDelay = Math.max(0, 2.45 + i * 0.15 - ecoule).toFixed(2) + 's';
+    });
+  };
+  numeroter();
+
+  /* ---------- Spotify via Lanyard ---------- */
+  const chargerMusique = async () => {
+    if (!CONFIG.discordUtilisateurId) return;
+    try {
+      const { data } = await api(`https://api.lanyard.rest/v1/users/${CONFIG.discordUtilisateurId}`);
+      if (data && data.listening_to_spotify && data.spotify) {
+        $('#musique-titre').textContent = `${data.spotify.song} — ${data.spotify.artist.split(';')[0]}`;
+        $('#musique-img').src = data.spotify.album_art_url;
+        $('#musique').hidden = false;
+      } else { $('#musique').hidden = true; }
+    } catch {}
+  };
+
+  /* ---------- Partage + QR ---------- */
+  $('#btn-partager').addEventListener('click', async () => {
+    const donnees = { title: 'Landry · Tahiti', text: 'Ia ora na ! 🌺', url: CONFIG.adresse };
+    try {
+      if (navigator.share) { await navigator.share(donnees); return; }
+      await navigator.clipboard.writeText(CONFIG.adresse); toast(t('lienCopie'));
+    } catch (err) { if (err && err.name !== 'AbortError') toast(CONFIG.adresse); }
+  });
+  const fenetre = $('#fenetre-qr');
+  $('#btn-qr').addEventListener('click', () => {
+    fenetre.showModal();
+    if ($('#qr').childElementCount) return;
+    const dessiner = () => new QRCode($('#qr'), { text: CONFIG.adresse, width: 440, height: 440, colorDark: '#B3212E', colorLight: '#ffffff' });
+    if (window.QRCode) return dessiner();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = dessiner; s.onerror = () => { $('#qr').textContent = CONFIG.adresse; };
+    document.head.appendChild(s);
+  });
+  $('#qr-fermer').addEventListener('click', () => fenetre.close());
+  fenetre.addEventListener('click', e => { if (e.target === fenetre) fenetre.close(); });
+
+  /* ---------- Livre d'or ---------- */
+  const afficherMots = () => {
+    const ul = $('#mots');
+    if (!mots.length) { ul.innerHTML = `<li class="vide">${echappe(t('loVide'))}</li>`; return; }
+    ul.innerHTML = mots.map(m => `<li>${echappe(m.texte)}<span class="qui">— ${echappe(m.nom)}${m.exemple ? ` (${echappe(t('exemple'))})` : ''}</span></li>`).join('');
+  };
+  const chargerMots = async () => {
+    try { mots = (await api('/api/livredor')).messages || []; }
+    catch {
+      mots = [
+        { nom: 'Hina', texte: 'Trop beau le motif qui tourne ! Mauruuru 🌺', exemple: true },
+        { nom: 'Teva', texte: 'Ia ora na de Papeete, je te suis sur Insta !', exemple: true }
+      ];
+    }
+    afficherMots();
+  };
+  const champTexte = $('#lo-texte');
+  champTexte.addEventListener('input', () => { $('#lo-reste').textContent = 200 - champTexte.value.length; });
+  $('#form-livre').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target, retour = $('#lo-retour');
+    const nomV = f.nom.value.trim(), texteV = f.texte.value.trim();
+    if (!nomV || !texteV) { retour.textContent = t('loManque'); return; }
+    const btn = $('#lo-envoyer'); btn.disabled = true;
+    try {
+      if (demo) throw new Error('demo');
+      await api('/api/livredor', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nom: nomV, texte: texteV, site: f.site.value }) });
+      retour.textContent = t('loMerci'); f.reset(); $('#lo-reste').textContent = 200;
+    } catch (err) {
+      retour.textContent = err.message === 'demo' ? t('apercu') : t('loErreur');
+    } finally { btn.disabled = false; }
+  });
+
+  /* ---------- Démarrage ---------- */
+  document.getElementById('annee').textContent = new Date().getFullYear();
+  const langueNav = (navigator.language || 'fr').slice(0, 2);
+  langue(stock.lire('langue') || (langueNav === 'en' ? 'en' : 'fr'));
+  setInterval(majHeure, 30000);
+  chargerInfos(); chargerLiens(); chargerMots(); chargerMusique();
+  setInterval(chargerMusique, 30000);
+}
+</script>
+</body>
+</html>
