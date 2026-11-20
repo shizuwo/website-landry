@@ -290,7 +290,8 @@ async function liensBio(env) {
   const { results } = await env.DB.prepare(
     'SELECT id, titre, sous_titre, icone FROM liens WHERE actif = 1 AND (debut IS NULL OR debut <= ?) AND (fin IS NULL OR fin > ?) ORDER BY ordre, id'
   ).bind(now, now).all();
-  return json({ liens: results }, { headers: { 'cache-control': 'public, max-age=20' } });
+  const avant = +(await reglage(env, 'lien_avant')) || 0;
+  return json({ liens: results.map(l => (l.id === avant ? { ...l, avant: true } : l)) }, { headers: { 'cache-control': 'public, max-age=20' } });
 }
 
 async function vue(request, env) {
@@ -520,7 +521,7 @@ async function adminLire(env) {
     blocs,
     playlist: (() => { const p = lireJSON(r.playlist, null); return Array.isArray(p) ? p : (r.musique_id ? [{ id: r.musique_id, titre: r.musique_titre || '', artiste: r.musique_artiste || '' }] : []); })(),
     live: { actif: actif(r.live_actif, false), lien: r.live_lien || '', texte: r.live_texte || '' },
-    theme: r.theme || 'auto', theme_du_jour: themeDuJour(), disposition: r.disposition === 'liens' ? 'liens' : 'infos',
+    theme: r.theme || 'auto', theme_du_jour: themeDuJour(), disposition: r.disposition === 'liens' ? 'liens' : 'infos', lien_avant: +r.lien_avant || 0,
     legal: { nom: r.legal_nom || '', email: r.legal_email || '' },
     album_ouvert: !!r.album_mdp,
     accueil_textes: lireJSON(r.accueil_textes, {}),
@@ -684,6 +685,11 @@ async function adminEcrire(request, env) {
         .map(([k, val]) => DB.prepare('INSERT INTO reglages (cle, valeur) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur').bind(k, val)));
       break;
     }
+
+    // --- Lien mis en avant (un seul à la fois) ---
+    case 'lien_avant':
+      await ecrireReglage(env, 'lien_avant', c.id ? String(+c.id || '') : '');
+      break;
 
     // --- Disposition de la bio ---
     case 'disposition':

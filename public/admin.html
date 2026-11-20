@@ -847,7 +847,7 @@
       if (l.fin) prog += `<span class="badge">${l.fin > now ? "jusqu'au " + dateFr(l.fin) : 'terminé'}</span>`;
       return `<div class="carte${l.actif ? '' : ' eteint'}" data-id="${l.id}" id="item-lien-${l.id}">${poignee}
         <div class="ico">${ico(l.icone)}</div>
-        <div class="corps"><div class="titre">${echappe(l.titre)}${l.actif ? '' : ' (masqué)'}</div><small>${echappe(l.url)}</small>${prog}</div>
+        <div class="corps"><div class="titre">${echappe(l.titre)}${l.actif ? '' : ' (masqué)'}</div><small>${echappe(l.url)}</small>${prog}${D.lien_avant === l.id ? '<span class="badge">✨ mis en avant</span>' : ''}</div>
         <span class="chiffre">${pluriel(l.clics, 'clic')}</span>${trous('lien', l.id)}
       </div>`;
     }).join('') : '<p class="vide">Aucun lien pour l\'instant.</p>';
@@ -1302,6 +1302,9 @@
     lien: (id, el) => { const l = D.liens.find(x => x.id === +id); const i = D.liens.indexOf(l); return [
       { l: 'Modifier', f: () => editerLien(l.id) },
       { l: l.actif ? 'Masquer' : 'Afficher', f: () => action({ action: 'lien_basculer', id: l.id }) },
+      D.lien_avant === l.id
+        ? { l: 'Ne plus mettre en avant', f: async () => { if (await action({ action: 'lien_avant', id: null })) toast('Lien remis normal'); } }
+        : { l: 'Mettre en avant ✨', f: async () => { if (await action({ action: 'lien_avant', id: l.id })) toast('Lien mis en avant'); } },
       i > 0 && { l: 'Monter', f: () => deplacerDansListe(D.liens, l.id, -1, 'liens') },
       i < D.liens.length - 1 && { l: 'Descendre', f: () => deplacerDansListe(D.liens, l.id, 1, 'liens') },
       { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'lien_supprimer', id: l.id }, el, 'Lien') }]; },
