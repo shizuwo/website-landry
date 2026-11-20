@@ -9,3 +9,9 @@ CREATE TABLE IF NOT EXISTS liens (id INTEGER PRIMARY KEY AUTOINCREMENT, titre TE
 CREATE TABLE IF NOT EXISTS raccourcis (code TEXT PRIMARY KEY, url TEXT NOT NULL, clics INTEGER NOT NULL DEFAULT 0, cree INTEGER NOT NULL);
 INSERT INTO liens (titre, sous_titre, url, icone, ordre) SELECT 'Me suivre sur Instagram', 'Photos et stories de Tahiti', 'https://www.instagram.com/landry.pf/', 'instagram', 1 WHERE NOT EXISTS (SELECT 1 FROM liens);
 INSERT OR IGNORE INTO raccourcis (code, url, clics, cree) VALUES ('insta', 'https://www.instagram.com/landry.pf/', 0, 0);
+-- v2
+ALTER TABLE liens ADD COLUMN debut INTEGER;
+ALTER TABLE liens ADD COLUMN fin INTEGER;
+CREATE TABLE IF NOT EXISTS stats_jour (jour TEXT NOT NULL, cle TEXT NOT NULL, valeur INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (jour, cle));
+CREATE TABLE IF NOT EXISTS fichiers (id TEXT PRIMARY KEY, nom TEXT NOT NULL, cle TEXT NOT NULL, type TEXT NOT NULL, taille INTEGER NOT NULL, cree INTEGER NOT NULL, telechargements INTEGER NOT NULL DEFAULT 0, mdp TEXT, expire INTEGER, galerie INTEGER NOT NULL DEFAULT 0, legende TEXT NOT NULL DEFAULT '', ordre INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS contacts (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT NOT NULL, email TEXT NOT NULL DEFAULT '', message TEXT NOT NULL, cree INTEGER NOT NULL, lu INTEGER NOT NULL DEFAULT 0);
