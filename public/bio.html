@@ -110,7 +110,7 @@
 
   .statut, .musique {
     display: flex; align-items: center; gap: .6rem; text-align: left;
-    padding: .55rem .9rem; border-radius: 14px; margin: 0 0 .75rem; max-width: 100%;
+    padding: .55rem .9rem; border-radius: 14px; margin: 0; max-width: 100%;
     background: color-mix(in srgb, var(--blanc) 13%, transparent);
     font-size: .9375rem; animation: apparait .6s ease 2.2s both;
   }
@@ -123,6 +123,13 @@
   .bio { margin: .25rem 0 1.75rem; max-width: 30ch; font-size: 1.0625rem; color: var(--doux); animation: apparait .7s ease 2.2s both; }
   @keyframes monte    { from { transform: translateY(.6em); opacity: 0; } to { transform: none; opacity: 1; } }
   @keyframes apparait { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Bloc infos (En ce moment, événement, musique, lecteur) ---------- */
+  .infos { width: 100%; display: flex; flex-direction: column; align-items: center; gap: .875rem; margin: 0 0 1.5rem; }
+  .infos:not(:has(> :not([hidden]))) { display: none; }
+  /* Disposition « liens en haut » : les infos passent sous les boutons */
+  main.liens-d-abord .infos { order: 1; margin: 1.5rem 0 0; }
+  main.liens-d-abord .blocs, main.liens-d-abord .partage { order: 2; }
 
   /* ---------- Boutons ---------- */
   .liens { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .875rem; }
@@ -157,7 +164,7 @@
 
   /* ---------- Livre d'or ---------- */
   .evenement {
-    display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0 0 .9rem; padding: .8rem 1rem; border-radius: 16px;
+    display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0; padding: .8rem 1rem; border-radius: 16px;
     background: var(--doux); color: var(--btn-texte); text-decoration: none; text-align: left; animation: apparait .6s ease 2.3s both;
   }
   .evenement .cal { flex: none; width: 46px; border-radius: 10px; background: var(--blanc); text-align: center; line-height: 1.1; padding: 4px 0; box-shadow: 0 2px 0 var(--fonce); }
@@ -168,7 +175,7 @@
   a.evenement:hover { filter: brightness(1.04); }
   a.evenement:focus-visible { outline: 3px solid var(--blanc); outline-offset: 3px; }
   .lecteur {
-    display: flex; align-items: center; gap: .85rem; width: 100%; margin: -.75rem 0 1.5rem; padding: .7rem 1rem .7rem .7rem;
+    display: flex; align-items: center; gap: .85rem; width: 100%; margin: 0; padding: .7rem 1rem .7rem .7rem;
     background: var(--blanc); color: var(--btn-texte); border-radius: 16px; box-shadow: 0 4px 0 var(--fonce); text-align: left;
     animation: apparait .6s ease 2.35s both;
   }
@@ -327,6 +334,7 @@
   <h1 id="nom">Landry</h1>
   <a class="direct" id="direct" hidden target="_blank" rel="noopener"><span class="rond" aria-hidden="true"></span><span id="direct-texte">En direct</span></a>
 
+  <div class="infos" id="infos">
   <p class="statut" id="statut" hidden><span class="point" aria-hidden="true"></span><span><b data-t="enCeMoment">En ce moment :</b> <span id="statut-texte"></span></span></p>
   <a class="evenement" id="evenement" hidden>
     <span class="cal" aria-hidden="true"><b id="evt-jour"></b><small id="evt-mois"></small></span>
@@ -350,6 +358,7 @@
       <button type="button" id="piste-suiv" aria-label="Morceau suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM14.5 12 5 18.5v-13z"/></svg></button>
     </div>
     <audio id="lecteur-audio" preload="none"></audio>
+  </div>
   </div>
 
   <!-- ✏️ Ta bio : modifie le texte dans le dictionnaire TEXTES en bas de page (fr, en, ty) -->
@@ -727,6 +736,7 @@
     try {
       const d = await api('/api/infos');
       compte = d.mauruuru || 0;
+      $('main').classList.toggle('liens-d-abord', d.disposition === 'liens');
       const phrase = d.statuts && d.statuts.length ? d.statuts[Math.floor(Math.random() * d.statuts.length)] : d.statut;
       if (phrase) { $('#statut-texte').textContent = phrase; $('#statut').hidden = false; }
       if (d.evenement) afficherEvenement(d.evenement);

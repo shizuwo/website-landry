@@ -280,6 +280,15 @@
     </section>
 
     <!-- ================= PAGE BIO ================= -->
+    <section data-onglet="bio" data-nom="Disposition" id="s-disposition">
+      <h2>Disposition de la bio</h2>
+      <p class="aide">Ce qui s'affiche juste sous ton nom.</p>
+      <form id="form-disposition" class="boite choix" novalidate>
+        <label><input type="radio" name="disposition" value="liens"><span>Liens en haut<small>Tes boutons d'abord ; En ce moment, l'événement et la musique passent dessous</small></span></label>
+        <label><input type="radio" name="disposition" value="infos"><span>Infos en haut<small>En ce moment, l'événement et la musique d'abord, puis tes boutons</small></span></label>
+      </form>
+    </section>
+
     <section data-onglet="bio" data-nom="Liens" id="s-liens">
       <h2>Liens de la bio</h2>
       <p class="aide">Glisse avec ⠿ pour changer l'ordre. « Découvrir mon monde » reste toujours en dernier.</p>
@@ -1159,6 +1168,12 @@
   };
   ftheme.addEventListener('change', async (e) => { if (e.target.name === 'theme' && await action({ action: 'theme', valeur: e.target.value })) toast('Thème enregistré'); });
 
+  const fdispo = $('#form-disposition');
+  fdispo.addEventListener('change', async (e) => {
+    if (e.target.name !== 'disposition') return;
+    if (await action({ action: 'disposition', valeur: e.target.value })) { D.disposition = e.target.value; toast('Disposition enregistrée'); }
+  });
+
   const fleg = $('#form-legal');
   fleg.addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'legal', nom: fleg.nom.value.trim(), email: fleg.email.value.trim() }, $('#err-legal'))) toast('Mentions légales enregistrées'); });
 
@@ -1307,6 +1322,7 @@
     if (!$('#s-musique').contains(document.activeElement)) playlist = D.playlist.map(p => ({ ...p }));
     afficherTableau(); afficherStats(); afficherLiens(); afficherStatuts(); afficherPlaylist(); afficherBlocs();
     afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme();
+    fdispo.querySelector(`[value="${D.disposition || 'infos'}"]`).checked = true;
     majPastilles();
   };
 

@@ -157,7 +157,7 @@ const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.ex
 async function infos(env) {
   const [mauruuru, { results }] = await Promise.all([
     compteur(env, 'mauruuru'),
-    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email')").all()
+    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email','disposition')").all()
   ]);
   const r = Object.fromEntries(results.map(x => [x.cle, x.valeur]));
   const d = +r.evt_date || 0;
@@ -191,7 +191,7 @@ async function infos(env) {
     mauruuru: mauruuru || 0, statut: r.statut || '', evenement, banniere, musique,
     statuts: actif(r.statut_hasard, false) ? lireJSON(r.statuts, []).filter(Boolean) : null,
     livre: actif(r.livre_actif), contact: actif(r.contact_actif),
-    live, theme, blocs, legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
+    live, theme, blocs, disposition: r.disposition === 'liens' ? 'liens' : 'infos', legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
   }, { headers: { 'cache-control': 'public, max-age=15' } });
 }
 
@@ -454,7 +454,7 @@ async function adminLire(env) {
     blocs,
     playlist: (() => { const p = lireJSON(r.playlist, null); return Array.isArray(p) ? p : (r.musique_id ? [{ id: r.musique_id, titre: r.musique_titre || '', artiste: r.musique_artiste || '' }] : []); })(),
     live: { actif: actif(r.live_actif, false), lien: r.live_lien || '', texte: r.live_texte || '' },
-    theme: r.theme || 'auto', theme_du_jour: themeDuJour(),
+    theme: r.theme || 'auto', theme_du_jour: themeDuJour(), disposition: r.disposition === 'liens' ? 'liens' : 'infos',
     legal: { nom: r.legal_nom || '', email: r.legal_email || '' },
     album_ouvert: !!r.album_mdp,
     accueil_textes: lireJSON(r.accueil_textes, {}),
@@ -618,6 +618,12 @@ async function adminEcrire(request, env) {
         .map(([k, val]) => DB.prepare('INSERT INTO reglages (cle, valeur) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur').bind(k, val)));
       break;
     }
+
+    // --- Disposition de la bio ---
+    case 'disposition':
+      if (!['infos', 'liens'].includes(c.valeur)) return erreur('Disposition inconnue.');
+      await ecrireReglage(env, 'disposition', c.valeur);
+      break;
 
     // --- Thème saisonnier ---
     case 'theme':
