@@ -174,9 +174,13 @@
   .poissons g:nth-child(2) { animation-delay: -.3s; } .poissons g:nth-child(3) { animation-delay: -.6s; }
   @keyframes banc { from { transform: translateX(160px); } to { transform: translateX(calc(-100vw - 60px)); } }
   @keyframes fretille { 50% { transform: translateY(3px); } }
-  .horizon svg { width: 100%; height: 100%; display: block; }
+  .horizon svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .phrases { position: absolute; left: 0; right: 0; top: 11%; z-index: 2; display: grid; place-items: center; }
   .phrase { grid-area: 1 / 1; margin: 0; padding: 0 5vw; color: #fff; text-align: center; font-size: clamp(2.3rem, 8vw, 5.6rem); line-height: .92; max-width: 15ch; text-wrap: balance; opacity: 0; text-shadow: 0 3px 0 rgba(0,0,0,.12); }
+  /* Tant que le ciel est clair, les premières phrases sont foncées pour rester lisibles */
+  .phrase:nth-child(1) { color: var(--mape); text-shadow: none; }
+  .phrase:nth-child(2) { color: #4A1630; text-shadow: none; }
+  @media (max-width: 600px) { .matarii { left: 62%; top: 40%; } }
   .soir-boutons { position: absolute; left: 0; right: 0; bottom: 9%; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 0 16px; opacity: 0; pointer-events: none; }
   .soir-boutons.vu { pointer-events: auto; }
   .pilule {
@@ -411,8 +415,11 @@
       </div>
       <div class="astre" aria-hidden="true"></div>
       <div class="horizon" aria-hidden="true">
-        <svg viewBox="0 0 1600 360" preserveAspectRatio="none">
+        <!-- Moorea garde ses proportions (sur téléphone on la voit de plus près au lieu de l'écraser) -->
+        <svg viewBox="0 0 1600 360" preserveAspectRatio="xMidYMax slice">
           <path d="M0 150 L120 140 L210 96 L260 112 L330 40 L370 70 L420 20 L470 64 L520 52 L600 110 L700 120 L780 136 L1600 140 V360 H0Z" fill="var(--moorea, #1C3B46)" transform="translate(500 0)"/>
+        </svg>
+        <svg viewBox="0 0 1600 360" preserveAspectRatio="none">
           <rect y="146" width="1600" height="214" fill="var(--mer, #1A9EB0)"/>
           <g stroke="var(--reflet, #FFE07A)" stroke-width="6" stroke-linecap="round" opacity=".8">
             <path d="M720 176 H880"/><path d="M745 204 H855"/><path d="M770 234 H830"/><path d="M786 266 H814"/>
