@@ -21,7 +21,8 @@
 <meta property="og:image:alt" content="Landry, Ia ora na depuis Tahiti">
 <meta property="og:site_name" content="Landry">
 <meta property="og:locale" content="fr_FR">
-<meta name="twitter:card" content="summary_large_image"><link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="twitter:card" content="summary_large_image"><noscript><style>.liens li { opacity: 1 !important; }</style></noscript>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -125,8 +126,9 @@
 
   /* ---------- Boutons ---------- */
   .liens { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .875rem; }
-  .liens li { animation: monte .6s cubic-bezier(.2,.9,.3,1) both; }
-  .liens li { animation-delay: calc(2.45s + var(--i, 0) * .15s); }
+  /* Les boutons attendent que la liste soit arrivée, puis apparaissent tous en cascade, dans l'ordre */
+  .liens:not(.pret) li { opacity: 0; }
+  .liens.pret li { animation: monte .6s cubic-bezier(.2,.9,.3,1) both; animation-delay: calc(var(--d0, 0s) + var(--i, 0) * .15s); }
   .liens a {
     display: flex; align-items: center; gap: .9rem;
     min-height: 60px; padding: .9rem 1.25rem;
@@ -799,20 +801,21 @@
         const icone = (window.ICONES && (ICONES[l.icone] || ICONES.lien)) || { d: '' };
         li.innerHTML = `<a href="/l/${l.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone.d}"/></svg><span class="txt">${echappe(l.titre)}${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}</span></a>`;
         ul.insertBefore(li, ref);
-        li.dataset.nouveau = '1';
       });
     } catch { /* hors ligne ou aperçu : on garde le lien Instagram par défaut */ }
-    numeroter();
+    lancerCascade();
   };
-  const numeroter = () => {
-    const ecoule = performance.now() / 1000;
-    [...$('#liste-liens').children].forEach((li, i) => {
-      li.style.setProperty('--i', i);
-      // un lien ajouté après le chargement démarre son animation plus tard : on compense
-      if (li.dataset.nouveau) li.style.animationDelay = Math.max(0, 2.45 + i * 0.15 - ecoule).toFixed(2) + 's';
-    });
+  // Une seule cascade pour tous les boutons, quand la liste est prête :
+  // au rythme de l'intro si elle arrive vite, tout de suite (mais toujours en cascade) si elle arrive tard
+  let cascadeLancee = false;
+  const lancerCascade = () => {
+    if (cascadeLancee) return; cascadeLancee = true;
+    const ul = $('#liste-liens');
+    [...ul.children].forEach((li, i) => li.style.setProperty('--i', i));
+    ul.style.setProperty('--d0', Math.max(0, 2.45 - performance.now() / 1000).toFixed(2) + 's');
+    ul.classList.add('pret');
   };
-  numeroter();
+  setTimeout(lancerCascade, 6000); // filet de sécurité si le serveur ne répond pas
 
   /* ---------- Spotify via Lanyard ---------- */
   const chargerMusique = async () => {
