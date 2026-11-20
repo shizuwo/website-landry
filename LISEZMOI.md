@@ -18,14 +18,16 @@ Chaque modification fusionnée dans `main` est publiée automatiquement sur land
 
 - **Chiffres** : visites, clics, téléchargements et mauruuru des 30 derniers jours.
 - **Liens bio** : ajouter, modifier, masquer, réordonner, supprimer. Dates de début et de fin facultatives
-  (le lien n'apparaît qu'entre ces deux dates). Ligne « En ce moment ».
+  (le lien n'apparaît qu'entre ces deux dates). Phrases « En ce moment » : mets-en plusieurs et active
+  « au hasard » pour qu'une phrase différente s'affiche à chaque visite (bouton « Des idées » pour t'inspirer).
 - **Liens courts** : landrypf.com/ton-code vers n'importe quelle adresse, avec QR code à télécharger.
 - **Fichiers** : envoi jusqu'à 100 Mo, lien court à partager (landrypf.com/f/…), QR code, mot de passe
   et date d'expiration facultatifs, renommage. La case « Optimiser les photos » (cochée par défaut)
   les réduit à 2 560 px et les allège sans perte visible ; décoche-la pour envoyer l'original.
   La jauge indique la place utilisée sur les 10 Go gratuits ; l'envoi est bloqué juste avant la limite.
 - **Galerie** : chaque nouvelle image arrive dans « Photos à valider » ; rien n'est publié sans ton accord.
-- **Photos accueil** : remplace les 8 dessins de la page d'accueil par tes photos.
+- **Accueil** : remplace les 8 dessins par tes photos, et réécris tous les textes de la page d'accueil
+  (titre, bandeau, cartes, coucher de soleil, fin). Un champ vide garde le texte d'origine.
 - **Événement** : affiché avec un compte à rebours sur la page bio.
 - **Réglages** : activer ou couper le livre d'or et le formulaire de contact, la bannière d'annonce
   (en bas de toutes les pages) et le lecteur de musique de la bio (morceau choisi parmi tes fichiers audio).

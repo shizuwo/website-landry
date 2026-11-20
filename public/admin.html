@@ -92,6 +92,11 @@
   .envoi progress { width: 100%; height: 8px; accent-color: var(--rouge); }
 
   /* Photos de l'accueil */
+  .groupe-textes { border: 0; padding: 0; margin: 0 0 6px; display: grid; gap: 10px; }
+  .groupe-textes legend { font-weight: 700; margin-bottom: 4px; color: var(--rouge); }
+  .compte { font-weight: 400; color: var(--doux); font-size: .8rem; }
+  .statut-ligne { display: flex; gap: 8px; align-items: center; }
+  .idee { background: var(--rouge-pale); color: var(--rouge); border-radius: 999px; padding: .35rem .8rem; min-height: 36px; font-weight: 600; font-size: .875rem; }
   .emplacements { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
   .emplacement { background: var(--carte); border-radius: 12px; padding: 10px; box-shadow: 0 1px 0 var(--trait); }
   .emplacement .apercu { aspect-ratio: 4 / 3; border-radius: 8px; background: #EEE8DF; display: grid; place-items: center; color: var(--doux); font-size: .85rem; overflow: hidden; margin-bottom: 6px; }
@@ -138,7 +143,7 @@
     <a href="#s-courts">Liens courts</a>
     <a href="#s-fichiers">Fichiers</a>
     <a href="#s-galerie">Galerie</a>
-    <a href="#s-accueil">Photos accueil</a>
+    <a href="#s-accueil">Accueil</a>
     <a href="#s-evenement">Événement</a>
     <a href="#s-site">Réglages</a>
     <a href="#s-messages">Messages<span class="pastille" id="n-non-lus" hidden></span></a>
@@ -188,9 +193,13 @@
       </form>
 
       <h3>En ce moment</h3>
-      <form id="form-statut" class="boite">
-        <label for="statut">Petite ligne affichée sur la page bio (vide = cachée)</label>
-        <div class="ligne"><input id="statut" maxlength="120" placeholder="ex. En vacances à Moorea 🏝️" style="flex:1"><button>Enregistrer</button></div>
+      <form id="form-statut" class="boite" novalidate>
+        <p class="aide" style="margin-top:0">La petite ligne sous ton nom sur la bio. Mets-en plusieurs : une est tirée au hasard à chaque visite.</p>
+        <div id="liste-statuts" class="grille"></div>
+        <div class="ligne"><button type="button" class="gris" id="statut-ajouter">+ Ajouter une phrase</button><button type="button" class="gris" id="statut-idees">💡 Des idées</button></div>
+        <div id="idees" class="ligne" hidden></div>
+        <label class="interrupteur" style="margin-top:6px"><span>Une phrase au hasard à chaque visite<small>Désactivé : seule la première phrase s'affiche</small></span><span class="bascule"><input type="checkbox" id="statut-hasard"><span></span></span></label>
+        <div class="ligne"><button id="statut-enregistrer">Enregistrer les phrases</button></div>
       </form>
     </section>
 
@@ -252,9 +261,13 @@
 
     <!-- ================= PHOTOS ACCUEIL ================= -->
     <section id="s-accueil">
-      <h2>Photos de la page d'accueil</h2>
-      <p class="aide">Remplace les dessins de l'accueil par tes photos (envoie-les d'abord dans Fichiers, sans mot de passe). Format paysage conseillé.</p>
+      <h2>Page d'accueil</h2>
+      <h3>Photos</h3>
+      <p class="aide">Remplace les dessins par tes photos (envoie-les d'abord dans Fichiers, sans mot de passe ni expiration). Format paysage conseillé.</p>
       <div class="emplacements" id="emplacements"></div>
+      <h3>Textes</h3>
+      <p class="aide">Laisse un champ vide pour garder le texte d'origine (affiché en gris). Les très grands mots se resserrent tout seuls s'ils sont trop longs pour l'écran.</p>
+      <form id="form-textes" class="boite grille" novalidate></form>
     </section>
 
     <!-- ================= ÉVÉNEMENT ================= -->
@@ -602,10 +615,9 @@
   const charger = async () => {
     D = await appel('GET');
     $('#connexion').hidden = true; $('#panneau').hidden = false; $('#onglets').hidden = false;
-    if (document.activeElement !== $('#statut')) $('#statut').value = D.statut;
     const fe = $('#form-evt');
     if (!fe.contains(document.activeElement)) { fe.titre.value = D.evenement.titre; fe.date.value = versLocal(D.evenement.date); fe.lien.value = D.evenement.lien; }
-    afficherStats(); afficherLiens(); afficherCourts(); afficherFichiers(); afficherJauge(); afficherSite(); afficherContacts();
+    afficherStats(); afficherLiens(); afficherCourts(); afficherFichiers(); afficherJauge(); afficherSite(); afficherStatuts(); afficherTextes(); afficherContacts();
     $('#attente').innerHTML = listeMsgs(D.attente, true); $('#valides').innerHTML = listeMsgs(D.valides, false);
     $('#n-attente').textContent = D.attente.length; $('#n-attente').hidden = !D.attente.length;
   };
@@ -636,7 +648,77 @@
     if (await action({ action: 'court_ajouter', code: fc.code.value, url: fc.url.value.trim() }, $('#err-court'))) { toast('Créé : landrypf.com/' + fc.code.value); fc.reset(); }
   });
 
-  $('#form-statut').addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'statut', valeur: $('#statut').value })) toast('Enregistré'); });
+  /* ---------- Phrases « En ce moment » ---------- */
+  const IDEES = ["Au bord du lagon 🌊", "Pause coco sous un cocotier 🥥", "Sortie va'a ce matin 🛶", "En mode chill à la maison 🌺",
+    "Au soleil, comme d'hab ☀️", "Coucher de soleil sur Moorea 🌅", "En plein montage d'une vidéo 🎬", "Je réponds à vos messages 💬",
+    "Ia ora na à tous ! 🤙", "Concentré sur mes projets 💪", "Petit tour à Papeete 🛵", "Casque sur les oreilles 🎧",
+    "Une nouvelle photo dans la galerie 📸", "Ça bouge sur Insta 👀", "Mā'a tahiti ce midi 🐟", "Mauruuru d'être passé 🌺"];
+  const listeStatuts = $('#liste-statuts');
+  const ligneStatut = (texte = '') => {
+    const d = document.createElement('div'); d.className = 'statut-ligne';
+    d.innerHTML = `<input maxlength="120" placeholder="ex. Au bord du lagon 🌊" aria-label="Phrase"><button type="button" class="petit gris" aria-label="Retirer cette phrase">✕</button>`;
+    d.querySelector('input').value = texte;
+    d.querySelector('button').addEventListener('click', () => { d.remove(); if (!listeStatuts.children.length) listeStatuts.appendChild(ligneStatut()); });
+    return d;
+  };
+  const afficherStatuts = () => {
+    if ($('#form-statut').contains(document.activeElement)) return;
+    listeStatuts.innerHTML = '';
+    (D.statuts.length ? D.statuts : ['']).forEach(t => listeStatuts.appendChild(ligneStatut(t)));
+    $('#statut-hasard').checked = !!D.statut_hasard;
+  };
+  $('#statut-ajouter').addEventListener('click', () => { const l = ligneStatut(); listeStatuts.appendChild(l); l.querySelector('input').focus(); });
+  $('#statut-idees').addEventListener('click', () => {
+    const zone = $('#idees'); zone.hidden = !zone.hidden;
+    const deja = [...listeStatuts.querySelectorAll('input')].map(i => i.value.trim());
+    zone.innerHTML = IDEES.filter(t => !deja.includes(t)).map(t => `<button type="button" class="idee">${echappe(t)}</button>`).join('');
+  });
+  $('#idees').addEventListener('click', (e) => {
+    const b = e.target.closest('.idee'); if (!b) return;
+    const existantes = [...listeStatuts.querySelectorAll('input')].map(i => i.value.trim());
+    if (existantes.includes(b.textContent)) { b.remove(); return; }
+    const vide = [...listeStatuts.querySelectorAll('input')].find(i => !i.value.trim());
+    if (vide) vide.value = b.textContent; else listeStatuts.appendChild(ligneStatut(b.textContent));
+    b.remove(); toast('Ajoutée, pense à enregistrer');
+  });
+  $('#form-statut').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const liste = [...listeStatuts.querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+    if (await action({ action: 'statuts', liste, hasard: $('#statut-hasard').checked })) toast('Phrases enregistrées');
+  });
+
+  /* ---------- Textes de la page d'accueil ---------- */
+  const GROUPES = [
+    ['Le titre', [['hero1', 'Ligne 1 du grand titre', 'Ia ora', 12], ['hero2', 'Ligne 2 du grand titre', 'na !', 12], ['descends', 'Petite note manuscrite', 'descends doucement', 40]]],
+    ['Le bandeau', [['bande', 'Phrase qui défile (sépare les morceaux par ✿)', 'Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru', 120], ['badge', 'Texte du badge rond', 'Fait à Tahiti', 18]]],
+    ['Mon île', [['ile_mot', 'Grand mot', 'Tahiti', 10], ['p1_legende', 'Légende carte postale 1', 'le lagon, 7h du matin', 40], ['p2_legende', 'Légende carte postale 2', 'la tiare du jardin', 40],
+      ['p3_legende', 'Légende carte postale 3', 'fin de journée', 40], ['ile_texte', 'Petit texte', "Deux volcans reliés par l'isthme de Taravao : Tahiti Nui, la grande, et Tahiti Iti, la petite. C'est ici que je vis.", 300, true]]],
+    ['Les 5 mots', [['tour_titre', 'Grand titre (une ligne par mot)', 'Mon\nTahiti\nen 5\nmots', 60, true], ['tour_note', 'Petite note', 'continue de descendre, ça glisse', 60],
+      ['c1_titre', 'Mot 1', 'Le lagon', 24], ['c1_texte', 'Texte 1', 'Turquoise le matin, argenté le soir. On y nage, on y rame, on y rêve.', 160, true],
+      ['c2_titre', 'Mot 2', 'La montagne', 24], ['c2_texte', 'Texte 2', 'Des sommets verts toujours coiffés de nuages. Le mont Orohena monte à 2 241 m.', 160, true],
+      ['c3_titre', 'Mot 3', "Le va'a", 24], ['c3_texte', 'Texte 3', 'La pirogue à balancier, le sport roi de la Polynésie.', 160, true],
+      ['c4_titre', 'Mot 4', 'La tiare', 24], ['c4_texte', 'Texte 4', "La fleur du pays. Derrière l'oreille gauche : cœur pris. À droite : cœur libre.", 160, true],
+      ['c5_titre', 'Mot 5', 'Le Heiva', 24], ['c5_texte', 'Texte 5', 'En juillet, Papeete vibre au rythme des danses et des tambours.', 160, true]]],
+    ['Le coucher de soleil', [['soir1', 'Phrase 1', 'Le soir…', 80], ['soir2', 'Phrase 2', 'le soleil plonge derrière Moorea', 80], ['soir3', 'Phrase 3', "les étoiles s'allument une à une", 80], ['soir4', 'Phrase 4 (avec les boutons)', 'et sur Insta, la balade continue', 80]]],
+    ['La fin', [['fin_titre', 'Grand mot de la fin', 'Mauruuru', 14], ['fin_texte', 'Texte', "Merci d'avoir fait la balade jusqu'au bout. Reviens quand tu veux, le lagon ne bouge pas.", 200, true]]]
+  ];
+  const ft = $('#form-textes');
+  ft.innerHTML = GROUPES.map(([titre, champs]) => `<fieldset class="groupe-textes"><legend>${titre}</legend>${champs.map(([k, l, def, max, long]) => `
+    <label>${l} <span class="compte" data-compte="${k}"></span>
+      ${long ? `<textarea name="${k}" rows="${k === 'tour_titre' ? 4 : 2}" maxlength="${max}" placeholder="${echappe(def)}"></textarea>` : `<input name="${k}" maxlength="${max}" placeholder="${echappe(def)}">`}
+    </label>`).join('')}</fieldset>`).join('')
+    + '<div class="ligne"><button>Enregistrer les textes</button><a class="lien-btn" href="/" target="_blank" rel="noopener" style="background:#EAE4DB;color:#1E1E1E">Voir l\'accueil</a></div><p class="erreur" id="err-textes" role="alert"></p>';
+  const compter = (champ) => { const c = ft.querySelector(`[data-compte="${champ.name}"]`); if (c) c.textContent = champ.value ? `${champ.value.length}/${champ.maxLength}` : ''; };
+  ft.addEventListener('input', (e) => { if (e.target.name) compter(e.target); });
+  const afficherTextes = () => {
+    if (ft.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return;
+    ft.querySelectorAll('input, textarea').forEach(ch => { ch.value = D.accueil_textes[ch.name] || ''; compter(ch); });
+  };
+  ft.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const textes = {}; ft.querySelectorAll('input, textarea').forEach(ch => { if (ch.value.trim()) textes[ch.name] = ch.value.trim(); });
+    if (await action({ action: 'accueil_textes', textes }, $('#err-textes'))) toast("Textes de l'accueil enregistrés");
+  });
 
   const fe = $('#form-evt');
   fe.addEventListener('submit', async (e) => {
