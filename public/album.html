@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Album privé · Landry</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Album privé de Landry.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://landrypf.com/album">
+<meta property="og:title" content="Album privé · Landry">
+<meta property="og:description" content="Un album réservé aux proches.">
+<meta name="theme-color" content="#10264A">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:image" content="https://landrypf.com/partage.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,500..900&family=Caveat:wght@600&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /*
+    IDÉE : le même carnet que la galerie, mais rangé dans un tiroir fermé : le lagon de nuit.
+    COULEURS : bleu nuit en fond, papier blanc, jaune tiare pour le titre.
+    TYPO : Anybody (titre), Caveat (légendes manuscrites), Instrument Sans (texte).
+    MOUVEMENT : chaque photo tombe et se pose quand elle arrive à l'écran.
+  */
+  :root { --lagon: #10264A; --mape: #0A1931; --rouge: #FFC93C; --papier: #FFFDF8; --encre: #14261F; --menu-fond: #FFFDF8; --menu-texte: #B3212E; }
+  * { box-sizing: border-box; min-width: 0; }
+  body { margin: 0; background: var(--lagon); color: #fff; font: 400 17px/1.55 "Instrument Sans", system-ui, sans-serif; overflow-x: clip; -webkit-font-smoothing: antialiased; }
+  .d { font-family: "Anybody", "Arial Narrow", Impact, sans-serif; font-weight: 900; font-variation-settings: "wdth" 72; text-transform: uppercase; }
+  .note { font-family: "Caveat", "Comic Sans MS", cursive; font-weight: 600; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--mape); outline-offset: 4px; }
+  .papier { position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: .5; mix-blend-mode: soft-light;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.009' numOctaves='5' seed='7' stitchTiles='stitch'/%3E%3CfeDiffuseLighting lighting-color='%23fff' surfaceScale='2.4'%3E%3CfeDistantLight azimuth='50' elevation='58'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+    background-size: 600px 600px; }
+
+  header { position: relative; padding: clamp(80px, 14vh, 140px) 6vw 30px; }
+  .retour { position: absolute; top: 20px; left: max(16px, 3vw); color: #fff; text-decoration: none; font-size: 1.5rem; }
+  h1 { margin: 0; color: var(--rouge); font-size: clamp(4rem, 17vw, 12rem); line-height: .82; }
+  h1 span { display: inline-block; animation: tombe .9s cubic-bezier(.2,1.35,.4,1) both; }
+  @keyframes tombe { from { transform: translateY(-80vh) rotate(-20deg); } }
+  .sous { margin: 14px 0 0; color: #C9DAF2; font-size: clamp(1.4rem, 3.5vw, 2rem); rotate: -2deg; }
+
+  .mur { columns: 3 280px; column-gap: clamp(20px, 3vw, 40px); padding: 30px 6vw 120px; }
+  .photo {
+    break-inside: avoid; margin: 0 0 clamp(28px, 4vw, 48px); position: relative;
+    background: var(--papier); padding: 10px 10px 0; border-radius: 3px; box-shadow: 0 16px 34px rgba(0, 60, 70, .3);
+    cursor: zoom-in; opacity: 0; transform: translateY(-60px) rotate(var(--r0, -8deg)) scale(.9);
+    transition: transform .8s cubic-bezier(.2,1.3,.4,1), opacity .4s ease;
+  }
+  .photo.pose { opacity: 1; transform: rotate(var(--r, -2deg)); }
+  .photo.pose:hover { transform: rotate(0) scale(1.02); }
+  .photo img { display: block; width: 100%; height: auto; border-radius: 2px; background: #EEE; }
+  .photo figcaption { text-align: center; font-size: 1.35rem; padding: 6px 4px 10px; color: var(--encre); min-height: 1.2em; }
+  .photo button { all: unset; display: block; position: absolute; inset: 0; cursor: zoom-in; }
+  .photo button:focus-visible { outline: 3px solid var(--mape); outline-offset: 4px; }
+  .scotch { position: absolute; top: -12px; left: 50%; width: 92px; height: 26px; translate: -50% 0; rotate: var(--rs, 3deg); z-index: 2;
+    background: rgba(238, 224, 188, .92); box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    clip-path: polygon(0 10%,4% 0,96% 0,100% 12%,97% 30%,100% 50%,96% 70%,100% 90%,96% 100%,4% 100%,0 88%,3% 70%,0 50%,4% 30%); }
+
+  .vide { margin: 20px 6vw 140px; max-width: 30ch; background: var(--papier); padding: 26px 22px 18px; rotate: -2deg; box-shadow: 0 16px 34px rgba(0, 60, 70, .3); position: relative; }
+  .vide p { margin: 0 0 12px; font-size: 1.5rem; line-height: 1.2; }
+  .vide a { color: var(--rouge); font-weight: 600; font-family: "Instrument Sans", system-ui, sans-serif; font-size: 1rem; }
+
+  .vide { color: var(--encre); }
+  .vide a { color: #B3212E; }
+  .verrou { margin: 10px 6vw 140px; max-width: 360px; background: var(--papier); color: var(--encre); padding: 28px 22px 22px; rotate: -1.5deg; box-shadow: 0 16px 34px rgba(0,0,0,.4); position: relative; border-radius: 3px; }
+  .verrou p { margin: 0 0 14px; font-size: 1.5rem; line-height: 1.2; }
+  .verrou input { font: 16px "Instrument Sans", system-ui, sans-serif; width: 100%; padding: .8rem 1rem; border-radius: 10px; border: 1px solid #CCC; margin-bottom: 10px; }
+  .verrou button, .sortie { font: 600 1rem "Instrument Sans", system-ui, sans-serif; min-height: 48px; width: 100%; border: 0; border-radius: 999px; background: #10264A; color: #fff; cursor: pointer; }
+  .verrou .err { color: #B3212E; font: 600 .95rem "Instrument Sans", system-ui, sans-serif; margin: 8px 0 0; min-height: 1.3em; }
+  .verrou input:focus-visible, .verrou button:focus-visible { outline: 3px solid #10264A; outline-offset: 2px; }
+  .sortie { width: auto; padding: 0 1.2rem; background: rgba(255,255,255,.12); margin: 0 6vw 10px; }
+  footer { background: var(--mape); color: var(--papier); text-align: center; padding: 50px 20px 40px; border-radius: 50% 50% 0 0 / 6vw 6vw 0 0; }
+  footer a { color: var(--papier); font-weight: 600; }
+
+  /* Visionneuse */
+  dialog { border: 0; padding: 0; background: transparent; max-width: 100vw; max-height: 100vh; width: 100vw; height: 100dvh; }
+  dialog::backdrop { background: rgba(8, 30, 34, .92); }
+  .vision { width: 100%; height: 100%; display: grid; grid-template-rows: 1fr auto; place-items: center; padding: 56px 12px 16px; }
+  .vision img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .vision p { color: #fff; font-size: 1.6rem; margin: 10px 0 0; text-align: center; }
+  .v-btn { position: fixed; z-index: 2; width: 48px; height: 48px; border-radius: 50%; border: 0; background: rgba(255,255,255,.95); color: var(--rouge); font: 600 1.4rem/1 system-ui, sans-serif; cursor: pointer; display: grid; place-items: center; }
+  .v-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+  .v-fermer { top: 12px; right: 12px; }
+  .v-prec { left: 12px; top: 50%; translate: 0 -50%; }
+  .v-suiv { right: 12px; top: 50%; translate: 0 -50%; }
+
+  @media (prefers-reduced-motion: reduce) {
+    h1 span { animation: none; }
+    .photo { opacity: 1; transform: rotate(var(--r, -2deg)); transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="papier" aria-hidden="true"></div>
+
+<header>
+  <a class="retour d" href="./">Landry</a>
+  <h1 class="d" aria-label="Album privé"><span aria-hidden="true">Album</span></h1>
+  <p class="sous note">réservé aux proches 🔒</p>
+</header>
+
+<main>
+  <form class="verrou note" id="verrou" hidden novalidate>
+    <span class="scotch"></span>
+    <p id="verrou-texte">Cet album est privé. Entre le mot de passe que Landry t'a donné.</p>
+    <input type="password" id="mdp" aria-label="Mot de passe de l'album" autocomplete="current-password" required>
+    <button>Ouvrir l'album</button>
+    <p class="err" id="err" role="alert"></p>
+  </form>
+  <button class="sortie" id="sortie" type="button" hidden>🔒 Verrouiller l'album sur cet appareil</button>
+  <div class="mur" id="mur" aria-live="polite"></div>
+  <div class="vide note" id="vide" hidden>
+    <span class="scotch"></span>
+    <p id="vide-texte">L'album est vide pour l'instant. 🌺</p>
+    <a href="bio.html">Mes liens</a>
+  </div>
+</main>
+
+<footer>
+  <p><a href="./">Accueil</a> · <a href="bio.html">Mes liens</a></p>
+  <p style="opacity:.8;font-size:.875rem">© <span id="annee">2026</span> Landry · Tahiti · <a href="mentions.html">Mentions légales</a></p>
+</footer>
+
+<dialog id="visionneuse" aria-label="Photo en grand">
+  <div class="vision" id="vision"><img id="v-img" alt=""><p class="note" id="v-legende"></p></div>
+  <button class="v-btn v-fermer" id="v-fermer" aria-label="Fermer">✕</button>
+  <button class="v-btn v-prec" id="v-prec" aria-label="Photo précédente">‹</button>
+  <button class="v-btn v-suiv" id="v-suiv" aria-label="Photo suivante">›</button>
+</dialog>
+
+<script src="menu.js"></script>
+<script>
+{
+  const $ = (s) => document.querySelector(s);
+  const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const titre = $('h1 span');
+  titre.innerHTML = [...titre.textContent].map((c, i) => `<span style="animation-delay:${(i * 0.06).toFixed(2)}s">${c}</span>`).join('');
+  document.getElementById('annee').textContent = new Date().getFullYear();
+
+  let photos = [], courant = 0;
+  const fen = $('#visionneuse');
+  const montrer = (i) => {
+    courant = (i + photos.length) % photos.length;
+    const p = photos[courant];
+    $('#v-img').src = p.url; $('#v-img').alt = p.legende || '';
+    $('#v-legende').textContent = p.legende || '';
+    $('#v-prec').hidden = $('#v-suiv').hidden = photos.length < 2;
+  };
+  $('#v-fermer').addEventListener('click', () => fen.close());
+  $('#v-prec').addEventListener('click', () => montrer(courant - 1));
+  $('#v-suiv').addEventListener('click', () => montrer(courant + 1));
+  $('#vision').addEventListener('click', (e) => { if (e.target.id === 'vision') fen.close(); });
+  fen.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') montrer(courant - 1); if (e.key === 'ArrowRight') montrer(courant + 1); });
+  let x0 = null;
+  fen.addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  fen.addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) montrer(courant + (dx < 0 ? 1 : -1)); x0 = null; });
+
+  const poser = new IntersectionObserver((entrees) => {
+    entrees.forEach(en => { if (en.isIntersecting) { en.target.classList.add('pose'); poser.unobserve(en.target); } });
+  }, { rootMargin: '0px 0px -10% 0px' });
+
+  const afficher = (liste) => {
+    photos = liste;
+    $('#verrou').hidden = true; $('#sortie').hidden = false;
+    if (!photos.length) { $('#vide').hidden = false; return; }
+    $('#mur').innerHTML = photos.map((p, i) => {
+      const r = ((i * 37) % 9) - 4, r0 = r * 3 - 6, rs = ((i * 53) % 11) - 5;
+      return `<figure class="photo" style="--r:${r}deg;--r0:${r0}deg;--rs:${rs}deg">
+        <span class="scotch"></span>
+        <img src="${p.url}" alt="${echappe(p.legende)}" loading="lazy" decoding="async">
+        <figcaption class="note">${echappe(p.legende)}</figcaption>
+        <button data-i="${i}" aria-label="Agrandir ${echappe(p.legende || 'la photo')}"></button>
+      </figure>`;
+    }).join('');
+    document.querySelectorAll('.photo').forEach(f => poser.observe(f));
+  };
+  $('#mur').addEventListener('click', (e) => { const b = e.target.closest('button[data-i]'); if (b) { montrer(+b.dataset.i); fen.showModal(); } });
+  const charger = async () => {
+    try {
+      const r = await fetch('/api/album', { credentials: 'same-origin' });
+      if (r.status === 401) { $('#verrou').hidden = false; $('#mdp').focus(); return; }
+      const d = await r.json();
+      if (d.ferme) { $('#vide-texte').textContent = "L'album n'est pas ouvert pour le moment. 🌺"; $('#vide').hidden = false; return; }
+      afficher(d.photos || []);
+    } catch { $('#vide-texte').textContent = "L'album n'est pas disponible pour le moment."; $('#vide').hidden = false; }
+  };
+  $('#verrou').addEventListener('submit', async (e) => {
+    e.preventDefault(); $('#err').textContent = '';
+    const r = await fetch('/api/album', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mdp: $('#mdp').value }) }).catch(() => null);
+    if (r && r.ok) { $('#mdp').value = ''; charger(); return; }
+    const d = r ? await r.json().catch(() => ({})) : {};
+    $('#err').textContent = d.erreur || 'Connexion impossible, réessaie.';
+  });
+  $('#sortie').addEventListener('click', async () => { await fetch('/api/album/sortie', { method: 'POST' }); location.reload(); });
+  charger();
+}
+</script>
+</body>
+</html>

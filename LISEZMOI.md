@@ -10,32 +10,37 @@ Chaque modification fusionnée dans `main` est publiée automatiquement sur land
 | landrypf.com | `public/index.html` | Balade animée au scroll (écran de chargement, curseur tiare, tes photos) |
 | landrypf.com/bio | `public/bio.html` | Liens, heure, météo et houle, événement, Mauruuru, livre d'or, contact, 3 langues |
 | landrypf.com/galerie | `public/galerie.html` | Tes photos, façon carnet de voyage |
+| landrypf.com/album | `public/album.html` | Album privé, protégé par mot de passe |
+| landrypf.com/mentions | `public/mentions.html` | Mentions légales (le minimum obligatoire) |
 | landrypf.com/admin | `public/admin.html` | Ton espace privé |
 | landrypf.com/f/… | — | Les fichiers que tu partages |
 | landrypf.com/ton-code | — | Tes liens courts |
 
 ## L'admin (landrypf.com/admin)
 
-- **Chiffres** : visites, clics, téléchargements et mauruuru des 30 derniers jours.
-- **Liens bio** : ajouter, modifier, masquer, réordonner, supprimer. Dates de début et de fin facultatives
-  (le lien n'apparaît qu'entre ces deux dates). Phrases « En ce moment » : mets-en plusieurs et active
-  « au hasard » pour qu'une phrase différente s'affiche à chaque visite (bouton « Des idées » pour t'inspirer).
-- **Liens courts** : landrypf.com/ton-code vers n'importe quelle adresse, avec QR code à télécharger.
-- **Fichiers** : envoi jusqu'à 100 Mo, lien court à partager (landrypf.com/f/…), QR code, mot de passe
-  et date d'expiration facultatifs, renommage. La case « Optimiser les photos » (cochée par défaut)
-  les réduit à 2 560 px et les allège sans perte visible ; décoche-la pour envoyer l'original.
-  La jauge indique la place utilisée sur les 10 Go gratuits ; l'envoi est bloqué juste avant la limite.
-- **Galerie** : chaque nouvelle image arrive dans « Photos à valider » ; rien n'est publié sans ton accord.
-- **Accueil** : remplace les 8 dessins par tes photos, et réécris tous les textes de la page d'accueil
-  (titre, bandeau, cartes, coucher de soleil, fin). Un champ vide garde le texte d'origine.
-- **Événement** : affiché avec un compte à rebours sur la page bio.
-- **Réglages** : activer ou couper le livre d'or et le formulaire de contact, la bannière d'annonce
-  (en bas de toutes les pages) et le lecteur de musique de la bio (morceau choisi parmi tes fichiers audio).
-- **Messages** : ce que les visiteurs t'envoient avec le formulaire « Me contacter ».
-- **Livre d'or** : publier ou supprimer les mots.
+Sur téléphone, les onglets sont en bas de l'écran ; sur ordinateur, en haut. Chaque onglet a ses sous-onglets.
+L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cherche partout.
+
+- **Tableau de bord** : ce qui est à traiter (messages, mots, photos), jauge de stockage, chiffres sur 30 jours.
+- **Page bio** : liens (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
+  événement, badge « en direct », lecteur de musique avec playlist, blocs intégrés
+  (Instagram, TikTok, YouTube, Spotify, SoundCloud). Sur ordinateur, un aperçu en direct de la bio s'affiche à droite.
+- **Page d'accueil** : tes photos à la place des dessins, et tous les textes.
+- **Fichiers** : envoi (100 Mo max, photos optimisées), filtres, lien court, QR code, mot de passe, expiration,
+  renommage ; galerie publique (avec « Photos à valider ») ; **album privé** protégé par mot de passe (landrypf.com/album).
+- **Messages** : formulaire de contact et livre d'or (les visiteurs peuvent mettre un 🌺 aux mots).
+- **Réglages** : livre d'or et contact (activer/couper), bannière programmable, liens courts, thème saisonnier
+  (automatique : Heiva en juillet, Noël, Nouvel An), mentions légales, sauvegarde en un clic, nettoyage.
+
+Chaque suppression peut être annulée pendant 5 secondes. Le menu **⋯** de chaque élément regroupe ses actions.
 
 **Installer l'admin comme une appli** : ouvre landrypf.com/admin sur ton téléphone, puis
 « Partager → Sur l'écran d'accueil » (iPhone) ou « ⋮ → Ajouter à l'écran d'accueil » (Android).
+
+## Entretien automatique
+
+Chaque nuit à 4 h (heure de Tahiti), le site supprime les fichiers expirés, les messages de contact
+de plus d'un an et les vieilles traces anti-spam.
 
 ## Réglages Cloudflare (website-landry → Settings → Variables and Secrets)
 

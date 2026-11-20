@@ -87,7 +87,41 @@
   .banniere a:focus-visible,.banniere button:focus-visible{outline:3px solid #fff;outline-offset:2px;border-radius:999px}
   @keyframes banniere-entre{from{translate:-50% 140%;opacity:0}}
   @media (prefers-reduced-motion:reduce){.banniere{animation:none}}`;
+  /* Thème saisonnier (réglé dans l'admin, ou automatique selon la date) */
+  const THEMES = {
+    heiva: { texte: 'Heiva i Tahiti ! 🌺', objets: ['🌺', '🌼', '🌸', '🍃'] },
+    noel: { texte: 'Joyeux Noël 🎄', objets: ['✨', '⭐', '❄️', '🎁'] },
+    nouvel_an: { texte: 'Bonne année ! 🎉', confettis: ['#B3212E', '#FFC93C', '#2EC4C6', '#FFFFFF', '#F26B38'] }
+  };
+  const appliquerTheme = (nom) => {
+    const th = THEMES[nom]; if (!th) return;
+    document.documentElement.classList.add('theme-' + nom);
+    const cleT = 'theme-vu:' + nom;
+    try { if (sessionStorage.getItem(cleT)) return; sessionStorage.setItem(cleT, '1'); } catch {}
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const st = document.createElement('style');
+    st.textContent = `.fete{position:fixed;top:-40px;z-index:96;pointer-events:none;font-size:22px;animation:fete-tombe linear forwards}
+      .fete.confetti{width:8px;height:14px;border-radius:2px}
+      @keyframes fete-tombe{to{transform:translate(var(--dx),110vh) rotate(var(--r))}}
+      .fete-message{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);translate:-50% 0;z-index:97;background:#fff;color:#B3212E;font:700 16px/1.2 "Instrument Sans",system-ui,sans-serif;padding:10px 18px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:fete-msg 4.5s ease forwards;white-space:nowrap;pointer-events:none}
+      @keyframes fete-msg{0%{opacity:0;translate:-50% -20px}12%,80%{opacity:1;translate:-50% 0}100%{opacity:0;translate:-50% -10px}}`;
+    document.head.appendChild(st);
+    const msg = document.createElement('div'); msg.className = 'fete-message'; msg.textContent = th.texte; msg.setAttribute('role', 'status');
+    setTimeout(() => { document.body.appendChild(msg); setTimeout(() => msg.remove(), 4700); }, 900);
+    for (let i = 0; i < 34; i++) {
+      const f = document.createElement('div'); f.className = 'fete' + (th.confettis ? ' confetti' : ''); f.setAttribute('aria-hidden', 'true');
+      if (th.confettis) f.style.background = th.confettis[i % th.confettis.length]; else f.textContent = th.objets[i % th.objets.length];
+      f.style.left = Math.random() * 100 + 'vw';
+      f.style.setProperty('--dx', (Math.random() * 140 - 70) + 'px');
+      f.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      f.style.animationDuration = (4 + Math.random() * 3).toFixed(2) + 's';
+      f.style.animationDelay = (0.6 + Math.random() * 2.5).toFixed(2) + 's';
+      document.body.appendChild(f); f.addEventListener('animationend', () => f.remove());
+    }
+  };
+
   fetch('/api/infos').then(r => r.ok ? r.json() : null).then(d => {
+    if (d && d.theme) appliquerTheme(d.theme);
     const b = d && d.banniere; if (!b || !b.texte) return;
     const cleB = 'banniere-fermee:' + b.texte;
     try { if (sessionStorage.getItem(cleB)) return; } catch {}

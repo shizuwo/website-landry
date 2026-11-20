@@ -76,10 +76,11 @@
     cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 50%;
     touch-action: manipulation;
   }
+  .motif { outline: none; }
   .motif:focus-visible { outline: 3px solid var(--blanc); outline-offset: 6px; }
   .tourne { transform-origin: 200px 200px; animation: tourne 80s linear 2.6s infinite; }
   .tourne-clic { transform-origin: 200px 200px; }
-  .spin .tourne-clic { animation: clic .9s cubic-bezier(.3,1.4,.5,1); }
+  .spin .tourne-clic { animation: clic 1s cubic-bezier(.3,1.15,.5,1); }
   .feuille { transform-origin: 200px 200px; transform-box: view-box; animation: pose .55s cubic-bezier(.2,1.3,.4,1) both; }
   .nervure { stroke-dasharray: 120; stroke-dashoffset: 120; animation: trace .5s ease-out forwards; }
   .coeur   { transform-origin: 200px 200px; transform-box: view-box; animation: pose .5s cubic-bezier(.2,1.3,.4,1) 1.5s both; }
@@ -91,7 +92,7 @@
   @keyframes eclot { from { transform: scale(0) rotate(-40deg); } to { transform: none; } }
   @keyframes trace { to { stroke-dashoffset: 0; } }
   @keyframes tourne { to { transform: rotate(360deg); } }
-  @keyframes clic  { to { transform: rotate(180deg); } }
+  @keyframes clic  { to { transform: rotate(360deg); } }
 
   /* ---------- Compteur Mauruuru ---------- */
   .merci { display: flex; flex-direction: column; align-items: center; gap: .15rem; margin-bottom: 1.25rem; animation: apparait .6s ease 2.1s both; }
@@ -183,6 +184,38 @@
   .lecteur .ligne-temps { display: flex; align-items: center; gap: .5rem; }
   .lecteur input[type=range] { flex: 1; accent-color: var(--btn-texte); height: 22px; margin: 0; }
   .lecteur .temps { font-size: .75rem; color: var(--btn-sous); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* Playlist */
+  .lecteur .pistes { display: flex; align-items: center; gap: 2px; flex: none; }
+  .lecteur .pistes button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: transparent; color: var(--btn-texte); display: grid; place-items: center; cursor: pointer; }
+  .lecteur .pistes button:hover { background: color-mix(in srgb, var(--btn-texte) 10%, transparent); }
+  .lecteur .pistes button:focus-visible { outline: 3px solid var(--btn-texte); outline-offset: 1px; }
+  .lecteur .pistes svg { width: 16px; height: 16px; fill: currentColor; }
+  .lecteur .numero { font-size: .75rem; color: var(--btn-sous); font-variant-numeric: tabular-nums; }
+
+  /* Badge « en direct » */
+  .direct { display: inline-flex; align-items: center; gap: .5rem; margin: -.25rem 0 .9rem; padding: .4rem .95rem; border-radius: 999px; background: #E3122B; color: #fff; font-weight: 700; font-size: .9375rem; text-decoration: none; box-shadow: 0 0 0 0 rgba(227,18,43,.6); animation: direct-pulse 1.8s infinite; }
+  .direct .rond { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: clignote 1s steps(2) infinite; }
+  .direct:focus-visible { outline: 3px solid var(--blanc); outline-offset: 3px; }
+  @keyframes direct-pulse { 70% { box-shadow: 0 0 0 12px rgba(227,18,43,0); } 100% { box-shadow: 0 0 0 0 rgba(227,18,43,0); } }
+  @keyframes clignote { 50% { opacity: .2; } }
+
+  /* Blocs intégrés */
+  .blocs { width: 100%; display: grid; gap: .875rem; margin-top: .875rem; }
+  .bloc { background: var(--blanc); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 0 var(--fonce); }
+  .bloc button { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: .9rem; padding: .9rem 1.25rem; min-height: 60px; cursor: pointer; color: var(--btn-texte); font-weight: 600; text-align: left; }
+  .bloc button small { display: block; font-weight: 400; font-size: .8125rem; color: var(--btn-sous); }
+  .bloc button:focus-visible { outline: 3px solid var(--btn-texte); outline-offset: -3px; }
+  .bloc .em { font-size: 1.4rem; flex: none; }
+  .bloc iframe { display: block; width: 100%; border: 0; background: #fff; }
+
+  /* Réactions du livre d'or */
+  .mots .reagir { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: .3rem; margin-top: .45rem; padding: .2rem .6rem; border-radius: 999px; background: #F6E3E1; color: #8E1823; font-size: .875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mots .reagir[aria-pressed="true"] { background: #B3212E; color: #fff; }
+  .mots .reagir:focus-visible { outline: 3px solid #8E1823; outline-offset: 2px; }
+  .mots .reagir.pop { animation: pop .4s ease; }
+  @keyframes pop { 50% { transform: scale(1.25); } }
+  footer .legal { color: var(--doux); }
+
   .livre { width: 100%; max-width: 440px; margin: 0 auto; padding: 3rem 1.25rem 2rem; position: relative; z-index: 1; }
   .livre h2 { font-family: "Young Serif", Georgia, serif; font-weight: 400; font-size: 1.9rem; line-height: 1.1; margin: 0 0 .35rem; text-align: center; }
   .livre > p { text-align: center; color: var(--doux); margin: 0 0 1.5rem; }
@@ -290,6 +323,7 @@
   </div>
 
   <h1 id="nom">Landry</h1>
+  <a class="direct" id="direct" hidden target="_blank" rel="noopener"><span class="rond" aria-hidden="true"></span><span id="direct-texte">En direct</span></a>
 
   <p class="statut" id="statut" hidden><span class="point" aria-hidden="true"></span><span><b data-t="enCeMoment">En ce moment :</b> <span id="statut-texte"></span></span></p>
   <a class="evenement" id="evenement" hidden>
@@ -307,6 +341,11 @@
       <span class="titre"><svg viewBox="140 140 120 120" aria-hidden="true"><g fill="currentColor"><use href="#petale"/><use href="#petale" transform="rotate(51.43 200 200)"/><use href="#petale" transform="rotate(102.86 200 200)"/><use href="#petale" transform="rotate(154.29 200 200)"/><use href="#petale" transform="rotate(205.71 200 200)"/><use href="#petale" transform="rotate(257.14 200 200)"/><use href="#petale" transform="rotate(308.57 200 200)"/></g></svg><span class="defile" id="lecteur-defile"><span id="lecteur-titre"></span></span></span>
       <span class="artiste" id="lecteur-artiste"></span>
       <span class="ligne-temps"><input type="range" id="lecteur-pos" min="0" max="1000" value="0" aria-label="Position dans le morceau"><span class="temps" id="lecteur-temps">0:00</span></span>
+    </div>
+    <div class="pistes" id="lecteur-pistes" hidden>
+      <button type="button" id="piste-prec" aria-label="Morceau précédent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM9.5 12 19 5.5v13z"/></svg></button>
+      <span class="numero" id="piste-num">1/1</span>
+      <button type="button" id="piste-suiv" aria-label="Morceau suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM14.5 12 5 18.5v-13z"/></svg></button>
     </div>
     <audio id="lecteur-audio" preload="none"></audio>
   </div>
@@ -328,6 +367,8 @@
       </a>
     </li>
   </ul>
+
+  <div class="blocs" id="blocs" hidden></div>
 
   <div class="partage">
     <button class="petit-btn" id="btn-partager" type="button">
@@ -381,6 +422,7 @@
     <button type="button" data-langue="en" aria-pressed="false">EN</button>
   </div>
   <div>© <span id="annee">2026</span> Landry · Tahiti 🌺</div>
+  <div style="margin-top:.4rem"><a class="legal" href="mentions.html" data-t="mentions">Mentions légales</a></div>
   <span class="apercu" id="apercu" hidden></span>
 </footer>
 
@@ -431,7 +473,7 @@
       ctEmail: 'Ton e-mail (pour que je puisse te répondre)', ctEnvoyer: 'Envoyer',
       ctMerci: 'Mauruuru ! Ton message est bien arrivé.', ctManque: 'Écris ton prénom et un message.',
       ctEmailFaux: "Cette adresse e-mail n'a pas l'air correcte.", ctTropVite: 'Tu viens déjà de m\'écrire, réessaie dans 2 minutes.',
-      evtDans: 'dans', evtMaintenant: "C'est maintenant !", meteo: 'Météo et houle à Tahiti', ecouter: 'Écouter', pause: 'Pause'
+      evtDans: 'dans', evtMaintenant: "C'est maintenant !", meteo: 'Météo et houle à Tahiti', ecouter: 'Écouter', pause: 'Pause', mentions: 'Mentions légales'
     },
     // ⚠️ Reo tahiti : fais relire ces phrases par quelqu'un qui parle couramment.
     ty: {
@@ -472,7 +514,7 @@
       ctEmail: 'Your e-mail (so I can reply)', ctEnvoyer: 'Send',
       ctMerci: 'Mauruuru! Your message arrived.', ctManque: 'Write your name and a message.',
       ctEmailFaux: "That e-mail address doesn't look right.", ctTropVite: 'You just wrote to me, try again in 2 minutes.',
-      evtDans: 'in', evtMaintenant: "It's happening now!", meteo: 'Weather and swell in Tahiti', ecouter: 'Play', pause: 'Pause'
+      evtDans: 'in', evtMaintenant: "It's happening now!", meteo: 'Weather and swell in Tahiti', ecouter: 'Play', pause: 'Pause', mentions: 'Legal notice'
     }
   };
 
@@ -594,13 +636,27 @@
   /* ---------- Lecteur de musique (choisi dans l'admin) ---------- */
   const audio = $('#lecteur-audio'), boutonLire = $('#lecteur-btn'), pos = $('#lecteur-pos');
   const mmss = (t) => { if (!isFinite(t)) return '0:00'; const m = Math.floor(t / 60), s = Math.floor(t % 60); return `${m}:${String(s).padStart(2, '0')}`; };
+  let pistes = [], numPiste = 0;
+  const choisirPiste = (i, jouer) => {
+    numPiste = (i + pistes.length) % pistes.length;
+    const p = pistes[numPiste];
+    audio.src = p.url;
+    $('#lecteur-titre').textContent = p.titre;
+    $('#lecteur-artiste').textContent = p.artiste; $('#lecteur-artiste').hidden = !p.artiste;
+    $('#piste-num').textContent = `${numPiste + 1}/${pistes.length}`;
+    pos.value = 0; $('#lecteur-temps').textContent = '0:00';
+    if (defilement) defilement.cancel();
+    if (jouer) audio.play().catch(() => {}); else setTimeout(faireDefiler, 300);
+  };
   const afficherLecteur = (mu) => {
-    audio.src = mu.url;
-    $('#lecteur-titre').textContent = mu.titre;
-    $('#lecteur-artiste').textContent = mu.artiste; $('#lecteur-artiste').hidden = !mu.artiste;
+    pistes = mu.pistes && mu.pistes.length ? mu.pistes : [mu];
+    $('#lecteur-pistes').hidden = pistes.length < 2;
     $('#lecteur').hidden = false;
+    choisirPiste(0, false);
     setTimeout(faireDefiler, 3200); // une fois le lecteur apparu
   };
+  $('#piste-prec').addEventListener('click', () => choisirPiste(audio.currentTime > 3 ? numPiste : numPiste - 1, !audio.paused));
+  $('#piste-suiv').addEventListener('click', () => choisirPiste(numPiste + 1, !audio.paused));
   // Si le titre est trop long : il défile jusqu'au bout, marque une pause, revient, puis s'arrête
   const boiteTitre = $('#lecteur-defile'), texteTitre = $('#lecteur-titre');
   let defilement = null;
@@ -628,6 +684,7 @@
   };
   boutonLire.addEventListener('click', () => { if (audio.paused) audio.play().catch(() => {}); else audio.pause(); });
   ['play', 'pause', 'ended'].forEach(ev => audio.addEventListener(ev, majBouton));
+  audio.addEventListener('ended', () => { if (pistes.length > 1 && numPiste < pistes.length - 1) choisirPiste(numPiste + 1, true); });
   let glisse = false;
   audio.addEventListener('timeupdate', () => {
     if (!glisse && audio.duration) pos.value = Math.round(audio.currentTime / audio.duration * 1000);
@@ -636,6 +693,33 @@
   audio.addEventListener('loadedmetadata', () => { $('#lecteur-temps').textContent = `0:00 / ${mmss(audio.duration)}`; });
   pos.addEventListener('input', () => { glisse = true; });
   pos.addEventListener('change', () => { if (audio.duration) audio.currentTime = pos.value / 1000 * audio.duration; glisse = false; });
+
+  /* ---------- Blocs intégrés : chargés seulement au clic ---------- */
+  const BLOCS = {
+    instagram: { em: '📸', nom: { fr: 'Voir la publication Instagram', en: 'View the Instagram post' }, url: r => `https://www.instagram.com/${r}/embed/`, h: 600 },
+    tiktok: { em: '🎵', nom: { fr: 'Voir la vidéo TikTok', en: 'Watch the TikTok video' }, url: r => `https://www.tiktok.com/embed/v2/${r}`, h: 740 },
+    youtube: { em: '▶️', nom: { fr: 'Voir la vidéo YouTube', en: 'Watch the YouTube video' }, url: r => `https://www.youtube-nocookie.com/embed/${r}?autoplay=1`, ratio: true },
+    spotify: { em: '🎧', nom: { fr: 'Écouter sur Spotify', en: 'Listen on Spotify' }, url: r => `https://open.spotify.com/embed/${r}`, h: r => /^track|^episode/.test(r) ? 152 : 380 },
+    soundcloud: { em: '☁️', nom: { fr: 'Écouter sur SoundCloud', en: 'Listen on SoundCloud' }, url: r => `https://w.soundcloud.com/player/?url=${encodeURIComponent(r)}&color=%23B3212E&auto_play=true`, h: 166 }
+  };
+  const afficherBlocs = (liste) => {
+    const zone = $('#blocs');
+    zone.innerHTML = liste.filter(b => BLOCS[b.type]).map((b, i) => {
+      const B = BLOCS[b.type];
+      return `<div class="bloc"><button type="button" data-bloc="${i}"><span class="em" aria-hidden="true">${B.em}</span><span>${echappe(B.nom[L] || B.nom.fr)}<small>${L === 'en' ? 'Tap to load the content' : 'Touche pour charger le contenu'}</small></span></button></div>`;
+    }).join('');
+    zone.hidden = !zone.children.length;
+    zone.onclick = (e) => {
+      const btn = e.target.closest('[data-bloc]'); if (!btn) return;
+      const b = liste.filter(x => BLOCS[x.type])[+btn.dataset.bloc], B = BLOCS[b.type];
+      const f = document.createElement('iframe');
+      f.src = B.url(b.ref); f.title = B.nom.fr; f.loading = 'lazy';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write';
+      f.setAttribute('allowfullscreen', '');
+      if (B.ratio) f.style.aspectRatio = '16 / 9'; else f.style.height = (typeof B.h === 'function' ? B.h(b.ref) : B.h) + 'px';
+      btn.replaceWith(f);
+    };
+  };
 
   const chargerInfos = async () => {
     try {
@@ -647,6 +731,12 @@
       if (d.livre === false) $('#form-livre').closest('section').hidden = true;
       if (d.contact === false) $('#contact').hidden = true;
       if (d.musique) afficherLecteur(d.musique);
+      if (d.live) {
+        const a = $('#direct'); $('#direct-texte').textContent = d.live.texte;
+        if (d.live.lien) a.href = d.live.lien; else a.removeAttribute('href');
+        a.hidden = false;
+      }
+      if (d.blocs && d.blocs.length) afficherBlocs(d.blocs);
     } catch {
       demo = true;
       compte = +(stock.lire('demo-compte') || 128);
@@ -763,7 +853,9 @@
   const afficherMots = () => {
     const ul = $('#mots');
     if (!mots.length) { ul.innerHTML = `<li class="vide">${echappe(t('loVide'))}</li>`; return; }
-    ul.innerHTML = mots.map(m => `<li>${echappe(m.texte)}<span class="qui">— ${echappe(m.nom)}${m.exemple ? ` (${echappe(t('exemple'))})` : ''}</span></li>`).join('');
+    const deja = (() => { try { return JSON.parse(stock.lire('reactions') || '[]'); } catch { return []; } })();
+    ul.innerHTML = mots.map(m => `<li>${echappe(m.texte)}<span class="qui">— ${echappe(m.nom)}${m.exemple ? ` (${echappe(t('exemple'))})` : ''}</span>`
+      + (m.id ? `<button type="button" class="reagir" data-reagir="${m.id}" aria-pressed="${deja.includes(m.id)}" aria-label="Mettre un 🌺 à ce mot">🌺 <span>${m.reactions || 0}</span></button>` : '') + `</li>`).join('');
   };
   const chargerMots = async () => {
     try { mots = (await api('/api/livredor')).messages || []; }
@@ -775,6 +867,15 @@
     }
     afficherMots();
   };
+  $('#mots').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-reagir]'); if (!b || b.getAttribute('aria-pressed') === 'true') return;
+    const id = +b.dataset.reagir;
+    b.setAttribute('aria-pressed', 'true'); b.classList.add('pop');
+    const span = b.querySelector('span'); span.textContent = +span.textContent + 1;
+    let deja = []; try { deja = JSON.parse(stock.lire('reactions') || '[]'); } catch {}
+    stock.ecrire('reactions', JSON.stringify([...deja, id].slice(-300)));
+    try { const r = await api('/api/livredor/reagir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) }); span.textContent = r.reactions; } catch {}
+  });
   const champTexte = $('#lo-texte');
   champTexte.addEventListener('input', () => { $('#lo-reste').textContent = 200 - champTexte.value.length; });
   $('#form-livre').addEventListener('submit', async (e) => {
@@ -812,7 +913,8 @@
   });
 
   /* ---------- Statistiques de visite (anonymes) ---------- */
-  try { navigator.sendBeacon('/api/vue', new Blob([JSON.stringify({ page: 'bio' })], { type: 'application/json' })); } catch {}
+  const apercuAdmin = new URLSearchParams(location.search).has('apercu');
+  if (!apercuAdmin) { try { navigator.sendBeacon('/api/vue', new Blob([JSON.stringify({ page: 'bio' })], { type: 'application/json' })); } catch {} }
 
   /* ---------- Démarrage ---------- */
   document.getElementById('annee').textContent = new Date().getFullYear();
