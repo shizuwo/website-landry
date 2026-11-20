@@ -153,6 +153,17 @@
   .petit-btn svg { width: 1.1rem; height: 1.1rem; }
 
   /* ---------- Livre d'or ---------- */
+  .evenement {
+    display: flex; align-items: center; gap: .75rem; width: 100%; margin: 0 0 .9rem; padding: .8rem 1rem; border-radius: 16px;
+    background: var(--doux); color: var(--btn-texte); text-decoration: none; text-align: left; animation: apparait .6s ease 2.3s both;
+  }
+  .evenement .cal { flex: none; width: 46px; border-radius: 10px; background: var(--blanc); text-align: center; line-height: 1.1; padding: 4px 0; box-shadow: 0 2px 0 var(--fonce); }
+  .evenement .cal b { display: block; font-size: 1.25rem; }
+  .evenement .cal small { font-size: .7rem; text-transform: uppercase; font-weight: 600; }
+  .evenement .quoi { display: block; font-weight: 600; line-height: 1.25; }
+  .evenement .quand { display: block; font-size: .875rem; font-variant-numeric: tabular-nums; }
+  a.evenement:hover { filter: brightness(1.04); }
+  a.evenement:focus-visible { outline: 3px solid var(--blanc); outline-offset: 3px; }
   .livre { width: 100%; max-width: 440px; margin: 0 auto; padding: 3rem 1.25rem 2rem; position: relative; z-index: 1; }
   .livre h2 { font-family: "Young Serif", Georgia, serif; font-weight: 400; font-size: 1.9rem; line-height: 1.1; margin: 0 0 .35rem; text-align: center; }
   .livre > p { text-align: center; color: var(--doux); margin: 0 0 1.5rem; }
@@ -234,6 +245,7 @@
 
 <div class="haut">
   <span class="pastille" id="heure" aria-live="off">🕐 --:--</span>
+  <span class="pastille" id="meteo" hidden></span>
 </div>
 
 <main>
@@ -261,6 +273,10 @@
   <h1 id="nom">Landry</h1>
 
   <p class="statut" id="statut" hidden><span class="point" aria-hidden="true"></span><span><b data-t="enCeMoment">En ce moment :</b> <span id="statut-texte"></span></span></p>
+  <a class="evenement" id="evenement" hidden>
+    <span class="cal" aria-hidden="true"><b id="evt-jour"></b><small id="evt-mois"></small></span>
+    <span><span class="quoi" id="evt-titre"></span><span class="quand" id="evt-quand"></span></span>
+  </a>
   <p class="musique" id="musique" hidden><img id="musique-img" alt=""><span><b data-t="ecoute">J'écoute</b><span class="titre" id="musique-titre"></span></span></p>
 
   <!-- ✏️ Ta bio : modifie le texte dans le dictionnaire TEXTES en bas de page (fr, en, ty) -->
@@ -311,6 +327,19 @@
     <p class="retour" id="lo-retour" role="status"></p>
   </form>
   <ul class="mots" id="mots"></ul>
+</section>
+
+<section class="livre" id="contact" aria-labelledby="titre-contact">
+  <h2 id="titre-contact" data-t="ctTitre">Me contacter</h2>
+  <p data-t="ctIntro">Une question, une idée, un projet ? Écris-moi ici.</p>
+  <form class="form" id="form-contact" novalidate>
+    <label><span data-t="loNom">Ton prénom</span><input name="nom" maxlength="40" autocomplete="given-name" required></label>
+    <label><span data-t="ctEmail">Ton e-mail (pour que je puisse te répondre)</span><input name="email" type="email" maxlength="120" autocomplete="email" inputmode="email"></label>
+    <label><span data-t="loMsg">Ton message</span><textarea name="message" rows="4" maxlength="1500" required></textarea></label>
+    <label class="cache" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off"></label>
+    <div class="bas"><span></span><button type="submit" id="ct-envoyer" data-t="ctEnvoyer">Envoyer</button></div>
+    <p class="retour" id="ct-retour" role="status"></p>
+  </form>
 </section>
 
 <footer>
@@ -365,7 +394,12 @@
       loVide: 'Pas encore de mot. Sois le premier !', exemple: 'exemple',
       qrTitre: 'Scanne-moi', fermer: 'Fermer',
       merciDit: 'Mauruuru ! 🌺', merciEncore: "Merci encore ! (1 mauruuru par jour compte)",
-      apercu: "Aperçu : les compteurs et le livre d'or s'activeront une fois le site en ligne sur Cloudflare."
+      apercu: "Aperçu : les compteurs et le livre d'or s'activeront une fois le site en ligne sur Cloudflare.",
+      ctTitre: 'Me contacter', ctIntro: 'Une question, une idée, un projet ? Écris-moi ici.',
+      ctEmail: 'Ton e-mail (pour que je puisse te répondre)', ctEnvoyer: 'Envoyer',
+      ctMerci: 'Mauruuru ! Ton message est bien arrivé.', ctManque: 'Écris ton prénom et un message.',
+      ctEmailFaux: "Cette adresse e-mail n'a pas l'air correcte.", ctTropVite: 'Tu viens déjà de m\'écrire, réessaie dans 2 minutes.',
+      evtDans: 'dans', evtMaintenant: "C'est maintenant !", meteo: 'Météo et houle à Tahiti'
     },
     // ⚠️ Reo tahiti : fais relire ces phrases par quelqu'un qui parle couramment.
     ty: {
@@ -383,7 +417,8 @@
       loVide: 'Aita ā e parau.', exemple: 'hi\'ora\'a',
       qrTitre: 'QR code', fermer: 'Opani',
       merciDit: 'Māuruuru ! 🌺', merciEncore: 'Māuruuru roa !',
-      apercu: "Aperçu : les compteurs et le livre d'or s'activeront une fois le site en ligne."
+      apercu: "Aperçu : les compteurs et le livre d'or s'activeront une fois le site en ligne.",
+      ctTitre: "Pāpa'i mai", ctEnvoyer: 'Hāpono', ctMerci: 'Māuruuru !'
     },
     en: {
       bio: "Ia ora na! I live in Tahiti, between the lagoon and the mountains. Find me here 🌺",
@@ -400,7 +435,12 @@
       loVide: 'No notes yet. Be the first!', exemple: 'example',
       qrTitre: 'Scan me', fermer: 'Close',
       merciDit: 'Mauruuru! 🌺', merciEncore: 'Thanks again! (1 mauruuru per day counts)',
-      apercu: 'Preview: counters and the guestbook will work once the site is live on Cloudflare.'
+      apercu: 'Preview: counters and the guestbook will work once the site is live on Cloudflare.',
+      ctTitre: 'Contact me', ctIntro: 'A question, an idea, a project? Write to me here.',
+      ctEmail: 'Your e-mail (so I can reply)', ctEnvoyer: 'Send',
+      ctMerci: 'Mauruuru! Your message arrived.', ctManque: 'Write your name and a message.',
+      ctEmailFaux: "That e-mail address doesn't look right.", ctTropVite: 'You just wrote to me, try again in 2 minutes.',
+      evtDans: 'in', evtMaintenant: "It's happening now!", meteo: 'Weather and swell in Tahiti'
     }
   };
 
@@ -466,7 +506,7 @@
     document.querySelectorAll('[data-langue]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.langue === L)));
     window.menuLangue && window.menuLangue(L);
     stock.ecrire('langue', L);
-    majHeure(); afficherMots();
+    majHeure(); afficherMots(); if (evt) afficherEvenement(evt);
     if (demo) $('#apercu').textContent = t('apercu');
   };
   document.querySelectorAll('[data-langue]').forEach(b => b.addEventListener('click', () => langue(b.dataset.langue)));
@@ -480,11 +520,51 @@
   };
   const afficherCompte = () => { $('#compte').textContent = compte.toLocaleString(L === 'en' ? 'en-US' : 'fr-FR'); };
 
+  /* ---------- Prochain événement + compte à rebours ---------- */
+  let evt = null;
+  const majCompteARebours = () => {
+    if (!evt) return;
+    const ms = evt.date - Date.now();
+    if (ms <= 0) { $('#evt-quand').textContent = t('evtMaintenant'); return; }
+    const j = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, sec = Math.floor(ms / 1e3) % 60;
+    const morceaux = j ? [`${j} j`, `${h} h`, `${m} min`] : h ? [`${h} h`, `${m} min`, `${sec} s`] : [`${m} min`, `${sec} s`];
+    $('#evt-quand').textContent = `${t('evtDans')} ${morceaux.join(' ')}`;
+  };
+  const afficherEvenement = (e) => {
+    evt = e;
+    const d = new Date(e.date), loc = L === 'en' ? 'en-US' : 'fr-FR';
+    $('#evt-jour').textContent = d.toLocaleDateString(loc, { day: 'numeric', timeZone: 'Pacific/Tahiti' });
+    $('#evt-mois').textContent = d.toLocaleDateString(loc, { month: 'short', timeZone: 'Pacific/Tahiti' }).replace('.', '');
+    $('#evt-titre').textContent = e.titre;
+    const a = $('#evenement');
+    if (e.lien) { a.href = e.lien; if (/^https?:/.test(e.lien)) { a.target = '_blank'; a.rel = 'noopener'; } } else a.removeAttribute('href');
+    a.hidden = false; majCompteARebours();
+  };
+  setInterval(majCompteARebours, 1000);
+
+  /* ---------- Météo et houle (Open-Meteo, gratuit, sans clé) ---------- */
+  const chargerMeteo = async () => {
+    try {
+      const [m, h] = await Promise.all([
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=-17.54&longitude=-149.57&current=temperature_2m,weather_code,is_day&timezone=Pacific%2FTahiti').then(r => r.json()),
+        fetch('https://marine-api.open-meteo.com/v1/marine?latitude=-17.70&longitude=-149.62&current=wave_height').then(r => r.json()).catch(() => null)
+      ]);
+      const c = m.current, code = c.weather_code;
+      const ciel = code === 0 ? (c.is_day ? '☀️' : '🌙') : code <= 2 ? (c.is_day ? '🌤️' : '🌙') : code === 3 ? '☁️' : code <= 48 ? '🌫️'
+        : code <= 67 ? '🌧️' : code <= 77 ? '🌨️' : code <= 82 ? '🌦️' : '⛈️';
+      let texte = `${ciel} ${Math.round(c.temperature_2m)}°`;
+      const vague = h && h.current && h.current.wave_height;
+      if (vague != null) texte += ` · 🌊 ${vague.toLocaleString(L === 'en' ? 'en-US' : 'fr-FR', { maximumFractionDigits: 1 })} m`;
+      const el = $('#meteo'); el.textContent = texte; el.title = t('meteo'); el.setAttribute('aria-label', t('meteo') + ' : ' + texte); el.hidden = false;
+    } catch {}
+  };
+
   const chargerInfos = async () => {
     try {
       const d = await api('/api/infos');
       compte = d.mauruuru || 0;
       if (d.statut) { $('#statut-texte').textContent = d.statut; $('#statut').hidden = false; }
+      if (d.evenement) afficherEvenement(d.evenement);
     } catch {
       demo = true;
       compte = +(stock.lire('demo-compte') || 128);
@@ -630,12 +710,34 @@
     } finally { btn.disabled = false; }
   });
 
+  /* ---------- Formulaire de contact ---------- */
+  $('#form-contact').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.target, retour = $('#ct-retour');
+    const nomV = f.nom.value.trim(), emailV = f.email.value.trim(), msgV = f.message.value.trim();
+    if (!nomV || !msgV) { retour.textContent = t('ctManque'); return; }
+    if (emailV && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailV)) { retour.textContent = t('ctEmailFaux'); return; }
+    const btn = $('#ct-envoyer'); btn.disabled = true;
+    try {
+      if (demo) throw new Error('demo');
+      const r = await fetch('/api/contact', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ nom: nomV, email: emailV, message: msgV, site: f.site.value }) });
+      if (r.status === 429) throw new Error('vite');
+      if (!r.ok) throw new Error('erreur');
+      retour.textContent = t('ctMerci'); f.reset();
+    } catch (err) {
+      retour.textContent = err.message === 'demo' ? t('apercu') : err.message === 'vite' ? t('ctTropVite') : t('loErreur');
+    } finally { btn.disabled = false; }
+  });
+
+  /* ---------- Statistiques de visite (anonymes) ---------- */
+  try { navigator.sendBeacon('/api/vue', new Blob([JSON.stringify({ page: 'bio' })], { type: 'application/json' })); } catch {}
+
   /* ---------- Démarrage ---------- */
   document.getElementById('annee').textContent = new Date().getFullYear();
   const langueNav = (navigator.language || 'fr').slice(0, 2);
   langue(stock.lire('langue') || (langueNav === 'en' ? 'en' : 'fr'));
   setInterval(majHeure, 30000);
-  chargerInfos(); chargerLiens(); chargerMots(); chargerMusique();
+  chargerInfos(); chargerLiens(); chargerMots(); chargerMusique(); chargerMeteo();
   setInterval(chargerMusique, 30000);
 }
 </script>

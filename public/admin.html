@@ -2,57 +2,129 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>Admin · Landry</title>
 <link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/admin.webmanifest">
+<meta name="theme-color" content="#B3212E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Admin Landry">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
-  :root { --rouge: #B3212E; --fond: #F6F3EE; --encre: #1E1E1E; --doux: #6A6A6A; --vert: #1E8E4A; }
+  :root { --rouge: #B3212E; --rouge-pale: #F6E3E1; --fond: #F6F3EE; --carte: #fff; --encre: #1E1E1E; --doux: #666; --trait: #DDD6CC; --vert: #1E7A43; }
   * { box-sizing: border-box; min-width: 0; }
   [hidden] { display: none !important; }
-  body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, sans-serif; }
-  main { max-width: 680px; margin: 0 auto; padding: 24px 16px 80px; }
-  h1 { font-size: 1.6rem; margin: 0 0 1rem; color: var(--rouge); }
-  h2 { font-size: 1.2rem; margin: 2.25rem 0 .25rem; }
+  html { scroll-padding-top: 70px; }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, -apple-system, sans-serif; }
+  header.barre { position: sticky; top: 0; z-index: 20; background: var(--rouge); color: #fff; padding: calc(env(safe-area-inset-top) + 10px) 14px 0; }
+  header.barre .haut { display: flex; justify-content: space-between; align-items: center; gap: 10px; max-width: 760px; margin: 0 auto; }
+  header.barre h1 { font: 600 1.15rem/1.2 system-ui, sans-serif; margin: 0; }
+  header.barre a { color: #fff; font-size: .9rem; }
+  nav.onglets { display: flex; gap: 4px; overflow-x: auto; max-width: 760px; margin: 8px auto 0; scrollbar-width: none; }
+  nav.onglets::-webkit-scrollbar { display: none; }
+  nav.onglets a { flex: none; color: #fff; text-decoration: none; font-weight: 600; font-size: .9rem; padding: 10px 12px; border-bottom: 3px solid transparent; white-space: nowrap; }
+  nav.onglets a.actif { border-bottom-color: #fff; }
+  nav.onglets .pastille { display: inline-block; min-width: 1.3em; padding: 0 .35em; margin-left: .3em; border-radius: 999px; background: #fff; color: var(--rouge); font-size: .75rem; text-align: center; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 14px calc(env(safe-area-inset-bottom) + 80px); }
+  section { padding-top: 18px; }
+  h2 { font-size: 1.25rem; margin: 0 0 .25rem; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; }
   .aide { color: var(--doux); font-size: .9375rem; margin: 0 0 .9rem; }
-  .boite { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .boite { background: var(--carte); border-radius: 14px; padding: 16px; box-shadow: 0 1px 0 var(--trait); }
+  .alerte { background: #FFF4D6; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-size: .9375rem; }
   label { display: grid; gap: 4px; font-weight: 600; font-size: .9375rem; }
-  input, textarea, select { font: inherit; font-size: 16px; width: 100%; padding: .65rem .8rem; border: 1px solid #CCC; border-radius: 10px; background: #fff; }
-  input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
+  label.case { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  label.case input { width: 20px; height: 20px; }
+  input, textarea, select { font: inherit; font-size: 16px; width: 100%; padding: .6rem .75rem; border: 1px solid #CCC; border-radius: 10px; background: #fff; color: inherit; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
   button { font: inherit; font-weight: 600; min-height: 44px; padding: .5rem 1rem; border-radius: 10px; border: 0; background: var(--rouge); color: #fff; cursor: pointer; }
-  button.gris { background: #E7E2DA; color: var(--encre); }
-  button.petit { min-height: 40px; min-width: 40px; padding: .35rem .7rem; }
+  button.gris { background: #EAE4DB; color: var(--encre); }
+  button.petit { min-height: 40px; min-width: 40px; padding: .35rem .7rem; font-size: .9rem; }
+  button:disabled { opacity: .5; cursor: default; }
+  a.lien-btn { display: inline-flex; align-items: center; min-height: 40px; padding: .35rem .8rem; border-radius: 10px; background: var(--rouge); color: #fff; font-weight: 600; font-size: .9rem; text-decoration: none; }
   .ligne { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
   .grille { display: grid; gap: 10px; }
   @media (min-width: 560px) { .grille.deux { grid-template-columns: 1fr 1fr; } }
   .prefixe { display: flex; align-items: center; border: 1px solid #CCC; border-radius: 10px; background: #fff; overflow: hidden; }
-  .prefixe span { padding: 0 .2rem 0 .8rem; color: var(--doux); white-space: nowrap; font-weight: 400; }
+  .prefixe span { padding: 0 .1rem 0 .75rem; color: var(--doux); white-space: nowrap; font-weight: 400; }
   .prefixe input { border: 0; padding-left: 0; }
-  .chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .chiffres div { background: #fff; border-radius: 12px; padding: 12px; text-align: center; }
-  .chiffres b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
-  .chiffres span { font-size: .85rem; color: var(--doux); }
-  .carte { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
-  .carte.eteint { opacity: .55; }
-  .carte .ico { width: 36px; height: 36px; flex: none; border-radius: 10px; background: #F6E3E1; color: var(--rouge); display: grid; place-items: center; }
-  .carte .ico svg { width: 20px; height: 20px; fill: currentColor; }
-  .carte .corps { flex: 1; }
-  .carte .titre { font-weight: 600; }
-  .carte small { display: block; color: var(--doux); overflow-wrap: anywhere; }
-  .carte .clics { font-size: .85rem; color: var(--vert); font-weight: 600; white-space: nowrap; }
-  .msg { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-  .msg small { color: #777; }
-  .vide { color: #777; }
   .erreur { color: var(--rouge); font-weight: 600; margin: .5rem 0 0; }
-  .ok { color: var(--vert); font-weight: 600; margin: .5rem 0 0; }
-  .toast { position: fixed; left: 50%; bottom: 20px; translate: -50% 0; background: #1E1E1E; color: #fff; padding: .6rem 1rem; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .vide { color: var(--doux); }
+
+  /* Chiffres et graphique */
+  .tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .tuile { background: var(--carte); border-radius: 12px; padding: 12px; box-shadow: 0 1px 0 var(--trait); }
+  .tuile b { display: block; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tuile span { font-size: .85rem; color: var(--doux); }
+  .graphique { position: relative; margin-top: 12px; }
+  .graphique svg { display: block; width: 100%; height: 190px; overflow: visible; }
+  .graphique .bulle { position: absolute; pointer-events: none; background: #1E1E1E; color: #fff; font-size: .85rem; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -110%); opacity: 0; transition: opacity .12s; }
+  .graphique .bulle.vu { opacity: 1; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--doux); font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; margin-top: 6px; }
+  th, td { padding: 4px 6px; border-bottom: 1px solid var(--trait); text-align: right; font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+
+  /* Cartes de liste */
+  .carte { background: var(--carte); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 1px 0 var(--trait); }
+  .carte.eteint { opacity: .55; }
+  .carte.non-lu { border-left: 4px solid var(--rouge); }
+  .carte .ico { width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--rouge-pale); color: var(--rouge); display: grid; place-items: center; overflow: hidden; }
+  .carte .ico svg { width: 20px; height: 20px; fill: currentColor; }
+  .carte .ico img { width: 100%; height: 100%; object-fit: cover; }
+  .carte .corps { flex: 1; }
+  .carte .titre { font-weight: 600; overflow-wrap: anywhere; }
+  .carte small { display: block; color: var(--doux); overflow-wrap: anywhere; }
+  .carte .texte { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
+  .carte .chiffre { font-size: .85rem; color: var(--vert); font-weight: 600; white-space: nowrap; }
+  .badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--rouge-pale); color: var(--rouge); margin: 2px 4px 0 0; }
+
+  /* Envoi de fichiers */
+  .depot { border: 2px dashed #C9BFB2; border-radius: 14px; padding: 22px 14px; text-align: center; background: #fff; cursor: pointer; }
+  .depot.survol { border-color: var(--rouge); background: var(--rouge-pale); }
+  .depot b { color: var(--rouge); }
+  .envois { margin-top: 10px; display: grid; gap: 6px; }
+  .envoi { font-size: .9rem; }
+  .envoi progress { width: 100%; height: 8px; accent-color: var(--rouge); }
+
+  /* Photos de l'accueil */
+  .emplacements { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .emplacement { background: var(--carte); border-radius: 12px; padding: 10px; box-shadow: 0 1px 0 var(--trait); }
+  .emplacement .apercu { aspect-ratio: 4 / 3; border-radius: 8px; background: #EEE8DF; display: grid; place-items: center; color: var(--doux); font-size: .85rem; overflow: hidden; margin-bottom: 6px; }
+  .emplacement .apercu img { width: 100%; height: 100%; object-fit: cover; }
+  .emplacement b { display: block; font-size: .875rem; margin-bottom: 4px; }
+
+  dialog { border: 0; border-radius: 18px; padding: 20px; width: min(380px, 92vw); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  dialog h3 { margin-top: 0; }
+  #qr-zone { display: grid; place-items: center; min-height: 240px; }
+  #qr-zone img, #qr-zone canvas { width: 240px; height: 240px; }
+  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); translate: -50% 0; z-index: 50; background: #1E1E1E; color: #fff; padding: .6rem 1rem; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
   .toast.vu { opacity: 1; }
+  #connexion { max-width: 420px; margin: 40px auto; }
 </style>
 </head>
 <body>
-<main>
-  <h1>Admin du site 🌺</h1>
+<header class="barre">
+  <div class="haut"><h1>Admin 🌺</h1><a href="/bio" target="_blank" rel="noopener">Voir le site</a></div>
+  <nav class="onglets" id="onglets" hidden aria-label="Sections">
+    <a href="#s-stats">Chiffres</a>
+    <a href="#s-liens">Liens bio</a>
+    <a href="#s-courts">Liens courts</a>
+    <a href="#s-fichiers">Fichiers</a>
+    <a href="#s-galerie">Galerie</a>
+    <a href="#s-accueil">Photos accueil</a>
+    <a href="#s-evenement">Événement</a>
+    <a href="#s-messages">Messages<span class="pastille" id="n-non-lus" hidden></span></a>
+    <a href="#s-livre">Livre d'or<span class="pastille" id="n-attente" hidden></span></a>
+  </nav>
+</header>
 
+<main>
   <form id="connexion" class="boite">
     <label for="cle">Mot de passe admin (ADMIN_KEY)</label>
     <div class="ligne"><input id="cle" type="password" autocomplete="current-password" required style="flex:1"><button>Entrer</button></div>
@@ -60,65 +132,152 @@
   </form>
 
   <div id="panneau" hidden>
-    <h2>Chiffres</h2>
-    <div class="chiffres">
-      <div><b id="n-merci">0</b><span>mauruuru</span></div>
-      <div><b id="n-liens">0</b><span>clics sur la bio</span></div>
-      <div><b id="n-courts">0</b><span>clics liens courts</span></div>
-    </div>
 
-    <!-- ================= LIENS DE LA BIO ================= -->
-    <h2>Liens de la page bio</h2>
-    <p class="aide">Ce sont les boutons affichés sur landrypf.com/bio, dans cet ordre. « Découvrir mon monde » reste toujours en dernier.</p>
-    <div id="liste-liens"></div>
+    <!-- ================= CHIFFRES ================= -->
+    <section id="s-stats">
+      <h2>Les 30 derniers jours</h2>
+      <div class="tuiles" id="tuiles"></div>
+      <div class="boite graphique" style="margin-top:12px">
+        <strong>Visites par jour</strong>
+        <svg id="graph" role="img" aria-label="Visites par jour sur 30 jours"></svg>
+        <div class="bulle" id="bulle"></div>
+        <details><summary>Voir le tableau</summary><div style="overflow-x:auto"><table id="table-stats"></table></div></details>
+      </div>
+      <p class="aide" id="etat-notifs" style="margin-top:10px"></p>
+    </section>
 
-    <form id="form-lien" class="boite" novalidate>
-      <strong id="form-lien-titre">Ajouter un lien</strong>
-      <div class="grille deux" style="margin-top:10px">
-        <label>Titre<input name="titre" maxlength="60" placeholder="ex. Ma chaîne YouTube" required></label>
-        <label>Sous-titre (facultatif)<input name="sous_titre" maxlength="80" placeholder="ex. Mes vlogs à Tahiti"></label>
-        <label>Adresse<input name="url" type="url" inputmode="url" placeholder="https://…" required></label>
-        <label>Icône<select name="icone" id="choix-icone"></select></label>
-      </div>
-      <div class="ligne">
-        <button id="btn-lien">Ajouter</button>
-        <button type="button" class="gris" id="annuler-lien" hidden>Annuler</button>
-      </div>
-      <p class="erreur" id="err-lien" role="alert"></p>
-    </form>
+    <!-- ================= LIENS BIO ================= -->
+    <section id="s-liens">
+      <h2>Liens de la page bio</h2>
+      <p class="aide">Les boutons de landrypf.com/bio, dans cet ordre. « Découvrir mon monde » reste en dernier.</p>
+      <div id="liste-liens"></div>
+      <form id="form-lien" class="boite" novalidate>
+        <strong id="form-lien-titre">Ajouter un lien</strong>
+        <div class="grille deux" style="margin-top:10px">
+          <label>Titre<input name="titre" maxlength="60" placeholder="ex. Ma chaîne YouTube" required></label>
+          <label>Sous-titre (facultatif)<input name="sous_titre" maxlength="80" placeholder="ex. Mes vlogs à Tahiti"></label>
+          <label>Adresse<input name="url" inputmode="url" placeholder="https://… ou /galerie" required></label>
+          <label>Icône<select name="icone" id="choix-icone"></select></label>
+          <label>Afficher à partir du (facultatif)<input name="debut" type="datetime-local"></label>
+          <label>Jusqu'au (facultatif)<input name="fin" type="datetime-local"></label>
+        </div>
+        <div class="ligne"><button id="btn-lien">Ajouter</button><button type="button" class="gris" id="annuler-lien" hidden>Annuler</button></div>
+        <p class="erreur" id="err-lien" role="alert"></p>
+      </form>
+
+      <h3>En ce moment</h3>
+      <form id="form-statut" class="boite">
+        <label for="statut">Petite ligne affichée sur la page bio (vide = cachée)</label>
+        <div class="ligne"><input id="statut" maxlength="120" placeholder="ex. En vacances à Moorea 🏝️" style="flex:1"><button>Enregistrer</button></div>
+      </form>
+    </section>
 
     <!-- ================= LIENS COURTS ================= -->
-    <h2>Liens courts</h2>
-    <p class="aide">landrypf.com/ton-code redirige vers l'adresse de ton choix. Pratique pour une story, une affiche ou un QR code.</p>
-    <form id="form-court" class="boite" novalidate>
-      <div class="grille">
-        <label>Lien court
-          <span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span>
-        </label>
-        <label>Redirige vers<input name="url" type="url" inputmode="url" placeholder="https://…" required></label>
-      </div>
-      <div class="ligne">
-        <button>Créer le lien court</button>
-        <button type="button" class="gris" id="code-hasard">Code au hasard</button>
-      </div>
-      <p class="erreur" id="err-court" role="alert"></p>
-    </form>
-    <div id="liste-courts" style="margin-top:12px"></div>
+    <section id="s-courts">
+      <h2>Liens courts</h2>
+      <p class="aide">landrypf.com/ton-code redirige où tu veux. Chaque lien a son QR code.</p>
+      <form id="form-court" class="boite" novalidate>
+        <div class="grille">
+          <label>Lien court<span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span></label>
+          <label>Redirige vers<input name="url" inputmode="url" placeholder="https://…" required></label>
+        </div>
+        <div class="ligne"><button>Créer le lien court</button><button type="button" class="gris" id="code-hasard">Code au hasard</button></div>
+        <p class="erreur" id="err-court" role="alert"></p>
+      </form>
+      <div id="liste-courts" style="margin-top:12px"></div>
+    </section>
 
-    <!-- ================= STATUT ================= -->
-    <h2>En ce moment</h2>
-    <form id="form-statut" class="boite">
-      <label for="statut">Ce qui s'affiche sur la page bio (vide = caché)</label>
-      <div class="ligne"><input id="statut" maxlength="120" placeholder="ex. En vacances à Moorea 🏝️" style="flex:1"><button>Enregistrer</button></div>
-    </form>
+    <!-- ================= FICHIERS ================= -->
+    <section id="s-fichiers">
+      <h2>Fichiers</h2>
+      <p class="aide">Envoie un fichier (100 Mo max) et obtiens un lien landrypf.com/f/… à partager.</p>
+      <div class="alerte" id="pas-de-stockage" hidden>Le stockage n'est pas encore branché : active <b>R2</b> dans Cloudflare, puis préviens Claude.</div>
+      <div class="boite" id="zone-envoi">
+        <div class="grille deux">
+          <label class="case"><input type="checkbox" id="opt-galerie"> Ajouter les images à la galerie</label>
+          <label>Expiration
+            <select id="opt-expire">
+              <option value="">Jamais</option><option value="1">Après 1 jour</option><option value="7">Après 7 jours</option><option value="30">Après 30 jours</option>
+            </select>
+          </label>
+          <label>Mot de passe (facultatif)<input id="opt-mdp" type="text" autocomplete="off" placeholder="laisser vide = public"></label>
+        </div>
+        <label class="depot" id="depot" style="margin-top:12px">
+          <input type="file" id="choix-fichiers" multiple hidden>
+          <span>📎 <b>Choisis des fichiers</b> ou glisse-les ici</span>
+        </label>
+        <div class="envois" id="envois"></div>
+      </div>
+      <div id="liste-fichiers" style="margin-top:12px"></div>
+    </section>
+
+    <!-- ================= GALERIE ================= -->
+    <section id="s-galerie">
+      <h2>Galerie</h2>
+      <p class="aide">Les photos affichées sur landrypf.com/galerie, dans cet ordre. Ajoute-en depuis la section Fichiers.</p>
+      <div id="liste-galerie"></div>
+    </section>
+
+    <!-- ================= PHOTOS ACCUEIL ================= -->
+    <section id="s-accueil">
+      <h2>Photos de la page d'accueil</h2>
+      <p class="aide">Remplace les dessins de l'accueil par tes photos (envoie-les d'abord dans Fichiers, sans mot de passe). Format paysage conseillé.</p>
+      <div class="emplacements" id="emplacements"></div>
+    </section>
+
+    <!-- ================= ÉVÉNEMENT ================= -->
+    <section id="s-evenement">
+      <h2>Prochain événement</h2>
+      <p class="aide">S'affiche sur la page bio avec un compte à rebours, puis disparaît 6 h après l'heure prévue.</p>
+      <form id="form-evt" class="boite" novalidate>
+        <div class="grille deux">
+          <label>Nom<input name="titre" maxlength="80" placeholder="ex. Live Insta au coucher de soleil"></label>
+          <label>Date et heure<input name="date" type="datetime-local"></label>
+          <label>Lien (facultatif)<input name="lien" inputmode="url" placeholder="https://…"></label>
+        </div>
+        <div class="ligne"><button>Enregistrer</button><button type="button" class="gris" id="evt-effacer">Effacer l'événement</button></div>
+        <p class="erreur" id="err-evt" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- ================= MESSAGES ================= -->
+    <section id="s-messages">
+      <h2>Messages reçus</h2>
+      <p class="aide">Les messages du formulaire « Me contacter » de la page bio.</p>
+      <div id="liste-contacts"></div>
+    </section>
 
     <!-- ================= LIVRE D'OR ================= -->
-    <h2>Livre d'or : à valider</h2>
-    <div id="attente"></div>
-    <h2>Livre d'or : publiés</h2>
-    <div id="valides"></div>
+    <section id="s-livre">
+      <h2>Livre d'or</h2>
+      <h3>À valider</h3><div id="attente"></div>
+      <h3>Publiés</h3><div id="valides"></div>
+    </section>
   </div>
 </main>
+
+<dialog id="fen-qr" aria-labelledby="qr-titre">
+  <h3 id="qr-titre">QR code</h3>
+  <div id="qr-zone"></div>
+  <p id="qr-texte" style="text-align:center;font-weight:600;overflow-wrap:anywhere"></p>
+  <div class="ligne" style="justify-content:center"><button id="qr-telecharger">Télécharger</button><button class="gris" id="qr-fermer">Fermer</button></div>
+</dialog>
+
+<dialog id="fen-fichier" aria-labelledby="ff-titre">
+  <h3 id="ff-titre">Réglages du fichier</h3>
+  <form id="form-fichier" class="grille" novalidate>
+    <label>Légende (pour la galerie)<input name="legende" maxlength="120"></label>
+    <label class="case"><input type="checkbox" name="galerie"> Dans la galerie</label>
+    <label>Expiration<input name="expire" type="datetime-local"></label>
+    <label>Mot de passe
+      <select name="mdp_mode"><option value="garder">Ne pas changer</option><option value="changer">Définir un nouveau mot de passe</option><option value="retirer">Retirer le mot de passe</option></select>
+    </label>
+    <input name="mdp" type="text" autocomplete="off" placeholder="nouveau mot de passe" hidden>
+    <div class="ligne"><button>Enregistrer</button><button type="button" class="gris" id="ff-fermer">Annuler</button></div>
+    <p class="erreur" id="err-fichier" role="alert"></p>
+  </form>
+</dialog>
+
 <div class="toast" id="toast" role="status"></div>
 
 <script src="icones.js"></script>
@@ -126,10 +285,17 @@
 {
   const $ = (s) => document.querySelector(s);
   const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('vu'); clearTimeout(toast.x); toast.x = setTimeout(() => t.classList.remove('vu'), 1800); };
+  const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('vu'); clearTimeout(toast.x); toast.x = setTimeout(() => t.classList.remove('vu'), 2200); };
   const ico = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${(ICONES[k] || ICONES.lien).d}"/></svg>`;
-  let cle = sessionStorage.getItem('cle') || '';
-  let donnees = null, enEdition = null;
+  const SITE = location.origin.includes('localhost') ? location.origin : 'https://landrypf.com';
+  const nb = (n) => (n || 0).toLocaleString('fr-FR');
+  const pluriel = (n, mot) => `${nb(n)} ${mot}${n > 1 ? 's' : ''}`;
+  const dateFr = (t) => new Date(t).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  const versLocal = (t) => { if (!t) return ''; const d = new Date(t); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
+  const depuisLocal = (v) => (v ? new Date(v).getTime() : null);
+  const taille = (o) => o < 1024 ? o + ' o' : o < 1048576 ? (o / 1024).toFixed(0) + ' Ko' : (o / 1048576).toFixed(1).replace('.', ',') + ' Mo';
+  let cle = sessionStorage.getItem('cle') || localStorage.getItem('cle-admin') || '';
+  let D = null, enEdition = null, fichierEdite = null;
 
   $('#choix-icone').innerHTML = Object.entries(ICONES).map(([k, v]) => `<option value="${k}">${v.nom}</option>`).join('');
 
@@ -140,140 +306,355 @@
     if (!r.ok) throw new Error(d.erreur || 'Erreur du serveur (' + r.status + ').');
     return d;
   };
-  const action = async (corps, zoneErreur) => {
-    if (zoneErreur) zoneErreur.textContent = '';
+  const action = async (corps, zone) => {
+    if (zone) zone.textContent = '';
     try { await appel('POST', corps); await charger(); return true; }
-    catch (e) { if (zoneErreur) zoneErreur.textContent = e.message; else toast(e.message); return false; }
+    catch (e) { if (zone) zone.textContent = e.message; else toast(e.message); return false; }
+  };
+  const copier = async (texte) => { try { await navigator.clipboard.writeText(texte); toast('Copié : ' + texte); } catch { toast(texte); } };
+
+  /* ================= Chiffres ================= */
+  const jours30 = () => {
+    const l = [];
+    for (let i = 29; i >= 0; i--) l.push(new Date(Date.now() - i * 864e5).toLocaleDateString('en-CA', { timeZone: 'Pacific/Tahiti' }));
+    return l;
+  };
+  const afficherStats = () => {
+    const jours = jours30(), parJour = {};
+    jours.forEach(j => parJour[j] = { vues: 0, clic: 0, court: 0, telechargement: 0, mauruuru: 0 });
+    D.stats.forEach(s => {
+      const j = parJour[s.jour]; if (!j) return;
+      if (s.cle.startsWith('vue:')) j.vues += s.valeur; else if (s.cle in j) j[s.cle] += s.valeur;
+    });
+    const somme = (k) => jours.reduce((a, j) => a + parJour[j][k], 0);
+    const tuiles = [['vues', 'visites'], ['clic', 'clics sur la bio'], ['court', 'clics liens courts'], ['telechargement', 'téléchargements'], ['mauruuru', 'mauruuru']];
+    $('#tuiles').innerHTML = tuiles.map(([k, l]) => `<div class="tuile"><b>${nb(somme(k))}</b><span>${l}</span></div>`).join('')
+      + `<div class="tuile"><b>${nb(D.compteurs.mauruuru)}</b><span>mauruuru au total</span></div>`;
+
+    // Graphique en barres (une seule série : les visites)
+    const svg = $('#graph'), W = svg.clientWidth || 600, H = 190, bas = 22, haut = 10;
+    const max = Math.max(4, ...jours.map(j => parJour[j].vues));
+    const pas = Math.pow(10, Math.floor(Math.log10(max))); const plafond = Math.ceil(max / pas) * pas;
+    const larg = W / jours.length, barre = Math.max(2, larg - 2);
+    const y = (v) => H - bas - (v / plafond) * (H - bas - haut);
+    let s = '';
+    [0, plafond / 2, plafond].forEach(v => {
+      s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#E4DDD3" stroke-width="1"/>`;
+      s += `<text x="0" y="${y(v) - 3}" font-size="11" fill="#666">${nb(v)}</text>`;
+    });
+    jours.forEach((j, i) => {
+      const v = parJour[j].vues, h = H - bas - y(v), x = i * larg + 1;
+      if (v > 0) s += `<path d="M${x},${H - bas} v${-(h - 4)} q0,-4 4,-4 h${barre - 8} q4,0 4,4 v${h - 4} z" fill="#B3212E"/>`;
+      s += `<rect class="cible" data-i="${i}" x="${i * larg}" y="0" width="${larg}" height="${H - bas}" fill="transparent"/>`;
+    });
+    [0, 14, 29].forEach(i => {
+      const [, m, d] = jours[i].split('-');
+      s += `<text x="${Math.min(W - 30, Math.max(0, i * larg))}" y="${H - 6}" font-size="11" fill="#666">${d}/${m}</text>`;
+    });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+    const bulle = $('#bulle');
+    svg.onpointermove = (e) => {
+      const r = e.target.closest('.cible'); if (!r) { bulle.classList.remove('vu'); return; }
+      const j = jours[+r.dataset.i], [, m, d] = j.split('-');
+      bulle.textContent = `${d}/${m} : ${pluriel(parJour[j].vues, 'visite')}`;
+      const box = svg.getBoundingClientRect(), parent = svg.parentElement.getBoundingClientRect();
+      bulle.style.left = (box.left - parent.left + (+r.dataset.i + .5) * (box.width / jours.length)) + 'px';
+      bulle.style.top = (box.top - parent.top + Math.max(12, y(parJour[j].vues) * box.height / H)) + 'px';
+      bulle.classList.add('vu');
+    };
+    svg.onpointerleave = () => bulle.classList.remove('vu');
+    $('#table-stats').innerHTML = '<tr><th>Jour</th><th>Visites</th><th>Clics bio</th><th>Liens courts</th><th>Téléch.</th><th>Mauruuru</th></tr>'
+      + jours.slice().reverse().map(j => { const p = parJour[j], [, m, d] = j.split('-'); return `<tr><td>${d}/${m}</td><td>${p.vues}</td><td>${p.clic}</td><td>${p.court}</td><td>${p.telechargement}</td><td>${p.mauruuru}</td></tr>`; }).join('');
+    $('#etat-notifs').innerHTML = D.notifications
+      ? '🔔 Notifications sur ton téléphone : activées.'
+      : '🔕 Notifications sur ton téléphone : pas encore activées (voir le guide LISEZMOI, étape « ntfy »).';
   };
 
-  /* ---------- Affichage ---------- */
-  const dateFr = (t) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Pacific/Tahiti', dateStyle: 'short', timeStyle: 'short' });
-
-  const afficherLiens = (liens) => {
-    $('#liste-liens').innerHTML = liens.length ? liens.map((l, i) => `
-      <div class="carte${l.actif ? '' : ' eteint'}">
+  /* ================= Listes ================= */
+  const afficherLiens = () => {
+    const now = Date.now();
+    $('#liste-liens').innerHTML = D.liens.length ? D.liens.map((l, i) => {
+      let prog = '';
+      if (l.debut && l.debut > now) prog = `<span class="badge">à partir du ${dateFr(l.debut)}</span>`;
+      if (l.fin) prog += `<span class="badge">${l.fin > now ? "jusqu'au " + dateFr(l.fin) : 'terminé'}</span>`;
+      return `<div class="carte${l.actif ? '' : ' eteint'}">
         <div class="ico">${ico(l.icone)}</div>
         <div class="corps">
           <div class="titre">${echappe(l.titre)}${l.actif ? '' : ' (masqué)'}</div>
-          ${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}
-          <small>${echappe(l.url)}</small>
+          ${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}<small>${echappe(l.url)}</small>${prog}
           <div class="ligne">
             <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
-            <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="1" ${i === liens.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
-            <button class="petit gris" data-a="editer" data-id="${l.id}">Modifier</button>
+            <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="1" ${i === D.liens.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
+            <button class="petit gris" data-a="editer-lien" data-id="${l.id}">Modifier</button>
             <button class="petit gris" data-a="lien_basculer" data-id="${l.id}">${l.actif ? 'Masquer' : 'Afficher'}</button>
             <button class="petit gris" data-a="lien_supprimer" data-id="${l.id}">Supprimer</button>
           </div>
         </div>
-        <span class="clics">${l.clics} clic${l.clics > 1 ? 's' : ''}</span>
-      </div>`).join('') : '<p class="vide">Aucun lien pour l\'instant.</p>';
+        <span class="chiffre">${pluriel(l.clics, 'clic')}</span>
+      </div>`;
+    }).join('') : '<p class="vide">Aucun lien pour l\'instant.</p>';
   };
 
-  const afficherCourts = (courts) => {
-    $('#liste-courts').innerHTML = courts.length ? courts.map(c => `
+  const afficherCourts = () => {
+    $('#liste-courts').innerHTML = D.courts.length ? D.courts.map(c => `
       <div class="carte">
         <div class="ico">${ico('lien')}</div>
         <div class="corps">
-          <div class="titre">landrypf.com/${echappe(c.code)}</div>
-          <small>${echappe(c.url)}</small>
+          <div class="titre">landrypf.com/${echappe(c.code)}</div><small>${echappe(c.url)}</small>
           <div class="ligne">
-            <button class="petit gris" data-a="copier" data-code="${echappe(c.code)}">Copier</button>
+            <button class="petit gris" data-a="copier" data-texte="${SITE}/${echappe(c.code)}">Copier</button>
+            <button class="petit gris" data-a="qr" data-texte="${SITE}/${echappe(c.code)}" data-nom="${echappe(c.code)}">QR code</button>
             <button class="petit gris" data-a="court_supprimer" data-code="${echappe(c.code)}">Supprimer</button>
           </div>
         </div>
-        <span class="clics">${c.clics} clic${c.clics > 1 ? 's' : ''}</span>
+        <span class="chiffre">${pluriel(c.clics, 'clic')}</span>
       </div>`).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
   };
 
+  const vignette = (f) => f.type.startsWith('image/') && !f.protege ? `<img src="${f.url}" alt="" loading="lazy">` : ico(f.type.startsWith('image/') ? 'monde' : 'lien');
+  const afficherFichiers = () => {
+    const now = Date.now();
+    $('#pas-de-stockage').hidden = D.stockage;
+    $('#zone-envoi').hidden = !D.stockage;
+    $('#liste-fichiers').innerHTML = D.fichiers.length ? D.fichiers.map(f => {
+      const expire = f.expire ? (f.expire > now ? `<span class="badge">expire le ${dateFr(f.expire)}</span>` : '<span class="badge">expiré</span>') : '';
+      return `<div class="carte">
+        <div class="ico">${vignette(f)}</div>
+        <div class="corps">
+          <div class="titre">${echappe(f.nom)}</div>
+          <small>${taille(f.taille)} · ${dateFr(f.cree)}</small>
+          ${f.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}${expire}${f.galerie ? '<span class="badge">galerie</span>' : ''}
+          <div class="ligne">
+            <button class="petit gris" data-a="copier" data-texte="${SITE}${f.url}">Copier le lien</button>
+            <button class="petit gris" data-a="qr" data-texte="${SITE}${f.url}" data-nom="${echappe(f.nom)}">QR code</button>
+            <button class="petit gris" data-a="ouvrir" data-url="${f.url}">Ouvrir</button>
+            <button class="petit gris" data-a="regler-fichier" data-id="${f.id}">Réglages</button>
+            <button class="petit gris" data-a="fichier_supprimer" data-id="${f.id}">Supprimer</button>
+          </div>
+        </div>
+        <span class="chiffre">${pluriel(f.telechargements, 'vue')}</span>
+      </div>`;
+    }).join('') : '<p class="vide">Aucun fichier pour l\'instant.</p>';
+
+    const gal = D.fichiers.filter(f => f.galerie).sort((a, b) => a.ordre - b.ordre || b.cree - a.cree);
+    $('#liste-galerie').innerHTML = gal.length ? gal.map((f, i) => `
+      <div class="carte">
+        <div class="ico">${vignette(f)}</div>
+        <div class="corps">
+          <div class="titre">${echappe(f.legende || f.nom)}</div>${f.protege || (f.expire && f.expire < now) ? '<small>Invisible dans la galerie (privé ou expiré)</small>' : ''}
+          <div class="ligne">
+            <button class="petit gris" data-a="fichier_bouger" data-id="${f.id}" data-sens="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
+            <button class="petit gris" data-a="fichier_bouger" data-id="${f.id}" data-sens="1" ${i === gal.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
+            <button class="petit gris" data-a="regler-fichier" data-id="${f.id}">Légende</button>
+            <button class="petit gris" data-a="retirer-galerie" data-id="${f.id}">Retirer</button>
+          </div>
+        </div>
+      </div>`).join('') : '<p class="vide">La galerie est vide.</p>';
+
+    const images = D.fichiers.filter(f => f.type.startsWith('image/') && !f.protege && !f.expire);
+    const noms = { p1: 'Carte postale 1 (lagon)', p2: 'Carte postale 2 (tiare)', p3: 'Carte postale 3 (coucher)', c1: 'Mot 1 : le lagon', c2: 'Mot 2 : la montagne', c3: "Mot 3 : le va'a", c4: 'Mot 4 : la tiare', c5: 'Mot 5 : le Heiva' };
+    $('#emplacements').innerHTML = Object.entries(noms).map(([k, n]) => {
+      const choisi = D.fichiers.find(f => f.id === D.photos[k]);
+      return `<div class="emplacement">
+        <b>${n}</b>
+        <div class="apercu">${choisi ? `<img src="${choisi.url}" alt="">` : 'Dessin d\'origine'}</div>
+        <select data-emplacement="${k}" aria-label="Photo pour ${n}">
+          <option value="">Dessin d'origine</option>
+          ${images.map(f => `<option value="${f.id}" ${f.id === D.photos[k] ? 'selected' : ''}>${echappe(f.legende || f.nom)}</option>`).join('')}
+        </select>
+      </div>`;
+    }).join('');
+  };
+
+  const afficherContacts = () => {
+    const nonLus = D.contacts.filter(c => !c.lu).length;
+    $('#n-non-lus').textContent = nonLus; $('#n-non-lus').hidden = !nonLus;
+    $('#liste-contacts').innerHTML = D.contacts.length ? D.contacts.map(c => `
+      <div class="carte${c.lu ? '' : ' non-lu'}">
+        <div class="corps">
+          <div class="titre">${echappe(c.nom)}</div>
+          <small>${dateFr(c.cree)}${c.email ? ' · ' + echappe(c.email) : ''}</small>
+          <div class="texte">${echappe(c.message)}</div>
+          <div class="ligne">
+            ${c.email ? `<a class="lien-btn" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Re: ton message sur landrypf.com')}">Répondre</a>` : ''}
+            <button class="petit gris" data-a="contact_lu" data-id="${c.id}">${c.lu ? 'Marquer non lu' : 'Marquer lu'}</button>
+            <button class="petit gris" data-a="contact_supprimer" data-id="${c.id}">Supprimer</button>
+          </div>
+        </div>
+      </div>`).join('') : '<p class="vide">Aucun message pour l\'instant.</p>';
+  };
+
   const listeMsgs = (msgs, attente) => msgs.length ? msgs.map(m => `
-    <div class="msg">
-      <div>${echappe(m.texte)}</div>
-      <small>${echappe(m.nom)} · ${dateFr(m.cree)}</small>
+    <div class="carte"><div class="corps">
+      <div class="texte">${echappe(m.texte)}</div><small>${echappe(m.nom)} · ${dateFr(m.cree)}</small>
       <div class="ligne">
         ${attente ? `<button class="petit" data-a="valider" data-id="${m.id}">Publier</button>` : ''}
         <button class="petit gris" data-a="supprimer" data-id="${m.id}">Supprimer</button>
       </div>
-    </div>`).join('') : '<p class="vide">Rien ici.</p>';
+    </div></div>`).join('') : '<p class="vide">Rien ici.</p>';
 
   const charger = async () => {
-    const d = donnees = await appel('GET');
-    $('#connexion').hidden = true; $('#panneau').hidden = false;
-    $('#n-merci').textContent = d.compteurs.mauruuru || 0;
-    $('#n-liens').textContent = d.liens.reduce((s, l) => s + l.clics, 0);
-    $('#n-courts').textContent = d.courts.reduce((s, c) => s + c.clics, 0);
-    if (document.activeElement !== $('#statut')) $('#statut').value = d.statut;
-    afficherLiens(d.liens); afficherCourts(d.courts);
-    $('#attente').innerHTML = listeMsgs(d.attente, true);
-    $('#valides').innerHTML = listeMsgs(d.valides, false);
+    D = await appel('GET');
+    $('#connexion').hidden = true; $('#panneau').hidden = false; $('#onglets').hidden = false;
+    if (document.activeElement !== $('#statut')) $('#statut').value = D.statut;
+    const fe = $('#form-evt');
+    if (!fe.contains(document.activeElement)) { fe.titre.value = D.evenement.titre; fe.date.value = versLocal(D.evenement.date); fe.lien.value = D.evenement.lien; }
+    afficherStats(); afficherLiens(); afficherCourts(); afficherFichiers(); afficherContacts();
+    $('#attente').innerHTML = listeMsgs(D.attente, true); $('#valides').innerHTML = listeMsgs(D.valides, false);
+    $('#n-attente').textContent = D.attente.length; $('#n-attente').hidden = !D.attente.length;
   };
 
-  /* ---------- Formulaire lien bio (ajout + modification) ---------- */
+  /* ================= Formulaires ================= */
   const fl = $('#form-lien');
-  const finEdition = () => {
-    enEdition = null; fl.reset();
-    $('#form-lien-titre').textContent = 'Ajouter un lien'; $('#btn-lien').textContent = 'Ajouter'; $('#annuler-lien').hidden = true;
-  };
+  const finEdition = () => { enEdition = null; fl.reset(); $('#form-lien-titre').textContent = 'Ajouter un lien'; $('#btn-lien').textContent = 'Ajouter'; $('#annuler-lien').hidden = true; };
   $('#annuler-lien').addEventListener('click', finEdition);
   fl.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const corps = { action: enEdition ? 'lien_modifier' : 'lien_ajouter', id: enEdition,
-      titre: fl.titre.value, sous_titre: fl.sous_titre.value, url: fl.url.value.trim(), icone: fl.icone.value };
+    const corps = { action: enEdition ? 'lien_modifier' : 'lien_ajouter', id: enEdition, titre: fl.titre.value, sous_titre: fl.sous_titre.value,
+      url: fl.url.value.trim(), icone: fl.icone.value, debut: depuisLocal(fl.debut.value), fin: depuisLocal(fl.fin.value) };
     if (await action(corps, $('#err-lien'))) { toast(enEdition ? 'Lien modifié' : 'Lien ajouté'); finEdition(); }
   });
-  // Choix automatique de l'icône selon l'adresse
   fl.url.addEventListener('input', () => {
     if (enEdition) return;
     const u = fl.url.value.toLowerCase();
-    const devine = [['instagram', 'instagram'], ['tiktok', 'tiktok'], ['youtu', 'youtube'], ['facebook', 'facebook'], ['snapchat', 'snapchat'],
-      ['spotify', 'spotify'], ['twitter', 'x'], ['x.com', 'x'], ['wa.me', 'whatsapp'], ['whatsapp', 'whatsapp'], ['mailto:', 'email']].find(([m]) => u.includes(m));
+    const devine = [['instagram', 'instagram'], ['tiktok', 'tiktok'], ['youtu', 'youtube'], ['facebook', 'facebook'], ['snapchat', 'snapchat'], ['spotify', 'spotify'],
+      ['twitter', 'x'], ['x.com', 'x'], ['wa.me', 'whatsapp'], ['whatsapp', 'whatsapp'], ['mailto:', 'email'], ['/galerie', 'monde']].find(([m]) => u.includes(m));
     if (devine) fl.icone.value = devine[1];
   });
 
-  /* ---------- Formulaire lien court ---------- */
   const fc = $('#form-court');
   fc.code.addEventListener('input', () => { fc.code.value = fc.code.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
-  $('#code-hasard').addEventListener('click', () => {
-    const a = 'abcdefghjkmnpqrstuvwxyz23456789';
-    fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join('');
-  });
+  $('#code-hasard').addEventListener('click', () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join(''); });
   fc.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const ok = await action({ action: 'court_ajouter', code: fc.code.value, url: fc.url.value.trim() }, $('#err-court'));
-    if (ok) { toast('Lien court créé : landrypf.com/' + fc.code.value); fc.reset(); }
+    if (await action({ action: 'court_ajouter', code: fc.code.value, url: fc.url.value.trim() }, $('#err-court'))) { toast('Créé : landrypf.com/' + fc.code.value); fc.reset(); }
   });
 
-  /* ---------- Boutons des listes ---------- */
+  $('#form-statut').addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'statut', valeur: $('#statut').value })) toast('Enregistré'); });
+
+  const fe = $('#form-evt');
+  fe.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (await action({ action: 'evenement', titre: fe.titre.value, date: depuisLocal(fe.date.value), lien: fe.lien.value.trim() }, $('#err-evt'))) toast('Événement enregistré');
+  });
+  $('#evt-effacer').addEventListener('click', async () => { fe.reset(); if (await action({ action: 'evenement', titre: '' }, $('#err-evt'))) toast('Événement effacé'); });
+
+  /* ================= Envoi de fichiers ================= */
+  const depot = $('#depot'), choix = $('#choix-fichiers');
+  const envoyer = (fichier) => new Promise((ok) => {
+    const ligne = document.createElement('div'); ligne.className = 'envoi';
+    ligne.innerHTML = `<div>${echappe(fichier.name)} <small>(${taille(fichier.size)})</small></div><progress max="100" value="0"></progress>`;
+    $('#envois').prepend(ligne);
+    if (fichier.size > 100 * 1048576) { ligne.innerHTML = `<div class="erreur">${echappe(fichier.name)} : trop lourd (100 Mo max).</div>`; return ok(); }
+    const p = new URLSearchParams({ nom: fichier.name });
+    if ($('#opt-galerie').checked) p.set('galerie', '1');
+    const j = +$('#opt-expire').value; if (j) p.set('expire', Date.now() + j * 864e5);
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', '/api/fichiers?' + p);
+    xhr.setRequestHeader('x-cle', cle);
+    xhr.setRequestHeader('content-type', fichier.type || 'application/octet-stream');
+    const mdp = $('#opt-mdp').value; if (mdp) xhr.setRequestHeader('x-mdp', mdp);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) ligne.querySelector('progress').value = (e.loaded / e.total) * 100; };
+    xhr.onload = () => {
+      let d = {}; try { d = JSON.parse(xhr.responseText); } catch {}
+      if (xhr.status === 200) ligne.innerHTML = `✅ ${echappe(fichier.name)} : <a href="${d.url}" target="_blank" rel="noopener">${SITE}${d.url}</a>`;
+      else ligne.innerHTML = `<div class="erreur">${echappe(fichier.name)} : ${echappe(d.erreur || 'échec (' + xhr.status + ')')}</div>`;
+      ok();
+    };
+    xhr.onerror = () => { ligne.innerHTML = `<div class="erreur">${echappe(fichier.name)} : connexion perdue.</div>`; ok(); };
+    xhr.send(fichier);
+  });
+  const envoyerTout = async (liste) => { for (const f of liste) await envoyer(f); await charger(); };
+  choix.addEventListener('change', () => { envoyerTout([...choix.files]); choix.value = ''; });
+  ['dragenter', 'dragover'].forEach(t => depot.addEventListener(t, (e) => { e.preventDefault(); depot.classList.add('survol'); }));
+  ['dragleave', 'drop'].forEach(t => depot.addEventListener(t, (e) => { e.preventDefault(); depot.classList.remove('survol'); }));
+  depot.addEventListener('drop', (e) => envoyerTout([...e.dataTransfer.files]));
+
+  /* ================= Réglages d'un fichier ================= */
+  const ff = $('#form-fichier'), fenF = $('#fen-fichier');
+  ff.mdp_mode.addEventListener('change', () => { ff.mdp.hidden = ff.mdp_mode.value !== 'changer'; });
+  $('#ff-fermer').addEventListener('click', () => fenF.close());
+  const reglerFichier = (id) => {
+    const f = D.fichiers.find(x => x.id === id); if (!f) return;
+    fichierEdite = f; ff.reset(); $('#err-fichier').textContent = '';
+    $('#ff-titre').textContent = f.nom;
+    ff.legende.value = f.legende; ff.galerie.checked = !!f.galerie; ff.galerie.disabled = !f.type.startsWith('image/');
+    ff.expire.value = versLocal(f.expire); ff.mdp.hidden = true;
+    fenF.showModal();
+  };
+  ff.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const corps = { action: 'fichier_modifier', id: fichierEdite.id, legende: ff.legende.value, expire: depuisLocal(ff.expire.value) };
+    if (!!fichierEdite.galerie !== ff.galerie.checked) corps.galerie = ff.galerie.checked;
+    if (ff.mdp_mode.value === 'changer') { if (!ff.mdp.value) { $('#err-fichier').textContent = 'Écris le nouveau mot de passe.'; return; } corps.mdp = ff.mdp.value; }
+    if (ff.mdp_mode.value === 'retirer') corps.mdp = '';
+    if (await action(corps, $('#err-fichier'))) { fenF.close(); toast('Réglages enregistrés'); }
+  });
+
+  /* ================= QR codes ================= */
+  const fenQ = $('#fen-qr');
+  let nomQr = 'qr';
+  const montrerQr = (texte, nom) => {
+    nomQr = 'qr-' + nom.replace(/[^a-z0-9-]+/gi, '-').slice(0, 40);
+    $('#qr-texte').textContent = texte; $('#qr-zone').innerHTML = ''; fenQ.showModal();
+    const dessiner = () => new QRCode($('#qr-zone'), { text: texte, width: 720, height: 720, colorDark: '#B3212E', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+    if (window.QRCode) return dessiner();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = dessiner; s.onerror = () => { $('#qr-zone').textContent = 'Impossible de charger le générateur de QR code.'; };
+    document.head.appendChild(s);
+  };
+  $('#qr-fermer').addEventListener('click', () => fenQ.close());
+  $('#qr-telecharger').addEventListener('click', () => {
+    const c = $('#qr-zone canvas'); if (!c) return;
+    // On ajoute une marge blanche autour pour que le QR soit bien lisible
+    const m = 60, t = document.createElement('canvas'); t.width = c.width + 2 * m; t.height = c.height + 2 * m;
+    const x = t.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(c, m, m);
+    const a = document.createElement('a'); a.href = t.toDataURL('image/png'); a.download = nomQr + '.png'; a.click();
+  });
+
+  /* ================= Boutons ================= */
+  document.addEventListener('change', async (e) => {
+    const s = e.target.closest('select[data-emplacement]'); if (!s) return;
+    if (await action({ action: 'photo_accueil', emplacement: s.dataset.emplacement, id: s.value || null })) toast('Photo de l\'accueil mise à jour');
+  });
   document.addEventListener('click', async (e) => {
     const b = e.target.closest('button[data-a]'); if (!b) return;
-    const a = b.dataset.a, id = +b.dataset.id;
-    if (a === 'editer') {
-      const l = donnees.liens.find(x => x.id === id); if (!l) return;
+    const a = b.dataset.a, id = /^\d+$/.test(b.dataset.id || '') ? +b.dataset.id : b.dataset.id;
+    if (a === 'editer-lien') {
+      const l = D.liens.find(x => x.id === id); if (!l) return;
       enEdition = id;
       fl.titre.value = l.titre; fl.sous_titre.value = l.sous_titre; fl.url.value = l.url; fl.icone.value = l.icone;
+      fl.debut.value = versLocal(l.debut); fl.fin.value = versLocal(l.fin);
       $('#form-lien-titre').textContent = 'Modifier « ' + l.titre + ' »'; $('#btn-lien').textContent = 'Enregistrer'; $('#annuler-lien').hidden = false;
       fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.titre.focus({ preventScroll: true });
       return;
     }
-    if (a === 'copier') {
-      const t = 'https://landrypf.com/' + b.dataset.code;
-      try { await navigator.clipboard.writeText(t); toast('Copié : ' + t); } catch { toast(t); }
-      return;
-    }
-    if ((a === 'supprimer' || a === 'lien_supprimer' || a === 'court_supprimer') && !confirm('Supprimer définitivement ?')) return;
+    if (a === 'copier') return copier(b.dataset.texte);
+    if (a === 'qr') return montrerQr(b.dataset.texte, b.dataset.nom);
+    if (a === 'ouvrir') return window.open(b.dataset.url, '_blank', 'noopener');
+    if (a === 'regler-fichier') return reglerFichier(id);
+    if (a === 'retirer-galerie') return action({ action: 'fichier_modifier', id, galerie: false });
+    if (['supprimer', 'lien_supprimer', 'court_supprimer', 'fichier_supprimer', 'contact_supprimer'].includes(a) && !confirm('Supprimer définitivement ?')) return;
     b.disabled = true;
     await action({ action: a, id, code: b.dataset.code, sens: +b.dataset.sens });
   });
 
-  /* ---------- Connexion + statut ---------- */
+  /* ================= Onglet actif selon le défilement ================= */
+  const liensNav = [...document.querySelectorAll('#onglets a')];
+  const obs = new IntersectionObserver((entrees) => {
+    entrees.forEach(en => { if (en.isIntersecting) liensNav.forEach(l => l.classList.toggle('actif', l.getAttribute('href') === '#' + en.target.id)); });
+  }, { rootMargin: '-40% 0px -55% 0px' });
+  document.querySelectorAll('main section').forEach(s => obs.observe(s));
+
+  /* ================= Connexion ================= */
   $('#connexion').addEventListener('submit', async (e) => {
     e.preventDefault(); cle = $('#cle').value; $('#erreur').textContent = '';
-    try { await charger(); sessionStorage.setItem('cle', cle); } catch (err) { $('#erreur').textContent = err.message; }
+    try { await charger(); sessionStorage.setItem('cle', cle); try { localStorage.setItem('cle-admin', cle); } catch {} }
+    catch (err) { $('#erreur').textContent = err.message; }
   });
-  $('#form-statut').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (await action({ action: 'statut', valeur: $('#statut').value })) toast('Enregistré');
-  });
-  if (cle) charger().catch(() => {});
+  addEventListener('resize', () => { if (D) afficherStats(); });
+  if (cle) charger().catch(() => { try { localStorage.removeItem('cle-admin'); } catch {} });
 }
 </script>
 </body>

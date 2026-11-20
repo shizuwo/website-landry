@@ -1,15 +1,16 @@
 /* Menu "Tire-moi" : un bout de tissu tifaifai qui pend en haut de l'écran et se déroule. */
 (() => {
   const T = {
-    fr: { menu: 'Menu', accueil: 'Accueil', liens: 'Mes liens' },
-    en: { menu: 'Menu', accueil: 'Home', liens: 'My links' },
-    ty: { menu: 'Menu', accueil: 'Fare', liens: 'Mes liens' }
+    fr: { menu: 'Menu', accueil: 'Accueil', galerie: 'Galerie', liens: 'Mes liens' },
+    en: { menu: 'Menu', accueil: 'Home', galerie: 'Gallery', liens: 'My links' },
+    ty: { menu: 'Menu', accueil: 'Fare', galerie: 'Galerie', liens: 'Mes liens' }
   };
   const pages = [
     { cle: 'accueil', href: './' },
+    { cle: 'galerie', href: 'galerie.html' },
     { cle: 'liens', href: 'bio.html' }
   ];
-  const ici = /bio/.test(location.pathname) ? 'liens' : 'accueil';
+  const ici = /bio/.test(location.pathname) ? 'liens' : /galerie/.test(location.pathname) ? 'galerie' : 'accueil';
 
   const css = `
   .tire{position:fixed;top:0;right:max(14px,3vw);z-index:100;font:600 15px/1.2 "Instrument Sans",system-ui,sans-serif;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))}
@@ -18,7 +19,7 @@
             mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/16px 100%}
   .tire-tissu::before{content:"";position:absolute;inset:6px 7px 18px;border:2px dashed currentColor;opacity:.35;border-radius:4px;pointer-events:none}
   .tire-liste{list-style:none;margin:0;padding:0 12px;display:grid;gap:2px;max-height:0;overflow:hidden;transition:max-height .55s cubic-bezier(.3,1.25,.5,1),padding .3s}
-  .tire.ouvert .tire-liste{max-height:200px;padding-top:8px;padding-bottom:8px}
+  .tire.ouvert .tire-liste{max-height:260px;padding-top:8px;padding-bottom:8px}
   .tire-liste a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px;color:inherit;text-decoration:none;border-radius:8px;text-align:center}
   .tire-liste a:hover{background:color-mix(in srgb,currentColor 10%,transparent)}
   .tire-liste a[aria-current]{background:color-mix(in srgb,currentColor 16%,transparent)}
