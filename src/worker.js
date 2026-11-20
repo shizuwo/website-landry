@@ -14,7 +14,9 @@ const RESERVES = new Set(['bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'ind
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
-const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo
+const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
+const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
+const STOCKAGE_LIMITE = STOCKAGE_MAX - 50 * 1000 ** 2; // on bloque un peu avant, par sécurité
 const PAGES_VUES = new Set(['accueil', 'bio', 'galerie']);
 
 function urlValide(u) {
@@ -90,18 +92,31 @@ function notifier(env, ctx, titre, message) {
 }
 
 const urlFichier = (f) => `/f/${f.id}/${encodeURIComponent(f.nom)}`;
+const urlCourte = (f) => `/f/${f.id}`;
+const actif = (v, defaut = true) => (v === null || v === undefined || v === '' ? defaut : v === '1');
+const stockageUtilise = async (env) => (await env.DB.prepare('SELECT COALESCE(SUM(taille), 0) AS t FROM fichiers').first('t')) || 0;
 const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.expire > now);
 
 /* ================= Public ================= */
 
 async function infos(env) {
-  const [mauruuru, statut, titre, date, lien] = await Promise.all([
-    compteur(env, 'mauruuru'), reglage(env, 'statut'),
-    reglage(env, 'evt_titre'), reglage(env, 'evt_date'), reglage(env, 'evt_lien')
+  const [mauruuru, { results }] = await Promise.all([
+    compteur(env, 'mauruuru'),
+    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste')").all()
   ]);
-  const d = +date || 0;
-  const evenement = titre && d && d > Date.now() - 6 * 3600e3 ? { titre, date: d, lien: lien || '' } : null;
-  return json({ mauruuru: mauruuru || 0, statut: statut || '', evenement }, { headers: { 'cache-control': 'public, max-age=15' } });
+  const r = Object.fromEntries(results.map(x => [x.cle, x.valeur]));
+  const d = +r.evt_date || 0;
+  const evenement = r.evt_titre && d && d > Date.now() - 6 * 3600e3 ? { titre: r.evt_titre, date: d, lien: r.evt_lien || '' } : null;
+  const banniere = actif(r.banniere_active, false) && r.banniere_texte ? { texte: r.banniere_texte, lien: r.banniere_lien || '' } : null;
+  let musique = null;
+  if (actif(r.musique_active, false) && r.musique_id) {
+    const f = await env.DB.prepare('SELECT id, nom, type, mdp, expire FROM fichiers WHERE id = ?').bind(r.musique_id).first();
+    if (f && String(f.type).startsWith('audio/') && fichierPublic(f)) musique = { url: urlFichier(f), titre: r.musique_titre || f.nom.replace(/\.[a-z0-9]+$/i, ''), artiste: r.musique_artiste || '' };
+  }
+  return json({
+    mauruuru: mauruuru || 0, statut: r.statut || '', evenement, banniere, musique,
+    livre: actif(r.livre_actif), contact: actif(r.contact_actif)
+  }, { headers: { 'cache-control': 'public, max-age=15' } });
 }
 
 async function mauruuru(request, env, ctx) {
@@ -116,6 +131,7 @@ async function mauruuru(request, env, ctx) {
 }
 
 async function livreLire(env) {
+  if (!actif(await reglage(env, 'livre_actif'))) return json({ messages: [], desactive: true });
   const { results } = await env.DB.prepare("SELECT nom, texte, cree FROM messages WHERE statut = 'ok' ORDER BY cree DESC LIMIT 30").all();
   return json({ messages: results }, { headers: { 'cache-control': 'public, max-age=30' } });
 }
@@ -123,6 +139,7 @@ async function livreLire(env) {
 async function livreEcrire(request, env, ctx) {
   let c; try { c = await request.json(); } catch { return erreur('format'); }
   if (c.site) return json({ ok: true }); // piège à robots
+  if (!actif(await reglage(env, 'livre_actif'))) return erreur('desactive', 403);
   const nom = nettoyer(c.nom, 30), texte = nettoyer(c.texte, 200);
   if (!nom || !texte) return erreur('vide');
   if (/(https?:\/\/|www\.)/i.test(nom + ' ' + texte)) return erreur('liens');
@@ -135,6 +152,7 @@ async function livreEcrire(request, env, ctx) {
 async function contact(request, env, ctx) {
   let c; try { c = await request.json(); } catch { return erreur('format'); }
   if (c.site) return json({ ok: true });
+  if (!actif(await reglage(env, 'contact_actif'))) return erreur('desactive', 403);
   const nom = nettoyer(c.nom, 40), email = nettoyer(c.email, 120), message = nettoyerTexte(c.message, 1500);
   if (!nom || !message) return erreur('vide');
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return erreur('email');
@@ -262,6 +280,7 @@ async function envoyerFichier(request, env) {
   const taille = +request.headers.get('content-length') || 0;
   if (!taille) return erreur('Fichier vide.');
   if (taille > TAILLE_MAX) return erreur('Fichier trop lourd (100 Mo maximum).', 413);
+  if ((await stockageUtilise(env)) + taille > STOCKAGE_LIMITE) return erreur('Stockage presque plein (10 Go) : supprime des fichiers avant d\'en envoyer de nouveaux.', 507);
   const p = new URL(request.url).searchParams;
   const nom = nettoyer(p.get('nom') || 'fichier', 120).replace(/[\\/]/g, '-') || 'fichier';
   const type = nettoyer(request.headers.get('content-type') || 'application/octet-stream', 100);
@@ -270,11 +289,9 @@ async function envoyerFichier(request, env) {
   await env.FICHIERS.put(cle, request.body, { httpMetadata: { contentType: type } });
   const mdp = request.headers.get('x-mdp');
   const expire = entierOuNull(p.get('expire'));
-  const versGalerie = p.get('galerie') === '1' && type.startsWith('image/') ? 1 : 0;
-  const ordre = versGalerie ? ((await env.DB.prepare('SELECT MAX(ordre) AS m FROM fichiers WHERE galerie = 1').first('m')) || 0) + 1 : 0;
-  await env.DB.prepare('INSERT INTO fichiers (id, nom, cle, type, taille, cree, mdp, expire, galerie, legende, ordre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, nom, cle, type, taille, Date.now(), mdp ? await hacher(mdp) : null, expire, versGalerie, nettoyer(p.get('legende'), 120), ordre).run();
-  return json({ ok: true, id, url: `/f/${id}/${encodeURIComponent(nom)}` });
+  await env.DB.prepare('INSERT INTO fichiers (id, nom, cle, type, taille, cree, mdp, expire, galerie, legende, ordre, vu_galerie) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, \'\', 0, 0)')
+    .bind(id, nom, cle, type, taille, Date.now(), mdp ? await hacher(mdp) : null, expire).run();
+  return json({ ok: true, id, url: urlCourte({ id }) });
 }
 
 /* ================= Admin ================= */
@@ -289,7 +306,7 @@ async function adminLire(env) {
     DB.prepare("SELECT id, nom, texte, cree FROM messages WHERE statut = 'ok' ORDER BY cree DESC LIMIT 50").all(),
     DB.prepare('SELECT id, titre, sous_titre, url, icone, ordre, actif, clics, debut, fin FROM liens ORDER BY ordre, id').all(),
     DB.prepare('SELECT code, url, clics, cree FROM raccourcis ORDER BY cree DESC').all(),
-    DB.prepare('SELECT id, nom, type, taille, cree, telechargements, (mdp IS NOT NULL) AS protege, expire, galerie, legende, ordre FROM fichiers ORDER BY cree DESC').all(),
+    DB.prepare('SELECT id, nom, type, taille, cree, telechargements, (mdp IS NOT NULL) AS protege, expire, galerie, legende, ordre, vu_galerie FROM fichiers ORDER BY cree DESC').all(),
     DB.prepare('SELECT id, nom, email, message, cree, lu FROM contacts ORDER BY cree DESC LIMIT 100').all(),
     DB.prepare('SELECT jour, cle, valeur FROM stats_jour WHERE jour >= ? ORDER BY jour').bind(depuis).all()
   ]);
@@ -302,7 +319,13 @@ async function adminLire(env) {
     evenement: { titre: r.evt_titre || '', date: +r.evt_date || null, lien: r.evt_lien || '' },
     attente: attente.results, valides: valides.results,
     liens: liens.results, courts: courts.results,
-    fichiers: fichiers.results.map(f => ({ ...f, protege: !!f.protege, url: urlFichier(f) })),
+    fichiers: fichiers.results.map(f => ({ ...f, protege: !!f.protege, url: urlFichier(f), court: urlCourte(f) })),
+    stockage_utilise: fichiers.results.reduce((a, f) => a + f.taille, 0), stockage_max: STOCKAGE_MAX,
+    site: {
+      livre_actif: actif(r.livre_actif), contact_actif: actif(r.contact_actif),
+      banniere_active: actif(r.banniere_active, false), banniere_texte: r.banniere_texte || '', banniere_lien: r.banniere_lien || '',
+      musique_active: actif(r.musique_active, false), musique_id: r.musique_id || '', musique_titre: r.musique_titre || '', musique_artiste: r.musique_artiste || ''
+    },
     contacts: contacts.results, photos, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
   });
 }
@@ -397,16 +420,56 @@ async function adminEcrire(request, env) {
       await DB.prepare('DELETE FROM contacts WHERE id = ?').bind(c.id).run();
       break;
 
+    // --- Réglages du site (interrupteurs, bannière, musique) ---
+    case 'reglages_site': {
+      const v = (b) => (b ? '1' : '0');
+      const lienBanniere = c.banniere_lien ? urlValide(c.banniere_lien) : '';
+      if (c.banniere_lien && !lienBanniere) return erreur('Le lien de la bannière doit commencer par https:// ou /');
+      if (c.banniere_active && !nettoyer(c.banniere_texte, 140)) return erreur('Écris le texte de la bannière.');
+      if (c.musique_active) {
+        const f = c.musique_id && await DB.prepare('SELECT type, mdp, expire FROM fichiers WHERE id = ?').bind(c.musique_id).first();
+        if (!f || !String(f.type).startsWith('audio/')) return erreur('Choisis un morceau parmi tes fichiers audio.');
+        if (!fichierPublic(f)) return erreur('Ce morceau est protégé ou expire : il ne peut pas être lu sur la bio.');
+      }
+      const paires = [
+        ['livre_actif', v(c.livre_actif)], ['contact_actif', v(c.contact_actif)],
+        ['banniere_active', v(c.banniere_active)], ['banniere_texte', nettoyer(c.banniere_texte, 140)], ['banniere_lien', lienBanniere || ''],
+        ['musique_active', v(c.musique_active)], ['musique_id', String(c.musique_id || '')],
+        ['musique_titre', nettoyer(c.musique_titre, 80)], ['musique_artiste', nettoyer(c.musique_artiste, 80)]
+      ];
+      await DB.batch(paires.map(([k, val]) => DB.prepare('INSERT INTO reglages (cle, valeur) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur').bind(k, val)));
+      break;
+    }
+
+    // --- Galerie : photos à valider ---
+    case 'galerie_decider': {
+      const f = await DB.prepare('SELECT type FROM fichiers WHERE id = ?').bind(c.id).first();
+      if (!f) return erreur('Fichier introuvable.');
+      if (c.ajouter) {
+        if (!String(f.type).startsWith('image/')) return erreur('Seules les images peuvent aller dans la galerie.');
+        const ordre = ((await DB.prepare('SELECT MAX(ordre) AS m FROM fichiers WHERE galerie = 1').first('m')) || 0) + 1;
+        await DB.prepare('UPDATE fichiers SET galerie = 1, vu_galerie = 1, ordre = ? WHERE id = ?').bind(ordre, c.id).run();
+      } else {
+        await DB.prepare('UPDATE fichiers SET vu_galerie = 1 WHERE id = ?').bind(c.id).run();
+      }
+      break;
+    }
+
     // --- Fichiers ---
     case 'fichier_modifier': {
       const f = await DB.prepare('SELECT id, type FROM fichiers WHERE id = ?').bind(c.id).first();
       if (!f) return erreur('Fichier introuvable.');
       const champs = [], valeurs = [];
+      if ('nom' in c) {
+        const nom = nettoyer(c.nom, 120).replace(/[\\/]/g, '-');
+        if (!nom) return erreur('Le nom ne peut pas être vide.');
+        champs.push('nom = ?'); valeurs.push(nom);
+      }
       if ('legende' in c) { champs.push('legende = ?'); valeurs.push(nettoyer(c.legende, 120)); }
       if ('expire' in c) { champs.push('expire = ?'); valeurs.push(entierOuNull(c.expire)); }
       if ('galerie' in c) {
         if (c.galerie && !String(f.type).startsWith('image/')) return erreur('Seules les images peuvent aller dans la galerie.');
-        champs.push('galerie = ?'); valeurs.push(c.galerie ? 1 : 0);
+        champs.push('galerie = ?', 'vu_galerie = 1'); valeurs.push(c.galerie ? 1 : 0);
         if (c.galerie) { champs.push('ordre = ?'); valeurs.push(((await DB.prepare('SELECT MAX(ordre) AS m FROM fichiers WHERE galerie = 1').first('m')) || 0) + 1); }
       }
       if ('mdp' in c) { champs.push('mdp = ?'); valeurs.push(c.mdp ? await hacher(String(c.mdp)) : null); }

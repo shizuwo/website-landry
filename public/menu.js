@@ -74,4 +74,29 @@
   };
   langue(document.documentElement.lang || 'fr');
   window.menuLangue = langue;
+
+  /* Bannière d'annonce (réglée depuis l'admin) */
+  const cssB = `
+  .banniere{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 14px);translate:-50% 0;z-index:95;width:max-content;max-width:min(560px,92vw);
+    display:flex;align-items:center;gap:6px;padding:6px 6px 6px 16px;border-radius:999px;background:#12303A;color:#fff;
+    font:600 15px/1.3 "Instrument Sans",system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:banniere-entre .6s cubic-bezier(.2,1.3,.4,1) 1.2s both}
+  .banniere a,.banniere span.txt{color:inherit;text-decoration:none;padding:6px 4px;overflow-wrap:anywhere}
+  .banniere a{text-decoration:underline;text-underline-offset:3px}
+  .banniere button{all:unset;flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:18px;line-height:1}
+  .banniere button:hover{background:rgba(255,255,255,.15)}
+  .banniere a:focus-visible,.banniere button:focus-visible{outline:3px solid #fff;outline-offset:2px;border-radius:999px}
+  @keyframes banniere-entre{from{translate:-50% 140%;opacity:0}}
+  @media (prefers-reduced-motion:reduce){.banniere{animation:none}}`;
+  fetch('/api/infos').then(r => r.ok ? r.json() : null).then(d => {
+    const b = d && d.banniere; if (!b || !b.texte) return;
+    const cleB = 'banniere-fermee:' + b.texte;
+    try { if (sessionStorage.getItem(cleB)) return; } catch {}
+    const st = document.createElement('style'); st.textContent = cssB; document.head.appendChild(st);
+    const el = document.createElement('div'); el.className = 'banniere'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', 'Annonce');
+    const txt = document.createElement(b.lien ? 'a' : 'span'); txt.className = 'txt'; txt.textContent = b.texte;
+    if (b.lien) { txt.href = b.lien; if (/^https?:/.test(b.lien)) { txt.target = '_blank'; txt.rel = 'noopener'; } }
+    const x = document.createElement('button'); x.type = 'button'; x.setAttribute('aria-label', "Fermer l'annonce"); x.textContent = '✕';
+    x.addEventListener('click', () => { el.remove(); try { sessionStorage.setItem(cleB, '1'); } catch {} });
+    el.append(txt, x); document.body.appendChild(el);
+  }).catch(() => {});
 })();
