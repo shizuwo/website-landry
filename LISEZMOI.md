@@ -44,7 +44,6 @@ Chaque suppression peut être annulée pendant 5 secondes. Le menu **⋯** de ch
 ## Les petits secrets de l'accueil
 
 - Les cartes postales de « Mon île » se déplacent à la souris (ou au doigt avec un appui long). Double-clic pour les remettre.
-- Dans le lagon du soir, une honu et un banc de poissons nagent.
 - À la nuit tombée, Matari'i (les Pléiades) s'allume, et une étoile filante passe de temps en temps.
 
 ## Entretien automatique
