@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin · Landry</title>
+<style>
+  :root { --rouge: #B3212E; --fond: #F6F3EE; --encre: #1E1E1E; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 1.6rem; margin: 0 0 1rem; color: var(--rouge); }
+  h2 { font-size: 1.15rem; margin: 2rem 0 .75rem; }
+  .boite { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  input, textarea { font: inherit; font-size: 16px; width: 100%; padding: .7rem .8rem; border: 1px solid #CCC; border-radius: 10px; }
+  button { font: inherit; font-weight: 600; min-height: 44px; padding: .5rem 1rem; border-radius: 10px; border: 0; background: var(--rouge); color: #fff; cursor: pointer; }
+  button.gris { background: #E7E2DA; color: var(--encre); }
+  .ligne { display: flex; gap: 8px; margin-top: 8px; }
+  .chiffres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .chiffres div { background: #fff; border-radius: 12px; padding: 12px; text-align: center; }
+  .chiffres b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .chiffres span { font-size: .85rem; color: #666; }
+  .msg { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .msg small { color: #777; }
+  .vide { color: #777; }
+  #erreur { color: var(--rouge); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Admin du site 🌺</h1>
+
+  <form id="connexion" class="boite">
+    <label for="cle">Mot de passe admin (ADMIN_KEY)</label>
+    <div class="ligne"><input id="cle" type="password" autocomplete="current-password" required><button>Entrer</button></div>
+    <p id="erreur" role="alert"></p>
+  </form>
+
+  <div id="panneau" hidden>
+    <h2>Chiffres</h2>
+    <div class="chiffres">
+      <div><b id="n-merci">0</b><span>mauruuru</span></div>
+      <div><b id="n-insta">0</b><span>clics Instagram</span></div>
+    </div>
+
+    <h2>En ce moment</h2>
+    <form id="form-statut" class="boite">
+      <label for="statut">Ce qui s'affiche sur la page d'accueil (vide = caché)</label>
+      <div class="ligne"><input id="statut" maxlength="120" placeholder="ex. En vacances à Moorea 🏝️"><button>Enregistrer</button></div>
+    </form>
+
+    <h2>Livre d'or : à valider</h2>
+    <div id="attente"></div>
+
+    <h2>Livre d'or : publiés</h2>
+    <div id="valides"></div>
+  </div>
+</main>
+<script>
+{
+  const $ = (s) => document.querySelector(s);
+  const echappe = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let cle = sessionStorage.getItem('cle') || '';
+
+  const appel = async (methode, corps) => {
+    const r = await fetch('/api/admin', { method: methode, headers: { 'x-cle': cle, 'content-type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined });
+    if (r.status === 401) throw new Error('Mot de passe incorrect.');
+    if (!r.ok) throw new Error('Erreur du serveur (' + r.status + ').');
+    return r.json();
+  };
+
+  const liste = (msgs, attente) => msgs.length ? msgs.map(m => `
+    <div class="msg">
+      <div>${echappe(m.texte)}</div>
+      <small>${echappe(m.nom)} · ${new Date(m.cree).toLocaleString('fr-FR', { timeZone: 'Pacific/Tahiti' })}</small>
+      <div class="ligne">
+        ${attente ? `<button data-action="valider" data-id="${m.id}">Publier</button>` : ''}
+        <button class="gris" data-action="supprimer" data-id="${m.id}">Supprimer</button>
+      </div>
+    </div>`).join('') : '<p class="vide">Rien ici.</p>';
+
+  const charger = async () => {
+    const d = await appel('GET');
+    $('#connexion').hidden = true; $('#panneau').hidden = false;
+    $('#n-merci').textContent = d.compteurs.mauruuru || 0;
+    $('#n-insta').textContent = d.compteurs['clic:insta'] || 0;
+    $('#statut').value = d.statut;
+    $('#attente').innerHTML = liste(d.attente, true);
+    $('#valides').innerHTML = liste(d.valides, false);
+  };
+
+  $('#connexion').addEventListener('submit', async (e) => {
+    e.preventDefault(); cle = $('#cle').value; $('#erreur').textContent = '';
+    try { await charger(); sessionStorage.setItem('cle', cle); } catch (err) { $('#erreur').textContent = err.message; }
+  });
+  $('#form-statut').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await appel('POST', { action: 'statut', valeur: $('#statut').value });
+    e.target.querySelector('button').textContent = 'Enregistré ✓';
+    setTimeout(() => e.target.querySelector('button').textContent = 'Enregistrer', 1500);
+  });
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-action]'); if (!b) return;
+    if (b.dataset.action === 'supprimer' && !confirm('Supprimer ce message ?')) return;
+    await appel('POST', { action: b.dataset.action, id: +b.dataset.id }); charger();
+  });
+  if (cle) charger().catch(() => {});
+}
+</script>
+</body>
+</html>
