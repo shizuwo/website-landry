@@ -18,6 +18,14 @@ const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
 const STOCKAGE_LIMITE = STOCKAGE_MAX - 50 * 1000 ** 2; // on bloque un peu avant, par sécurité
 const PAGES_VUES = new Set(['accueil', 'bio', 'galerie']);
+// Textes modifiables de la page d'accueil, avec leur longueur maximale
+const TEXTES_ACCUEIL = {
+  hero1: 12, hero2: 12, descends: 40, bande: 120, badge: 18, ile_mot: 10,
+  p1_legende: 40, p2_legende: 40, p3_legende: 40, ile_texte: 300, tour_titre: 60, tour_note: 60,
+  c1_titre: 24, c1_texte: 160, c2_titre: 24, c2_texte: 160, c3_titre: 24, c3_texte: 160, c4_titre: 24, c4_texte: 160, c5_titre: 24, c5_texte: 160,
+  soir1: 80, soir2: 80, soir3: 80, soir4: 80, fin_titre: 14, fin_texte: 200
+};
+const lireJSON = (t, defaut) => { try { return t ? JSON.parse(t) : defaut; } catch { return defaut; } };
 
 function urlValide(u) {
   const s = String(u || '').trim();
@@ -102,7 +110,7 @@ const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.ex
 async function infos(env) {
   const [mauruuru, { results }] = await Promise.all([
     compteur(env, 'mauruuru'),
-    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste')").all()
+    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste')").all()
   ]);
   const r = Object.fromEntries(results.map(x => [x.cle, x.valeur]));
   const d = +r.evt_date || 0;
@@ -115,6 +123,7 @@ async function infos(env) {
   }
   return json({
     mauruuru: mauruuru || 0, statut: r.statut || '', evenement, banniere, musique,
+    statuts: actif(r.statut_hasard, false) ? lireJSON(r.statuts, []).filter(Boolean) : null,
     livre: actif(r.livre_actif), contact: actif(r.contact_actif)
   }, { headers: { 'cache-control': 'public, max-age=15' } });
 }
@@ -321,6 +330,8 @@ async function adminLire(env) {
     liens: liens.results, courts: courts.results,
     fichiers: fichiers.results.map(f => ({ ...f, protege: !!f.protege, url: urlFichier(f), court: urlCourte(f) })),
     stockage_utilise: fichiers.results.reduce((a, f) => a + f.taille, 0), stockage_max: STOCKAGE_MAX,
+    statuts: lireJSON(r.statuts, r.statut ? [r.statut] : []), statut_hasard: actif(r.statut_hasard, false),
+    accueil_textes: lireJSON(r.accueil_textes, {}),
     site: {
       livre_actif: actif(r.livre_actif), contact_actif: actif(r.contact_actif),
       banniere_active: actif(r.banniere_active, false), banniere_texte: r.banniere_texte || '', banniere_lien: r.banniere_lien || '',
@@ -420,6 +431,29 @@ async function adminEcrire(request, env) {
       await DB.prepare('DELETE FROM contacts WHERE id = ?').bind(c.id).run();
       break;
 
+    // --- Phrases « En ce moment » ---
+    case 'statuts': {
+      const liste = (Array.isArray(c.liste) ? c.liste : []).map(x => nettoyer(x, 120)).filter(Boolean).slice(0, 50);
+      await DB.batch([
+        DB.prepare("INSERT INTO reglages (cle, valeur) VALUES ('statuts', ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur").bind(JSON.stringify(liste)),
+        DB.prepare("INSERT INTO reglages (cle, valeur) VALUES ('statut', ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur").bind(liste[0] || ''),
+        DB.prepare("INSERT INTO reglages (cle, valeur) VALUES ('statut_hasard', ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur").bind(c.hasard ? '1' : '0')
+      ]);
+      break;
+    }
+
+    // --- Textes de la page d'accueil ---
+    case 'accueil_textes': {
+      const propres = {};
+      for (const [cle, max] of Object.entries(TEXTES_ACCUEIL)) {
+        const v = c.textes && c.textes[cle];
+        if (!v) continue;
+        propres[cle] = cle === 'tour_titre' ? nettoyerTexte(v, max).replace(/\n{2,}/g, '\n') : nettoyer(v, max);
+      }
+      await ecrireReglage(env, 'accueil_textes', JSON.stringify(propres));
+      break;
+    }
+
     // --- Réglages du site (interrupteurs, bannière, musique) ---
     case 'reglages_site': {
       const v = (b) => (b ? '1' : '0');
@@ -506,6 +540,26 @@ async function adminEcrire(request, env) {
   return json({ ok: true });
 }
 
+/* ================= Page d'accueil personnalisée ================= */
+
+async function pageAccueil(request, env) {
+  const reponse = await env.ASSETS.fetch(request);
+  if (!reponse.ok || !(reponse.headers.get('content-type') || '').includes('text/html')) return reponse;
+  let textes = {};
+  try { textes = lireJSON(await reglage(env, 'accueil_textes'), {}); } catch {}
+  if (!Object.keys(textes).length) return reponse;
+  const h = new Headers(reponse.headers);
+  h.delete('etag'); h.set('cache-control', 'no-cache');
+  return new HTMLRewriter().on('[data-txt]', {
+    element(el) {
+      const cle = el.getAttribute('data-txt'), v = textes[cle];
+      if (!v) return;
+      if (cle === 'tour_titre') el.setInnerContent(String(v).split(/\n+/).map(echappe).join('<br>'), { html: true });
+      else el.setInnerContent(String(v));
+    }
+  }).transform(new Response(reponse.body, { status: reponse.status, headers: h }));
+}
+
 /* ================= Aiguillage ================= */
 
 export default {
@@ -531,6 +585,8 @@ export default {
         }
         return erreur('introuvable', 404);
       }
+
+      if ((pathname === '/' || pathname === '/index.html') && (m === 'GET' || m === 'HEAD')) return await pageAccueil(request, env);
 
       // Fichier : /f/abc12345/nom.jpg
       const fichier = pathname.match(/^\/f\/([a-z0-9]{8})(?:\/.*)?$/);

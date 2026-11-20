@@ -173,7 +173,10 @@
   .lecteur .lire svg { width: 20px; height: 20px; fill: currentColor; }
   .lecteur .lire:focus-visible { outline: 3px solid var(--btn-texte); outline-offset: 3px; }
   .lecteur .corps { flex: 1; display: grid; gap: 2px; }
-  .lecteur .titre { font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: .4rem; }
+  .lecteur .titre { font-weight: 600; line-height: 1.2; white-space: nowrap; display: flex; align-items: center; gap: .4rem; min-width: 0; }
+  .lecteur .defile { flex: 1; min-width: 0; overflow: hidden; }
+  .lecteur .defile span { display: inline-block; will-change: transform; }
+  .lecteur .defile.coupe { -webkit-mask: linear-gradient(90deg, #000 85%, transparent); mask: linear-gradient(90deg, #000 85%, transparent); }
   .lecteur .titre svg { width: 16px; height: 16px; flex: none; }
   .lecteur.joue .titre svg { animation: tourne 4s linear infinite; }
   .lecteur .artiste { font-size: .875rem; color: var(--btn-sous); }
@@ -301,7 +304,7 @@
       <svg viewBox="0 0 24 24" id="ico-pause" aria-hidden="true" hidden><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
     </button>
     <div class="corps">
-      <span class="titre"><svg viewBox="140 140 120 120" aria-hidden="true"><g fill="currentColor"><use href="#petale"/><use href="#petale" transform="rotate(51.43 200 200)"/><use href="#petale" transform="rotate(102.86 200 200)"/><use href="#petale" transform="rotate(154.29 200 200)"/><use href="#petale" transform="rotate(205.71 200 200)"/><use href="#petale" transform="rotate(257.14 200 200)"/><use href="#petale" transform="rotate(308.57 200 200)"/></g></svg><span id="lecteur-titre"></span></span>
+      <span class="titre"><svg viewBox="140 140 120 120" aria-hidden="true"><g fill="currentColor"><use href="#petale"/><use href="#petale" transform="rotate(51.43 200 200)"/><use href="#petale" transform="rotate(102.86 200 200)"/><use href="#petale" transform="rotate(154.29 200 200)"/><use href="#petale" transform="rotate(205.71 200 200)"/><use href="#petale" transform="rotate(257.14 200 200)"/><use href="#petale" transform="rotate(308.57 200 200)"/></g></svg><span class="defile" id="lecteur-defile"><span id="lecteur-titre"></span></span></span>
       <span class="artiste" id="lecteur-artiste"></span>
       <span class="ligne-temps"><input type="range" id="lecteur-pos" min="0" max="1000" value="0" aria-label="Position dans le morceau"><span class="temps" id="lecteur-temps">0:00</span></span>
     </div>
@@ -596,7 +599,27 @@
     $('#lecteur-titre').textContent = mu.titre;
     $('#lecteur-artiste').textContent = mu.artiste; $('#lecteur-artiste').hidden = !mu.artiste;
     $('#lecteur').hidden = false;
+    setTimeout(faireDefiler, 3200); // une fois le lecteur apparu
   };
+  // Si le titre est trop long : il défile jusqu'au bout, marque une pause, revient, puis s'arrête
+  const boiteTitre = $('#lecteur-defile'), texteTitre = $('#lecteur-titre');
+  let defilement = null;
+  const faireDefiler = () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const d = texteTitre.scrollWidth - boiteTitre.clientWidth;
+    boiteTitre.classList.toggle('coupe', d > 4);
+    if (d <= 4 || (defilement && defilement.playState === 'running')) return;
+    boiteTitre.classList.remove('coupe');
+    defilement = texteTitre.animate([
+      { transform: 'translateX(0)' }, { transform: 'translateX(0)', offset: 0.12 },
+      { transform: `translateX(${-d}px)`, offset: 0.55 }, { transform: `translateX(${-d}px)`, offset: 0.8 },
+      { transform: 'translateX(0)' }
+    ], { duration: Math.max(6000, d * 45 + 4000), easing: 'ease-in-out' });
+    defilement.onfinish = () => boiteTitre.classList.add('coupe');
+  };
+  audio.addEventListener('play', faireDefiler);
+  addEventListener('resize', () => boiteTitre.classList.toggle('coupe', texteTitre.scrollWidth - boiteTitre.clientWidth > 4));
+
   const majBouton = () => {
     const joue = !audio.paused;
     $('#ico-lire').toggleAttribute('hidden', joue); $('#ico-pause').toggleAttribute('hidden', !joue);
@@ -618,7 +641,8 @@
     try {
       const d = await api('/api/infos');
       compte = d.mauruuru || 0;
-      if (d.statut) { $('#statut-texte').textContent = d.statut; $('#statut').hidden = false; }
+      const phrase = d.statuts && d.statuts.length ? d.statuts[Math.floor(Math.random() * d.statuts.length)] : d.statut;
+      if (phrase) { $('#statut-texte').textContent = phrase; $('#statut').hidden = false; }
       if (d.evenement) afficherEvenement(d.evenement);
       if (d.livre === false) $('#form-livre').closest('section').hidden = true;
       if (d.contact === false) $('#contact').hidden = true;

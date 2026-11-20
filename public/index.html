@@ -39,6 +39,7 @@
     --menu-fond: #FFFDF8; --menu-texte: #B3212E;
   }
   * { box-sizing: border-box; }
+  html { overflow-x: clip; }
   body {
     margin: 0; background: var(--mape); color: var(--encre);
     font: 400 17px/1.55 "Instrument Sans", system-ui, sans-serif;
@@ -76,7 +77,7 @@
   }
   .logo { position: absolute; top: 18px; left: max(16px, 3vw); z-index: 3; color: var(--mape); text-decoration: none; font-size: 1.5rem; }
   .mes-liens { position: absolute; top: 20px; left: calc(max(16px, 3vw) + 6.4rem); z-index: 3; padding: .3rem .85rem; border-radius: 999px; background: var(--papier); color: var(--mape); font-weight: 600; font-size: .9375rem; text-decoration: none; box-shadow: 0 3px 0 rgba(0,0,0,.15); }
-  .hero-titre { margin: 0; text-align: center; font-size: clamp(5.5rem, 27vw, 17rem); line-height: .8; }
+  .hero-titre { margin: 0; text-align: center; max-width: 100vw; font-size: clamp(5.5rem, 27vw, 17rem); line-height: .8; }
   .hero-titre .ligne { display: block; white-space: nowrap; }
   .l { display: inline-block; will-change: transform; }
   .l > span { display: inline-block; animation: chute .95s cubic-bezier(.2,1.35,.4,1) both; }
@@ -161,7 +162,8 @@
     border-radius: 50% 50% 0 0 / 8vw 8vw 0 0;
     display: grid; place-items: center; text-align: center; padding: 16vh 5vw 8vh; overflow: hidden;
   }
-  .fin-mot { margin: 0 0 .3em; font-size: clamp(3.4rem, 13.5vw, 12rem); line-height: .9; white-space: nowrap; }
+  .s-fin > div { width: 100%; min-width: 0; }
+  .fin-mot { margin: 0 0 .3em; overflow: visible; font-size: clamp(3.4rem, 13.5vw, 12rem); line-height: .9; white-space: nowrap; }
   .fin-texte { margin: 0 auto 2rem; max-width: 34ch; font-size: 1.1rem; }
   .fin-liens { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 3rem; }
   .fin-bas { font-size: .875rem; opacity: .85; }
@@ -173,7 +175,7 @@
     .p1 { left: 3%; top: 12%; } .p2 { right: 3%; top: 6%; } .p3 { right: 4%; bottom: 25%; }
     .ile-texte { max-width: none; left: 6%; right: 6%; bottom: 5%; }
     .badge { right: 6%; }
-    .progression { right: 3px; }
+    .progression { display: none; }
   }
 
   /* Photos envoyées depuis l'admin, à la place des dessins */
@@ -307,15 +309,15 @@
   <a class="logo d" href="./">Landry</a>
   <a class="mes-liens" href="bio.html">Mes liens</a>
   <h1 class="hero-titre d" id="hero-titre" aria-label="Ia ora na !">
-    <span class="ligne" aria-hidden="true">Ia ora</span>
-    <span class="ligne" aria-hidden="true">na !</span>
+    <span class="ligne" aria-hidden="true" data-txt="hero1">Ia ora</span>
+    <span class="ligne" aria-hidden="true" data-txt="hero2">na !</span>
   </h1>
   <div class="sticker-motif" id="sticker">
     <span class="scotch"></span>
     <svg class="rond" viewBox="0 0 400 400" aria-hidden="true"><use href="#motif-tifaifai"/></svg>
   </div>
   <p class="descends note">
-    descends doucement
+    <span data-txt="descends">descends doucement</span>
     <svg viewBox="0 0 44 64" aria-hidden="true"><path d="M8 4 C30 14 4 30 22 44 L22 58 M14 50 L22 60 L30 50" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </p>
 </header>
@@ -326,12 +328,14 @@
     <path id="vague-bande" d="M-200 170 C150 40 450 250 800 140 S1450 40 1800 160" fill="none" stroke="#B3212E" stroke-width="104"/>
     <text class="d" font-size="64" fill="#FFFDF8" dy="22"><textPath id="texte-bande" href="#vague-bande" startOffset="0"></textPath></text>
   </svg>
+  <span id="phrase-bande" hidden data-txt="bande">Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru</span>
+  <span id="phrase-badge" hidden data-txt="badge">Fait à Tahiti</span>
   <div class="badge" id="badge">
     <svg viewBox="0 0 200 200">
       <circle cx="100" cy="100" r="96" fill="#FFC93C"/>
       <circle cx="100" cy="100" r="74" fill="none" stroke="#B3212E" stroke-width="2" stroke-dasharray="4 5"/>
       <path id="cercle-badge" d="M100 100 m-80 0 a80 80 0 1 1 160 0 a80 80 0 1 1 -160 0" fill="none"/>
-      <text class="d" font-size="21" fill="#0D4D3A" letter-spacing="2"><textPath href="#cercle-badge">Fait à Tahiti ✿ Fait à Tahiti ✿ Fait à Tahiti ✿</textPath></text>
+      <text class="d" font-size="21" fill="#0D4D3A" letter-spacing="2"><textPath href="#cercle-badge" id="texte-badge">Fait à Tahiti ✿ Fait à Tahiti ✿ Fait à Tahiti ✿</textPath></text>
       <g transform="translate(100 100) scale(.42) translate(-200 -200)"><use href="#motif-tifaifai"/></g>
     </svg>
   </div>
@@ -341,11 +345,11 @@
   <!-- ================= 3. MON ÎLE ================= -->
   <section class="pin s-ile" id="ile" aria-labelledby="titre-ile">
     <div class="scene">
-      <h2 class="ile-mot d" id="titre-ile" aria-label="Tahiti"><span aria-hidden="true">Tahiti</span></h2>
-      <figure class="postale p1" data-photo="p1" data-from="-70,-40,-28" data-rot="-7" data-start=".32"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-lagon"/></svg><figcaption class="note">le lagon, 7h du matin</figcaption></figure>
-      <figure class="postale p2" data-photo="p2" data-from="70,-50,30" data-rot="6" data-start=".44"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-tiare"/></svg><figcaption class="note">la tiare du jardin</figcaption></figure>
-      <figure class="postale p3" data-photo="p3" data-from="60,70,-24" data-rot="-4" data-start=".56"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-coucher"/></svg><figcaption class="note">fin de journée</figcaption></figure>
-      <p class="ile-texte" id="ile-texte">Deux volcans reliés par l'isthme de Taravao : <b>Tahiti Nui</b>, la grande, et <b>Tahiti Iti</b>, la petite. C'est ici que je vis.</p>
+      <h2 class="ile-mot d" id="titre-ile" aria-label="Tahiti"><span aria-hidden="true" data-txt="ile_mot">Tahiti</span></h2>
+      <figure class="postale p1" data-photo="p1" data-from="-70,-40,-28" data-rot="-7" data-start=".32"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-lagon"/></svg><figcaption class="note" data-txt="p1_legende">le lagon, 7h du matin</figcaption></figure>
+      <figure class="postale p2" data-photo="p2" data-from="70,-50,30" data-rot="6" data-start=".44"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-tiare"/></svg><figcaption class="note" data-txt="p2_legende">la tiare du jardin</figcaption></figure>
+      <figure class="postale p3" data-photo="p3" data-from="60,70,-24" data-rot="-4" data-start=".56"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-coucher"/></svg><figcaption class="note" data-txt="p3_legende">fin de journée</figcaption></figure>
+      <p class="ile-texte" id="ile-texte" data-txt="ile_texte">Deux volcans reliés par l'isthme de Taravao : <b>Tahiti Nui</b>, la grande, et <b>Tahiti Iti</b>, la petite. C'est ici que je vis.</p>
     </div>
   </section>
 
@@ -353,12 +357,12 @@
   <section class="pin s-tour" id="tour" aria-labelledby="titre-tour">
     <div class="scene">
       <div class="piste" id="piste">
-        <h2 class="tour-titre d" id="titre-tour">Mon<br>Tahiti<br>en 5<br>mots <span class="note">continue de descendre, ça glisse</span></h2>
-        <article class="carte" data-photo="c1"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-lagon"/></svg><h3 class="d">Le lagon</h3><p>Turquoise le matin, argenté le soir. On y nage, on y rame, on y rêve.</p></article>
-        <article class="carte" data-photo="c2"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-montagne"/></svg><h3 class="d">La montagne</h3><p>Des sommets verts toujours coiffés de nuages. Le mont Orohena monte à 2 241 m.</p></article>
-        <article class="carte" data-photo="c3"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-vaa"/></svg><h3 class="d">Le va'a</h3><p>La pirogue à balancier, le sport roi de la Polynésie.</p></article>
-        <article class="carte" data-photo="c4"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-tiare"/></svg><h3 class="d">La tiare</h3><p>La fleur du pays. Derrière l'oreille gauche : cœur pris. À droite : cœur libre.</p></article>
-        <article class="carte" data-photo="c5"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-heiva"/></svg><h3 class="d">Le Heiva</h3><p>En juillet, Papeete vibre au rythme des danses et des tambours.</p></article>
+        <h2 class="tour-titre d" id="titre-tour"><span data-txt="tour_titre">Mon<br>Tahiti<br>en 5<br>mots</span> <span class="note" data-txt="tour_note">continue de descendre, ça glisse</span></h2>
+        <article class="carte" data-photo="c1"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-lagon"/></svg><h3 class="d" data-txt="c1_titre">Le lagon</h3><p data-txt="c1_texte">Turquoise le matin, argenté le soir. On y nage, on y rame, on y rêve.</p></article>
+        <article class="carte" data-photo="c2"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-montagne"/></svg><h3 class="d" data-txt="c2_titre">La montagne</h3><p data-txt="c2_texte">Des sommets verts toujours coiffés de nuages. Le mont Orohena monte à 2 241 m.</p></article>
+        <article class="carte" data-photo="c3"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-vaa"/></svg><h3 class="d" data-txt="c3_titre">Le va'a</h3><p data-txt="c3_texte">La pirogue à balancier, le sport roi de la Polynésie.</p></article>
+        <article class="carte" data-photo="c4"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-tiare"/></svg><h3 class="d" data-txt="c4_titre">La tiare</h3><p data-txt="c4_texte">La fleur du pays. Derrière l'oreille gauche : cœur pris. À droite : cœur libre.</p></article>
+        <article class="carte" data-photo="c5"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-heiva"/></svg><h3 class="d" data-txt="c5_titre">Le Heiva</h3><p data-txt="c5_texte">En juillet, Papeete vibre au rythme des danses et des tambours.</p></article>
       </div>
     </div>
   </section>
@@ -379,10 +383,10 @@
         </svg>
       </div>
       <div class="phrases">
-        <p class="phrase d">Le soir…</p>
-        <p class="phrase d">le soleil plonge derrière Moorea</p>
-        <p class="phrase d">les étoiles s'allument une à une</p>
-        <p class="phrase d">et sur Insta, la balade continue</p>
+        <p class="phrase d" data-txt="soir1">Le soir…</p>
+        <p class="phrase d" data-txt="soir2">le soleil plonge derrière Moorea</p>
+        <p class="phrase d" data-txt="soir3">les étoiles s'allument une à une</p>
+        <p class="phrase d" data-txt="soir4">et sur Insta, la balade continue</p>
       </div>
       <div class="soir-boutons" id="soir-boutons">
         <a class="pilule" href="https://landrypf.com/insta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4ZM21.9 7c-.1-1.6-.4-3-1.6-4.2S17.6 1.2 16 1.1C14.3 1 9.7 1 8 1.1 6.4 1.2 5 1.5 3.8 2.7S2.2 5.4 2.1 7C2 8.7 2 13.3 2.1 15c.1 1.6.4 3 1.6 4.2s2.6 1.5 4.2 1.6c1.7.1 6.3.1 8 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.7.1-6.3.2-8Zm-2.2 10a3.3 3.3 0 0 1-1.8 1.8c-1.3.5-4.3.4-5.9.4s-4.6.1-5.9-.4A3.3 3.3 0 0 1 4.3 17c-.5-1.3-.4-4.3-.4-5.9s-.1-4.6.4-5.9A3.3 3.3 0 0 1 6.1 3.4C7.4 2.9 10.4 3 12 3s4.6-.1 5.9.4a3.3 3.3 0 0 1 1.8 1.8c.5 1.3.4 4.3.4 5.9s.1 4.6-.4 5.9Z"/></svg>Me suivre sur Instagram</a>
@@ -397,8 +401,8 @@
 <footer class="s-fin" id="fin">
   <div>
     <svg class="fin-tiare" viewBox="140 140 120 120" aria-hidden="true"><use href="#tiare-blanche"/></svg>
-    <h2 class="fin-mot d" id="fin-mot">Mauruuru</h2>
-    <p class="fin-texte">Merci d'avoir fait la balade jusqu'au bout. Reviens quand tu veux, le lagon ne bouge pas.</p>
+    <h2 class="fin-mot d" id="fin-mot" data-txt="fin_titre">Mauruuru</h2>
+    <p class="fin-texte" data-txt="fin_texte">Merci d'avoir fait la balade jusqu'au bout. Reviens quand tu veux, le lagon ne bouge pas.</p>
     <div class="fin-liens">
       <a class="pilule" href="bio.html">Mes liens</a>
       <a class="pilule" href="https://landrypf.com/insta">Instagram</a>
@@ -434,6 +438,8 @@
     $$('.l', el).forEach(l => lettres.push(l));
     return lettres;
   };
+  $('#hero-titre').setAttribute('aria-label', $$('#hero-titre .ligne').map(l => l.textContent.trim()).join(' '));
+  $('#titre-ile').setAttribute('aria-label', $('#titre-ile span').textContent.trim());
   const heroLettres = $$('#hero-titre .ligne').flatMap((ligne, n) => decouper(ligne, n * 0.35));
   heroLettres.forEach(l => {
     l.dataset.r0 = (alea() * 12 - 6).toFixed(1);
@@ -451,7 +457,9 @@
   });
 
   /* ---------- Bandeau ---------- */
-  const phraseBande = 'Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru ✿ ';
+  const phraseBande = $('#phrase-bande').textContent.trim().replace(/\s*✿?\s*$/, '') + ' ✿ ';
+  const badgeTxt = $('#phrase-badge').textContent.trim().slice(0, 18);
+  $('#texte-badge').textContent = `${badgeTxt} ✿ `.repeat(3);
   $('#texte-bande').textContent = phraseBande.repeat(8);
 
   /* ---------- Couronne de fleurs (Heiva) ---------- */
@@ -578,8 +586,27 @@
     finMot.style.fontVariationSettings = `"wdth" ${(50 + pf * 100).toFixed(1)}`;
   };
 
+  // Les très grands mots (titre, TAHITI, MAURUURU) rétrécissent s'ils dépassent l'écran
+  const ajuster = (el, marge = 0.92) => {
+    if (!el) return;
+    el.style.fontSize = '';
+    const dispo = (el.parentElement.clientWidth || innerWidth) * marge;
+    el.style.width = 'max-content'; el.style.maxWidth = 'none';   // largeur réelle du texte
+    const largeur = el.getBoundingClientRect().width;
+    el.style.width = ''; el.style.maxWidth = '';
+    if (largeur > dispo) el.style.fontSize = (parseFloat(getComputedStyle(el).fontSize) * dispo / largeur).toFixed(1) + 'px';
+  };
+  const ajusterTout = () => {
+    finMot.style.fontVariationSettings = '"wdth" 150';      // on mesure au plus large
+    ajuster(finMot);
+    ajuster($('#hero-titre'), 0.94);
+    ajuster($('#titre-ile span'), 0.92);
+    aFaire = true;
+  };
+
   const mesurer = () => {
     try { longueurBande = $('#texte-bande').getComputedTextLength() / 8; } catch { longueurBande = 0; }
+    ajusterTout();
     aFaire = true;
   };
 
@@ -592,7 +619,9 @@
   } else {
     // Mouvement réduit : état final directement
     scSoir.style.cssText += ';--ciel-haut:#0B1838;--ciel-bas:#1A2A55;--soleil-y:90%;--etoiles:1;--mer:#0A1430;--moorea:#070B1A';
+    ajusterTout();
     finMot.style.fontVariationSettings = '"wdth" 100';
+    addEventListener('resize', ajusterTout);
   }
   document.getElementById('annee').textContent = new Date().getFullYear();
 
