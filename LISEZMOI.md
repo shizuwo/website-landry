@@ -20,10 +20,15 @@ Chaque modification fusionnée dans `main` est publiée automatiquement sur land
 - **Liens bio** : ajouter, modifier, masquer, réordonner, supprimer. Dates de début et de fin facultatives
   (le lien n'apparaît qu'entre ces deux dates). Ligne « En ce moment ».
 - **Liens courts** : landrypf.com/ton-code vers n'importe quelle adresse, avec QR code à télécharger.
-- **Fichiers** : envoi jusqu'à 100 Mo, lien à partager, QR code, mot de passe et date d'expiration facultatifs.
-- **Galerie** : choisis quelles images apparaissent sur /galerie, leur ordre et leur légende.
+- **Fichiers** : envoi jusqu'à 100 Mo, lien court à partager (landrypf.com/f/…), QR code, mot de passe
+  et date d'expiration facultatifs, renommage. La case « Optimiser les photos » (cochée par défaut)
+  les réduit à 2 560 px et les allège sans perte visible ; décoche-la pour envoyer l'original.
+  La jauge indique la place utilisée sur les 10 Go gratuits ; l'envoi est bloqué juste avant la limite.
+- **Galerie** : chaque nouvelle image arrive dans « Photos à valider » ; rien n'est publié sans ton accord.
 - **Photos accueil** : remplace les 8 dessins de la page d'accueil par tes photos.
 - **Événement** : affiché avec un compte à rebours sur la page bio.
+- **Réglages** : activer ou couper le livre d'or et le formulaire de contact, la bannière d'annonce
+  (en bas de toutes les pages) et le lecteur de musique de la bio (morceau choisi parmi tes fichiers audio).
 - **Messages** : ce que les visiteurs t'envoient avec le formulaire « Me contacter ».
 - **Livre d'or** : publier ou supprimer les mots.
 

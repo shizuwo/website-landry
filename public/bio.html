@@ -164,6 +164,22 @@
   .evenement .quand { display: block; font-size: .875rem; font-variant-numeric: tabular-nums; }
   a.evenement:hover { filter: brightness(1.04); }
   a.evenement:focus-visible { outline: 3px solid var(--blanc); outline-offset: 3px; }
+  .lecteur {
+    display: flex; align-items: center; gap: .85rem; width: 100%; margin: -.75rem 0 1.5rem; padding: .7rem 1rem .7rem .7rem;
+    background: var(--blanc); color: var(--btn-texte); border-radius: 16px; box-shadow: 0 4px 0 var(--fonce); text-align: left;
+    animation: apparait .6s ease 2.35s both;
+  }
+  .lecteur .lire { flex: none; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--btn-texte); color: var(--blanc); display: grid; place-items: center; cursor: pointer; transition: background 1.2s; }
+  .lecteur .lire svg { width: 20px; height: 20px; fill: currentColor; }
+  .lecteur .lire:focus-visible { outline: 3px solid var(--btn-texte); outline-offset: 3px; }
+  .lecteur .corps { flex: 1; display: grid; gap: 2px; }
+  .lecteur .titre { font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: .4rem; }
+  .lecteur .titre svg { width: 16px; height: 16px; flex: none; }
+  .lecteur.joue .titre svg { animation: tourne 4s linear infinite; }
+  .lecteur .artiste { font-size: .875rem; color: var(--btn-sous); }
+  .lecteur .ligne-temps { display: flex; align-items: center; gap: .5rem; }
+  .lecteur input[type=range] { flex: 1; accent-color: var(--btn-texte); height: 22px; margin: 0; }
+  .lecteur .temps { font-size: .75rem; color: var(--btn-sous); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .livre { width: 100%; max-width: 440px; margin: 0 auto; padding: 3rem 1.25rem 2rem; position: relative; z-index: 1; }
   .livre h2 { font-family: "Young Serif", Georgia, serif; font-weight: 400; font-size: 1.9rem; line-height: 1.1; margin: 0 0 .35rem; text-align: center; }
   .livre > p { text-align: center; color: var(--doux); margin: 0 0 1.5rem; }
@@ -278,6 +294,19 @@
     <span><span class="quoi" id="evt-titre"></span><span class="quand" id="evt-quand"></span></span>
   </a>
   <p class="musique" id="musique" hidden><img id="musique-img" alt=""><span><b data-t="ecoute">J'écoute</b><span class="titre" id="musique-titre"></span></span></p>
+
+  <div class="lecteur" id="lecteur" hidden>
+    <button class="lire" id="lecteur-btn" type="button" aria-label="Écouter">
+      <svg viewBox="0 0 24 24" id="ico-lire" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.9l10.4-6.5a1 1 0 0 0 0-1.8L9.5 4.6A1 1 0 0 0 8 5.5Z"/></svg>
+      <svg viewBox="0 0 24 24" id="ico-pause" aria-hidden="true" hidden><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+    </button>
+    <div class="corps">
+      <span class="titre"><svg viewBox="140 140 120 120" aria-hidden="true"><g fill="currentColor"><use href="#petale"/><use href="#petale" transform="rotate(51.43 200 200)"/><use href="#petale" transform="rotate(102.86 200 200)"/><use href="#petale" transform="rotate(154.29 200 200)"/><use href="#petale" transform="rotate(205.71 200 200)"/><use href="#petale" transform="rotate(257.14 200 200)"/><use href="#petale" transform="rotate(308.57 200 200)"/></g></svg><span id="lecteur-titre"></span></span>
+      <span class="artiste" id="lecteur-artiste"></span>
+      <span class="ligne-temps"><input type="range" id="lecteur-pos" min="0" max="1000" value="0" aria-label="Position dans le morceau"><span class="temps" id="lecteur-temps">0:00</span></span>
+    </div>
+    <audio id="lecteur-audio" preload="none"></audio>
+  </div>
 
   <!-- ✏️ Ta bio : modifie le texte dans le dictionnaire TEXTES en bas de page (fr, en, ty) -->
   <p class="bio" data-t="bio">Ia ora na ! Je vis à Tahiti, entre le lagon et la montagne. Retrouve-moi ici 🌺</p>
@@ -399,7 +428,7 @@
       ctEmail: 'Ton e-mail (pour que je puisse te répondre)', ctEnvoyer: 'Envoyer',
       ctMerci: 'Mauruuru ! Ton message est bien arrivé.', ctManque: 'Écris ton prénom et un message.',
       ctEmailFaux: "Cette adresse e-mail n'a pas l'air correcte.", ctTropVite: 'Tu viens déjà de m\'écrire, réessaie dans 2 minutes.',
-      evtDans: 'dans', evtMaintenant: "C'est maintenant !", meteo: 'Météo et houle à Tahiti'
+      evtDans: 'dans', evtMaintenant: "C'est maintenant !", meteo: 'Météo et houle à Tahiti', ecouter: 'Écouter', pause: 'Pause'
     },
     // ⚠️ Reo tahiti : fais relire ces phrases par quelqu'un qui parle couramment.
     ty: {
@@ -440,7 +469,7 @@
       ctEmail: 'Your e-mail (so I can reply)', ctEnvoyer: 'Send',
       ctMerci: 'Mauruuru! Your message arrived.', ctManque: 'Write your name and a message.',
       ctEmailFaux: "That e-mail address doesn't look right.", ctTropVite: 'You just wrote to me, try again in 2 minutes.',
-      evtDans: 'in', evtMaintenant: "It's happening now!", meteo: 'Weather and swell in Tahiti'
+      evtDans: 'in', evtMaintenant: "It's happening now!", meteo: 'Weather and swell in Tahiti', ecouter: 'Play', pause: 'Pause'
     }
   };
 
@@ -559,12 +588,41 @@
     } catch {}
   };
 
+  /* ---------- Lecteur de musique (choisi dans l'admin) ---------- */
+  const audio = $('#lecteur-audio'), boutonLire = $('#lecteur-btn'), pos = $('#lecteur-pos');
+  const mmss = (t) => { if (!isFinite(t)) return '0:00'; const m = Math.floor(t / 60), s = Math.floor(t % 60); return `${m}:${String(s).padStart(2, '0')}`; };
+  const afficherLecteur = (mu) => {
+    audio.src = mu.url;
+    $('#lecteur-titre').textContent = mu.titre;
+    $('#lecteur-artiste').textContent = mu.artiste; $('#lecteur-artiste').hidden = !mu.artiste;
+    $('#lecteur').hidden = false;
+  };
+  const majBouton = () => {
+    const joue = !audio.paused;
+    $('#ico-lire').toggleAttribute('hidden', joue); $('#ico-pause').toggleAttribute('hidden', !joue);
+    boutonLire.setAttribute('aria-label', joue ? t('pause') : t('ecouter'));
+    $('#lecteur').classList.toggle('joue', joue);
+  };
+  boutonLire.addEventListener('click', () => { if (audio.paused) audio.play().catch(() => {}); else audio.pause(); });
+  ['play', 'pause', 'ended'].forEach(ev => audio.addEventListener(ev, majBouton));
+  let glisse = false;
+  audio.addEventListener('timeupdate', () => {
+    if (!glisse && audio.duration) pos.value = Math.round(audio.currentTime / audio.duration * 1000);
+    $('#lecteur-temps').textContent = `${mmss(audio.currentTime)} / ${mmss(audio.duration)}`;
+  });
+  audio.addEventListener('loadedmetadata', () => { $('#lecteur-temps').textContent = `0:00 / ${mmss(audio.duration)}`; });
+  pos.addEventListener('input', () => { glisse = true; });
+  pos.addEventListener('change', () => { if (audio.duration) audio.currentTime = pos.value / 1000 * audio.duration; glisse = false; });
+
   const chargerInfos = async () => {
     try {
       const d = await api('/api/infos');
       compte = d.mauruuru || 0;
       if (d.statut) { $('#statut-texte').textContent = d.statut; $('#statut').hidden = false; }
       if (d.evenement) afficherEvenement(d.evenement);
+      if (d.livre === false) $('#form-livre').closest('section').hidden = true;
+      if (d.contact === false) $('#contact').hidden = true;
+      if (d.musique) afficherLecteur(d.musique);
     } catch {
       demo = true;
       compte = +(stock.lire('demo-compte') || 128);

@@ -98,6 +98,27 @@
   .emplacement .apercu img { width: 100%; height: 100%; object-fit: cover; }
   .emplacement b { display: block; font-size: .875rem; margin-bottom: 4px; }
 
+  .jauge { display: flex; align-items: center; gap: 14px; }
+  .jauge svg { width: 64px; height: 64px; flex: none; transform: rotate(-90deg); }
+  .jauge .pct { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .jauge small { display: block; color: var(--doux); }
+  .interrupteur { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--trait); font-weight: 600; }
+  .interrupteur:last-child { border-bottom: 0; }
+  .interrupteur small { display: block; font-weight: 400; color: var(--doux); }
+  .bascule { position: relative; width: 52px; height: 30px; flex: none; }
+  .bascule input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; cursor: pointer; }
+  .bascule span { position: absolute; inset: 0; border-radius: 999px; background: #CFC6BA; transition: background .2s; pointer-events: none; }
+  .bascule span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .bascule input:checked + span { background: var(--rouge); }
+  .bascule input:checked + span::after { transform: translateX(22px); }
+  .bascule input:focus-visible + span { outline: 3px solid var(--rouge); outline-offset: 2px; }
+  .sous-bloc { margin: 4px 0 12px; display: grid; gap: 10px; }
+  .a-valider { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .a-valider figure { margin: 0; background: var(--carte); border-radius: 12px; padding: 8px; box-shadow: 0 1px 0 var(--trait); }
+  .a-valider img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
+  .a-valider figcaption { font-size: .8rem; color: var(--doux); margin: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .a-valider .ligne { margin-top: 4px; gap: 6px; }
+  .a-valider button { flex: 1; padding: .3rem .4rem; }
   dialog { border: 0; border-radius: 18px; padding: 20px; width: min(380px, 92vw); }
   dialog::backdrop { background: rgba(0,0,0,.5); }
   dialog h3 { margin-top: 0; }
@@ -119,6 +140,7 @@
     <a href="#s-galerie">Galerie</a>
     <a href="#s-accueil">Photos accueil</a>
     <a href="#s-evenement">Événement</a>
+    <a href="#s-site">Réglages</a>
     <a href="#s-messages">Messages<span class="pastille" id="n-non-lus" hidden></span></a>
     <a href="#s-livre">Livre d'or<span class="pastille" id="n-attente" hidden></span></a>
   </nav>
@@ -191,10 +213,14 @@
     <section id="s-fichiers">
       <h2>Fichiers</h2>
       <p class="aide">Envoie un fichier (100 Mo max) et obtiens un lien landrypf.com/f/… à partager.</p>
+      <div class="boite jauge" style="margin-bottom:12px">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="#EAE4DB" stroke-width="8"/><circle id="jauge-arc" cx="32" cy="32" r="27" fill="none" stroke="#1E7A43" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 999"/></svg>
+        <div><span class="pct" id="jauge-pct">0 %</span><small id="jauge-texte">du stockage gratuit utilisé</small></div>
+      </div>
       <div class="alerte" id="pas-de-stockage" hidden>Le stockage n'est pas encore branché : active <b>R2</b> dans Cloudflare, puis préviens Claude.</div>
       <div class="boite" id="zone-envoi">
         <div class="grille deux">
-          <label class="case"><input type="checkbox" id="opt-galerie"> Ajouter les images à la galerie</label>
+          <label class="case"><input type="checkbox" id="opt-optimiser" checked> Optimiser les photos (plus légères, qualité préservée)</label>
           <label>Expiration
             <select id="opt-expire">
               <option value="">Jamais</option><option value="1">Après 1 jour</option><option value="7">Après 7 jours</option><option value="30">Après 30 jours</option>
@@ -214,7 +240,13 @@
     <!-- ================= GALERIE ================= -->
     <section id="s-galerie">
       <h2>Galerie</h2>
-      <p class="aide">Les photos affichées sur landrypf.com/galerie, dans cet ordre. Ajoute-en depuis la section Fichiers.</p>
+      <div id="bloc-valider" hidden>
+        <h3>Photos à valider</h3>
+        <p class="aide">Tes nouvelles images. Rien n'est publié sans ton accord.</p>
+        <div class="a-valider" id="a-valider"></div>
+      </div>
+      <h3>Dans la galerie</h3>
+      <p class="aide">Affichées sur landrypf.com/galerie, dans cet ordre.</p>
       <div id="liste-galerie"></div>
     </section>
 
@@ -237,6 +269,35 @@
         </div>
         <div class="ligne"><button>Enregistrer</button><button type="button" class="gris" id="evt-effacer">Effacer l'événement</button></div>
         <p class="erreur" id="err-evt" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- ================= RÉGLAGES DU SITE ================= -->
+    <section id="s-site">
+      <h2>Réglages du site</h2>
+      <p class="aide">Active ou coupe les fonctionnalités de la page bio, et gère la bannière et la musique.</p>
+      <form id="form-site" class="boite" novalidate>
+        <label class="interrupteur"><span>Livre d'or<small>La section où les visiteurs laissent un mot public</small></span><span class="bascule"><input type="checkbox" name="livre_actif"><span></span></span></label>
+        <label class="interrupteur"><span>Formulaire « Me contacter »<small>Les messages privés qui arrivent dans ta boîte</small></span><span class="bascule"><input type="checkbox" name="contact_actif"><span></span></span></label>
+
+        <label class="interrupteur"><span>Bannière d'annonce<small>Un message en bas de toutes les pages</small></span><span class="bascule"><input type="checkbox" name="banniere_active"><span></span></span></label>
+        <div class="sous-bloc" id="bloc-banniere">
+          <label>Texte de l'annonce<input name="banniere_texte" maxlength="140" placeholder="ex. Nouvelle vidéo dispo sur Insta !"></label>
+          <label>Lien (facultatif)<input name="banniere_lien" inputmode="url" placeholder="https://… ou /galerie"></label>
+        </div>
+
+        <label class="interrupteur"><span>Lecteur de musique sur la bio<small>Le visiteur appuie sur lecture, rien ne démarre tout seul</small></span><span class="bascule"><input type="checkbox" name="musique_active"><span></span></span></label>
+        <div class="sous-bloc" id="bloc-musique">
+          <label>Morceau<select name="musique_id" id="choix-musique"></select></label>
+          <div class="grille deux">
+            <label>Titre affiché<input name="musique_titre" maxlength="80" placeholder="ex. Nom du morceau"></label>
+            <label>Artiste<input name="musique_artiste" maxlength="80" placeholder="ex. Landry"></label>
+          </div>
+          <p class="aide" style="margin:0">Mets uniquement des morceaux à toi ou que tu as le droit de diffuser publiquement.</p>
+        </div>
+
+        <div class="ligne"><button>Enregistrer les réglages</button></div>
+        <p class="erreur" id="err-site" role="alert"></p>
       </form>
     </section>
 
@@ -266,6 +327,7 @@
 <dialog id="fen-fichier" aria-labelledby="ff-titre">
   <h3 id="ff-titre">Réglages du fichier</h3>
   <form id="form-fichier" class="grille" novalidate>
+    <label>Nom du fichier<input name="nom" maxlength="120" required></label>
     <label>Légende (pour la galerie)<input name="legende" maxlength="120"></label>
     <label class="case"><input type="checkbox" name="galerie"> Dans la galerie</label>
     <label>Expiration<input name="expire" type="datetime-local"></label>
@@ -293,7 +355,7 @@
   const dateFr = (t) => new Date(t).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
   const versLocal = (t) => { if (!t) return ''; const d = new Date(t); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
   const depuisLocal = (v) => (v ? new Date(v).getTime() : null);
-  const taille = (o) => o < 1024 ? o + ' o' : o < 1048576 ? (o / 1024).toFixed(0) + ' Ko' : (o / 1048576).toFixed(1).replace('.', ',') + ' Mo';
+  const taille = (o) => o < 1e3 ? o + ' o' : o < 1e6 ? Math.round(o / 1e3) + ' Ko' : o < 1e9 ? (o / 1e6).toFixed(1).replace('.', ',') + ' Mo' : (o / 1e9).toFixed(2).replace('.', ',') + ' Go';
   let cle = sessionStorage.getItem('cle') || localStorage.getItem('cle-admin') || '';
   let D = null, enEdition = null, fichierEdite = null;
 
@@ -329,7 +391,8 @@
     const somme = (k) => jours.reduce((a, j) => a + parJour[j][k], 0);
     const tuiles = [['vues', 'visites'], ['clic', 'clics sur la bio'], ['court', 'clics liens courts'], ['telechargement', 'téléchargements'], ['mauruuru', 'mauruuru']];
     $('#tuiles').innerHTML = tuiles.map(([k, l]) => `<div class="tuile"><b>${nb(somme(k))}</b><span>${l}</span></div>`).join('')
-      + `<div class="tuile"><b>${nb(D.compteurs.mauruuru)}</b><span>mauruuru au total</span></div>`;
+      + `<div class="tuile"><b>${nb(D.compteurs.mauruuru)}</b><span>mauruuru au total</span></div>`
+      + `<div class="tuile"><b>${taille(D.stockage_utilise || 0)}</b><span>stockage utilisé sur 10 Go</span></div>`;
 
     // Graphique en barres (une seule série : les visites)
     const svg = $('#graph'), W = svg.clientWidth || 600, H = 190, bas = 22, haut = 10;
@@ -411,6 +474,16 @@
       </div>`).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
   };
 
+  const afficherJauge = () => {
+    const u = D.stockage_utilise || 0, max = D.stockage_max || 1e10, ratio = Math.min(1, u / max);
+    const pct = ratio * 100, txt = pct < 1 && u > 0 ? '< 1 %' : Math.round(pct) + ' %';
+    const couleur = ratio >= .95 ? '#B3212E' : ratio >= .8 ? '#C97A00' : '#1E7A43';
+    const tour = 2 * Math.PI * 27;
+    const arc = $('#jauge-arc'); arc.setAttribute('stroke', couleur); arc.setAttribute('stroke-dasharray', `${Math.max(u > 0 ? 2 : 0, ratio * tour)} ${tour}`);
+    $('#jauge-pct').textContent = txt;
+    $('#jauge-texte').textContent = `${taille(u)} utilisés sur 10 Go · reste ${taille(Math.max(0, max - u))}`;
+  };
+
   const vignette = (f) => f.type.startsWith('image/') && !f.protege ? `<img src="${f.url}" alt="" loading="lazy">` : ico(f.type.startsWith('image/') ? 'monde' : 'lien');
   const afficherFichiers = () => {
     const now = Date.now();
@@ -422,11 +495,11 @@
         <div class="ico">${vignette(f)}</div>
         <div class="corps">
           <div class="titre">${echappe(f.nom)}</div>
-          <small>${taille(f.taille)} · ${dateFr(f.cree)}</small>
+          <small>landrypf.com${f.court} · ${taille(f.taille)} · ${dateFr(f.cree)}</small>
           ${f.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}${expire}${f.galerie ? '<span class="badge">galerie</span>' : ''}
           <div class="ligne">
-            <button class="petit gris" data-a="copier" data-texte="${SITE}${f.url}">Copier le lien</button>
-            <button class="petit gris" data-a="qr" data-texte="${SITE}${f.url}" data-nom="${echappe(f.nom)}">QR code</button>
+            <button class="petit gris" data-a="copier" data-texte="${SITE}${f.court}">Copier le lien</button>
+            <button class="petit gris" data-a="qr" data-texte="${SITE}${f.court}" data-nom="${echappe(f.nom)}">QR code</button>
             <button class="petit gris" data-a="ouvrir" data-url="${f.url}">Ouvrir</button>
             <button class="petit gris" data-a="regler-fichier" data-id="${f.id}">Réglages</button>
             <button class="petit gris" data-a="fichier_supprimer" data-id="${f.id}">Supprimer</button>
@@ -435,6 +508,13 @@
         <span class="chiffre">${pluriel(f.telechargements, 'vue')}</span>
       </div>`;
     }).join('') : '<p class="vide">Aucun fichier pour l\'instant.</p>';
+
+    const aValider = D.fichiers.filter(f => f.type.startsWith('image/') && !f.galerie && !f.vu_galerie && !f.protege && !(f.expire && f.expire < now));
+    $('#bloc-valider').hidden = !aValider.length;
+    $('#a-valider').innerHTML = aValider.map(f => `
+      <figure><img src="${f.url}" alt="" loading="lazy"><figcaption>${echappe(f.nom)}</figcaption>
+        <div class="ligne"><button class="petit" data-a="galerie-oui" data-id="${f.id}">Ajouter</button><button class="petit gris" data-a="galerie-non" data-id="${f.id}">Ignorer</button></div>
+      </figure>`).join('');
 
     const gal = D.fichiers.filter(f => f.galerie).sort((a, b) => a.ordre - b.ordre || b.cree - a.cree);
     $('#liste-galerie').innerHTML = gal.length ? gal.map((f, i) => `
@@ -484,6 +564,32 @@
       </div>`).join('') : '<p class="vide">Aucun message pour l\'instant.</p>';
   };
 
+  const fs = $('#form-site');
+  const majBlocsSite = () => { $('#bloc-banniere').hidden = !fs.banniere_active.checked; $('#bloc-musique').hidden = !fs.musique_active.checked; };
+  ['banniere_active', 'musique_active'].forEach(n => fs[n].addEventListener('change', majBlocsSite));
+  const afficherSite = () => {
+    if (fs.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return;
+    const r = D.site;
+    ['livre_actif', 'contact_actif', 'banniere_active', 'musique_active'].forEach(k => fs[k].checked = !!r[k]);
+    fs.banniere_texte.value = r.banniere_texte; fs.banniere_lien.value = r.banniere_lien;
+    fs.musique_titre.value = r.musique_titre; fs.musique_artiste.value = r.musique_artiste;
+    const audios = D.fichiers.filter(f => f.type.startsWith('audio/'));
+    $('#choix-musique').innerHTML = (audios.length ? '<option value="">Choisis un morceau…</option>' : '<option value="">Envoie d\'abord un fichier audio (section Fichiers)</option>')
+      + audios.map(f => `<option value="${f.id}" ${f.protege || f.expire ? 'disabled' : ''} ${f.id === r.musique_id ? 'selected' : ''}>${echappe(f.nom)}${f.protege ? ' (protégé)' : f.expire ? ' (expire)' : ''}</option>`).join('');
+    majBlocsSite();
+  };
+  fs.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const c = { action: 'reglages_site' };
+    ['livre_actif', 'contact_actif', 'banniere_active', 'musique_active'].forEach(k => c[k] = fs[k].checked);
+    ['banniere_texte', 'banniere_lien', 'musique_id', 'musique_titre', 'musique_artiste'].forEach(k => c[k] = fs[k].value.trim());
+    if (await action(c, $('#err-site'))) toast('Réglages enregistrés');
+  });
+  $('#choix-musique').addEventListener('change', () => {
+    const f = D.fichiers.find(x => x.id === $('#choix-musique').value);
+    if (f && !fs.musique_titre.value) fs.musique_titre.value = f.nom.replace(/\.[a-z0-9]+$/i, '');
+  });
+
   const listeMsgs = (msgs, attente) => msgs.length ? msgs.map(m => `
     <div class="carte"><div class="corps">
       <div class="texte">${echappe(m.texte)}</div><small>${echappe(m.nom)} · ${dateFr(m.cree)}</small>
@@ -499,7 +605,7 @@
     if (document.activeElement !== $('#statut')) $('#statut').value = D.statut;
     const fe = $('#form-evt');
     if (!fe.contains(document.activeElement)) { fe.titre.value = D.evenement.titre; fe.date.value = versLocal(D.evenement.date); fe.lien.value = D.evenement.lien; }
-    afficherStats(); afficherLiens(); afficherCourts(); afficherFichiers(); afficherContacts();
+    afficherStats(); afficherLiens(); afficherCourts(); afficherFichiers(); afficherJauge(); afficherSite(); afficherContacts();
     $('#attente').innerHTML = listeMsgs(D.attente, true); $('#valides').innerHTML = listeMsgs(D.valides, false);
     $('#n-attente').textContent = D.attente.length; $('#n-attente').hidden = !D.attente.length;
   };
@@ -541,13 +647,32 @@
 
   /* ================= Envoi de fichiers ================= */
   const depot = $('#depot'), choix = $('#choix-fichiers');
-  const envoyer = (fichier) => new Promise((ok) => {
+  // Optimisation : redimensionne à 2560 px maximum et recompresse légèrement (retire aussi la position GPS des photos)
+  const optimiser = async (fichier) => {
+    if (!$('#opt-optimiser').checked || !/^image\/(jpeg|png|webp)$/.test(fichier.type)) return fichier;
+    try {
+      const img = await createImageBitmap(fichier, { imageOrientation: 'from-image' });
+      const MAX = 2560, k = Math.min(1, MAX / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const png = fichier.type === 'image/png';
+      const type = png ? 'image/webp' : 'image/jpeg';
+      const blob = await new Promise(r => c.toBlob(r, type, png ? 0.92 : 0.86));
+      if (!blob || blob.size >= fichier.size) return fichier;
+      const nom = fichier.name.replace(/\.[a-z0-9]+$/i, '') + (png ? '.webp' : '.jpg');
+      return new File([blob], nom, { type });
+    } catch { return fichier; }
+  };
+  const envoyer = (original) => new Promise(async (ok) => {
     const ligne = document.createElement('div'); ligne.className = 'envoi';
-    ligne.innerHTML = `<div>${echappe(fichier.name)} <small>(${taille(fichier.size)})</small></div><progress max="100" value="0"></progress>`;
+    ligne.innerHTML = `<div>${echappe(original.name)} <small>(${taille(original.size)}) · préparation…</small></div><progress max="100" value="0"></progress>`;
     $('#envois').prepend(ligne);
-    if (fichier.size > 100 * 1048576) { ligne.innerHTML = `<div class="erreur">${echappe(fichier.name)} : trop lourd (100 Mo max).</div>`; return ok(); }
+    const fichier = await optimiser(original);
+    const gain = fichier !== original ? ` → ${taille(fichier.size)}` : '';
+    ligne.querySelector('small').textContent = `(${taille(original.size)}${gain})`;
+    if (fichier.size > 100e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : trop lourd (100 Mo max).</div>`; return ok(); }
+    if ((D.stockage_utilise || 0) + fichier.size > (D.stockage_max || 1e10) - 50e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : stockage presque plein. Supprime des fichiers d'abord.</div>`; return ok(); }
     const p = new URLSearchParams({ nom: fichier.name });
-    if ($('#opt-galerie').checked) p.set('galerie', '1');
     const j = +$('#opt-expire').value; if (j) p.set('expire', Date.now() + j * 864e5);
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', '/api/fichiers?' + p);
@@ -557,11 +682,11 @@
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) ligne.querySelector('progress').value = (e.loaded / e.total) * 100; };
     xhr.onload = () => {
       let d = {}; try { d = JSON.parse(xhr.responseText); } catch {}
-      if (xhr.status === 200) ligne.innerHTML = `✅ ${echappe(fichier.name)} : <a href="${d.url}" target="_blank" rel="noopener">${SITE}${d.url}</a>`;
-      else ligne.innerHTML = `<div class="erreur">${echappe(fichier.name)} : ${echappe(d.erreur || 'échec (' + xhr.status + ')')}</div>`;
+      if (xhr.status === 200) { D.stockage_utilise = (D.stockage_utilise || 0) + fichier.size; ligne.innerHTML = `✅ ${echappe(fichier.name)}${gain ? ` <small>(${taille(original.size)}${gain})</small>` : ''} : <a href="${d.url}" target="_blank" rel="noopener">${SITE.replace(/^https?:\/\//, '')}${d.url}</a>`; }
+      else ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : ${echappe(d.erreur || 'échec (' + xhr.status + ')')}</div>`;
       ok();
     };
-    xhr.onerror = () => { ligne.innerHTML = `<div class="erreur">${echappe(fichier.name)} : connexion perdue.</div>`; ok(); };
+    xhr.onerror = () => { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : connexion perdue.</div>`; ok(); };
     xhr.send(fichier);
   });
   const envoyerTout = async (liste) => { for (const f of liste) await envoyer(f); await charger(); };
@@ -578,13 +703,14 @@
     const f = D.fichiers.find(x => x.id === id); if (!f) return;
     fichierEdite = f; ff.reset(); $('#err-fichier').textContent = '';
     $('#ff-titre').textContent = f.nom;
-    ff.legende.value = f.legende; ff.galerie.checked = !!f.galerie; ff.galerie.disabled = !f.type.startsWith('image/');
+    ff.nom.value = f.nom; ff.legende.value = f.legende; ff.galerie.checked = !!f.galerie; ff.galerie.disabled = !f.type.startsWith('image/');
     ff.expire.value = versLocal(f.expire); ff.mdp.hidden = true;
     fenF.showModal();
   };
   ff.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const corps = { action: 'fichier_modifier', id: fichierEdite.id, legende: ff.legende.value, expire: depuisLocal(ff.expire.value) };
+    const corps = { action: 'fichier_modifier', id: fichierEdite.id, nom: ff.nom.value.trim(), legende: ff.legende.value, expire: depuisLocal(ff.expire.value) };
+    if (!corps.nom) { $('#err-fichier').textContent = 'Le nom ne peut pas être vide.'; return; }
     if (!!fichierEdite.galerie !== ff.galerie.checked) corps.galerie = ff.galerie.checked;
     if (ff.mdp_mode.value === 'changer') { if (!ff.mdp.value) { $('#err-fichier').textContent = 'Écris le nouveau mot de passe.'; return; } corps.mdp = ff.mdp.value; }
     if (ff.mdp_mode.value === 'retirer') corps.mdp = '';
@@ -635,6 +761,7 @@
     if (a === 'ouvrir') return window.open(b.dataset.url, '_blank', 'noopener');
     if (a === 'regler-fichier') return reglerFichier(id);
     if (a === 'retirer-galerie') return action({ action: 'fichier_modifier', id, galerie: false });
+    if (a === 'galerie-oui' || a === 'galerie-non') { b.disabled = true; if (await action({ action: 'galerie_decider', id, ajouter: a === 'galerie-oui' })) toast(a === 'galerie-oui' ? 'Ajoutée à la galerie' : 'Photo ignorée'); return; }
     if (['supprimer', 'lien_supprimer', 'court_supprimer', 'fichier_supprimer', 'contact_supprimer'].includes(a) && !confirm('Supprimer définitivement ?')) return;
     b.disabled = true;
     await action({ action: a, id, code: b.dataset.code, sens: +b.dataset.sens });
