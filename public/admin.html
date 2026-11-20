@@ -5,26 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Admin · Landry</title>
+<link rel="icon" href="/favicon.ico" sizes="48x48">
 <style>
-  :root { --rouge: #B3212E; --fond: #F6F3EE; --encre: #1E1E1E; }
-  * { box-sizing: border-box; }
+  :root { --rouge: #B3212E; --fond: #F6F3EE; --encre: #1E1E1E; --doux: #6A6A6A; --vert: #1E8E4A; }
+  * { box-sizing: border-box; min-width: 0; }
+  [hidden] { display: none !important; }
   body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, sans-serif; }
-  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 60px; }
+  main { max-width: 680px; margin: 0 auto; padding: 24px 16px 80px; }
   h1 { font-size: 1.6rem; margin: 0 0 1rem; color: var(--rouge); }
-  h2 { font-size: 1.15rem; margin: 2rem 0 .75rem; }
+  h2 { font-size: 1.2rem; margin: 2.25rem 0 .25rem; }
+  .aide { color: var(--doux); font-size: .9375rem; margin: 0 0 .9rem; }
   .boite { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  input, textarea { font: inherit; font-size: 16px; width: 100%; padding: .7rem .8rem; border: 1px solid #CCC; border-radius: 10px; }
+  label { display: grid; gap: 4px; font-weight: 600; font-size: .9375rem; }
+  input, textarea, select { font: inherit; font-size: 16px; width: 100%; padding: .65rem .8rem; border: 1px solid #CCC; border-radius: 10px; background: #fff; }
+  input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
   button { font: inherit; font-weight: 600; min-height: 44px; padding: .5rem 1rem; border-radius: 10px; border: 0; background: var(--rouge); color: #fff; cursor: pointer; }
   button.gris { background: #E7E2DA; color: var(--encre); }
-  .ligne { display: flex; gap: 8px; margin-top: 8px; }
-  .chiffres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  button.petit { min-height: 40px; min-width: 40px; padding: .35rem .7rem; }
+  .ligne { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  .grille { display: grid; gap: 10px; }
+  @media (min-width: 560px) { .grille.deux { grid-template-columns: 1fr 1fr; } }
+  .prefixe { display: flex; align-items: center; border: 1px solid #CCC; border-radius: 10px; background: #fff; overflow: hidden; }
+  .prefixe span { padding: 0 .2rem 0 .8rem; color: var(--doux); white-space: nowrap; font-weight: 400; }
+  .prefixe input { border: 0; padding-left: 0; }
+  .chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .chiffres div { background: #fff; border-radius: 12px; padding: 12px; text-align: center; }
   .chiffres b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
-  .chiffres span { font-size: .85rem; color: #666; }
+  .chiffres span { font-size: .85rem; color: var(--doux); }
+  .carte { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+  .carte.eteint { opacity: .55; }
+  .carte .ico { width: 36px; height: 36px; flex: none; border-radius: 10px; background: #F6E3E1; color: var(--rouge); display: grid; place-items: center; }
+  .carte .ico svg { width: 20px; height: 20px; fill: currentColor; }
+  .carte .corps { flex: 1; }
+  .carte .titre { font-weight: 600; }
+  .carte small { display: block; color: var(--doux); overflow-wrap: anywhere; }
+  .carte .clics { font-size: .85rem; color: var(--vert); font-weight: 600; white-space: nowrap; }
   .msg { background: #fff; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
   .msg small { color: #777; }
   .vide { color: #777; }
-  #erreur { color: var(--rouge); font-weight: 600; }
+  .erreur { color: var(--rouge); font-weight: 600; margin: .5rem 0 0; }
+  .ok { color: var(--vert); font-weight: 600; margin: .5rem 0 0; }
+  .toast { position: fixed; left: 50%; bottom: 20px; translate: -50% 0; background: #1E1E1E; color: #fff; padding: .6rem 1rem; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.vu { opacity: 1; }
 </style>
 </head>
 <body>
@@ -33,77 +55,223 @@
 
   <form id="connexion" class="boite">
     <label for="cle">Mot de passe admin (ADMIN_KEY)</label>
-    <div class="ligne"><input id="cle" type="password" autocomplete="current-password" required><button>Entrer</button></div>
-    <p id="erreur" role="alert"></p>
+    <div class="ligne"><input id="cle" type="password" autocomplete="current-password" required style="flex:1"><button>Entrer</button></div>
+    <p id="erreur" class="erreur" role="alert"></p>
   </form>
 
   <div id="panneau" hidden>
     <h2>Chiffres</h2>
     <div class="chiffres">
       <div><b id="n-merci">0</b><span>mauruuru</span></div>
-      <div><b id="n-insta">0</b><span>clics Instagram</span></div>
+      <div><b id="n-liens">0</b><span>clics sur la bio</span></div>
+      <div><b id="n-courts">0</b><span>clics liens courts</span></div>
     </div>
 
-    <h2>En ce moment</h2>
-    <form id="form-statut" class="boite">
-      <label for="statut">Ce qui s'affiche sur la page d'accueil (vide = caché)</label>
-      <div class="ligne"><input id="statut" maxlength="120" placeholder="ex. En vacances à Moorea 🏝️"><button>Enregistrer</button></div>
+    <!-- ================= LIENS DE LA BIO ================= -->
+    <h2>Liens de la page bio</h2>
+    <p class="aide">Ce sont les boutons affichés sur landrypf.com/bio, dans cet ordre. « Découvrir mon monde » reste toujours en dernier.</p>
+    <div id="liste-liens"></div>
+
+    <form id="form-lien" class="boite" novalidate>
+      <strong id="form-lien-titre">Ajouter un lien</strong>
+      <div class="grille deux" style="margin-top:10px">
+        <label>Titre<input name="titre" maxlength="60" placeholder="ex. Ma chaîne YouTube" required></label>
+        <label>Sous-titre (facultatif)<input name="sous_titre" maxlength="80" placeholder="ex. Mes vlogs à Tahiti"></label>
+        <label>Adresse<input name="url" type="url" inputmode="url" placeholder="https://…" required></label>
+        <label>Icône<select name="icone" id="choix-icone"></select></label>
+      </div>
+      <div class="ligne">
+        <button id="btn-lien">Ajouter</button>
+        <button type="button" class="gris" id="annuler-lien" hidden>Annuler</button>
+      </div>
+      <p class="erreur" id="err-lien" role="alert"></p>
     </form>
 
+    <!-- ================= LIENS COURTS ================= -->
+    <h2>Liens courts</h2>
+    <p class="aide">landrypf.com/ton-code redirige vers l'adresse de ton choix. Pratique pour une story, une affiche ou un QR code.</p>
+    <form id="form-court" class="boite" novalidate>
+      <div class="grille">
+        <label>Lien court
+          <span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span>
+        </label>
+        <label>Redirige vers<input name="url" type="url" inputmode="url" placeholder="https://…" required></label>
+      </div>
+      <div class="ligne">
+        <button>Créer le lien court</button>
+        <button type="button" class="gris" id="code-hasard">Code au hasard</button>
+      </div>
+      <p class="erreur" id="err-court" role="alert"></p>
+    </form>
+    <div id="liste-courts" style="margin-top:12px"></div>
+
+    <!-- ================= STATUT ================= -->
+    <h2>En ce moment</h2>
+    <form id="form-statut" class="boite">
+      <label for="statut">Ce qui s'affiche sur la page bio (vide = caché)</label>
+      <div class="ligne"><input id="statut" maxlength="120" placeholder="ex. En vacances à Moorea 🏝️" style="flex:1"><button>Enregistrer</button></div>
+    </form>
+
+    <!-- ================= LIVRE D'OR ================= -->
     <h2>Livre d'or : à valider</h2>
     <div id="attente"></div>
-
     <h2>Livre d'or : publiés</h2>
     <div id="valides"></div>
   </div>
 </main>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="icones.js"></script>
 <script>
 {
   const $ = (s) => document.querySelector(s);
-  const echappe = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('vu'); clearTimeout(toast.x); toast.x = setTimeout(() => t.classList.remove('vu'), 1800); };
+  const ico = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${(ICONES[k] || ICONES.lien).d}"/></svg>`;
   let cle = sessionStorage.getItem('cle') || '';
+  let donnees = null, enEdition = null;
+
+  $('#choix-icone').innerHTML = Object.entries(ICONES).map(([k, v]) => `<option value="${k}">${v.nom}</option>`).join('');
 
   const appel = async (methode, corps) => {
     const r = await fetch('/api/admin', { method: methode, headers: { 'x-cle': cle, 'content-type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined });
+    const d = await r.json().catch(() => ({}));
     if (r.status === 401) throw new Error('Mot de passe incorrect.');
-    if (!r.ok) throw new Error('Erreur du serveur (' + r.status + ').');
-    return r.json();
+    if (!r.ok) throw new Error(d.erreur || 'Erreur du serveur (' + r.status + ').');
+    return d;
+  };
+  const action = async (corps, zoneErreur) => {
+    if (zoneErreur) zoneErreur.textContent = '';
+    try { await appel('POST', corps); await charger(); return true; }
+    catch (e) { if (zoneErreur) zoneErreur.textContent = e.message; else toast(e.message); return false; }
   };
 
-  const liste = (msgs, attente) => msgs.length ? msgs.map(m => `
+  /* ---------- Affichage ---------- */
+  const dateFr = (t) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Pacific/Tahiti', dateStyle: 'short', timeStyle: 'short' });
+
+  const afficherLiens = (liens) => {
+    $('#liste-liens').innerHTML = liens.length ? liens.map((l, i) => `
+      <div class="carte${l.actif ? '' : ' eteint'}">
+        <div class="ico">${ico(l.icone)}</div>
+        <div class="corps">
+          <div class="titre">${echappe(l.titre)}${l.actif ? '' : ' (masqué)'}</div>
+          ${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}
+          <small>${echappe(l.url)}</small>
+          <div class="ligne">
+            <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
+            <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="1" ${i === liens.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
+            <button class="petit gris" data-a="editer" data-id="${l.id}">Modifier</button>
+            <button class="petit gris" data-a="lien_basculer" data-id="${l.id}">${l.actif ? 'Masquer' : 'Afficher'}</button>
+            <button class="petit gris" data-a="lien_supprimer" data-id="${l.id}">Supprimer</button>
+          </div>
+        </div>
+        <span class="clics">${l.clics} clic${l.clics > 1 ? 's' : ''}</span>
+      </div>`).join('') : '<p class="vide">Aucun lien pour l\'instant.</p>';
+  };
+
+  const afficherCourts = (courts) => {
+    $('#liste-courts').innerHTML = courts.length ? courts.map(c => `
+      <div class="carte">
+        <div class="ico">${ico('lien')}</div>
+        <div class="corps">
+          <div class="titre">landrypf.com/${echappe(c.code)}</div>
+          <small>${echappe(c.url)}</small>
+          <div class="ligne">
+            <button class="petit gris" data-a="copier" data-code="${echappe(c.code)}">Copier</button>
+            <button class="petit gris" data-a="court_supprimer" data-code="${echappe(c.code)}">Supprimer</button>
+          </div>
+        </div>
+        <span class="clics">${c.clics} clic${c.clics > 1 ? 's' : ''}</span>
+      </div>`).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
+  };
+
+  const listeMsgs = (msgs, attente) => msgs.length ? msgs.map(m => `
     <div class="msg">
       <div>${echappe(m.texte)}</div>
-      <small>${echappe(m.nom)} · ${new Date(m.cree).toLocaleString('fr-FR', { timeZone: 'Pacific/Tahiti' })}</small>
+      <small>${echappe(m.nom)} · ${dateFr(m.cree)}</small>
       <div class="ligne">
-        ${attente ? `<button data-action="valider" data-id="${m.id}">Publier</button>` : ''}
-        <button class="gris" data-action="supprimer" data-id="${m.id}">Supprimer</button>
+        ${attente ? `<button class="petit" data-a="valider" data-id="${m.id}">Publier</button>` : ''}
+        <button class="petit gris" data-a="supprimer" data-id="${m.id}">Supprimer</button>
       </div>
     </div>`).join('') : '<p class="vide">Rien ici.</p>';
 
   const charger = async () => {
-    const d = await appel('GET');
+    const d = donnees = await appel('GET');
     $('#connexion').hidden = true; $('#panneau').hidden = false;
     $('#n-merci').textContent = d.compteurs.mauruuru || 0;
-    $('#n-insta').textContent = d.compteurs['clic:insta'] || 0;
-    $('#statut').value = d.statut;
-    $('#attente').innerHTML = liste(d.attente, true);
-    $('#valides').innerHTML = liste(d.valides, false);
+    $('#n-liens').textContent = d.liens.reduce((s, l) => s + l.clics, 0);
+    $('#n-courts').textContent = d.courts.reduce((s, c) => s + c.clics, 0);
+    if (document.activeElement !== $('#statut')) $('#statut').value = d.statut;
+    afficherLiens(d.liens); afficherCourts(d.courts);
+    $('#attente').innerHTML = listeMsgs(d.attente, true);
+    $('#valides').innerHTML = listeMsgs(d.valides, false);
   };
 
+  /* ---------- Formulaire lien bio (ajout + modification) ---------- */
+  const fl = $('#form-lien');
+  const finEdition = () => {
+    enEdition = null; fl.reset();
+    $('#form-lien-titre').textContent = 'Ajouter un lien'; $('#btn-lien').textContent = 'Ajouter'; $('#annuler-lien').hidden = true;
+  };
+  $('#annuler-lien').addEventListener('click', finEdition);
+  fl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const corps = { action: enEdition ? 'lien_modifier' : 'lien_ajouter', id: enEdition,
+      titre: fl.titre.value, sous_titre: fl.sous_titre.value, url: fl.url.value.trim(), icone: fl.icone.value };
+    if (await action(corps, $('#err-lien'))) { toast(enEdition ? 'Lien modifié' : 'Lien ajouté'); finEdition(); }
+  });
+  // Choix automatique de l'icône selon l'adresse
+  fl.url.addEventListener('input', () => {
+    if (enEdition) return;
+    const u = fl.url.value.toLowerCase();
+    const devine = [['instagram', 'instagram'], ['tiktok', 'tiktok'], ['youtu', 'youtube'], ['facebook', 'facebook'], ['snapchat', 'snapchat'],
+      ['spotify', 'spotify'], ['twitter', 'x'], ['x.com', 'x'], ['wa.me', 'whatsapp'], ['whatsapp', 'whatsapp'], ['mailto:', 'email']].find(([m]) => u.includes(m));
+    if (devine) fl.icone.value = devine[1];
+  });
+
+  /* ---------- Formulaire lien court ---------- */
+  const fc = $('#form-court');
+  fc.code.addEventListener('input', () => { fc.code.value = fc.code.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+  $('#code-hasard').addEventListener('click', () => {
+    const a = 'abcdefghjkmnpqrstuvwxyz23456789';
+    fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join('');
+  });
+  fc.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const ok = await action({ action: 'court_ajouter', code: fc.code.value, url: fc.url.value.trim() }, $('#err-court'));
+    if (ok) { toast('Lien court créé : landrypf.com/' + fc.code.value); fc.reset(); }
+  });
+
+  /* ---------- Boutons des listes ---------- */
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    const a = b.dataset.a, id = +b.dataset.id;
+    if (a === 'editer') {
+      const l = donnees.liens.find(x => x.id === id); if (!l) return;
+      enEdition = id;
+      fl.titre.value = l.titre; fl.sous_titre.value = l.sous_titre; fl.url.value = l.url; fl.icone.value = l.icone;
+      $('#form-lien-titre').textContent = 'Modifier « ' + l.titre + ' »'; $('#btn-lien').textContent = 'Enregistrer'; $('#annuler-lien').hidden = false;
+      fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.titre.focus({ preventScroll: true });
+      return;
+    }
+    if (a === 'copier') {
+      const t = 'https://landrypf.com/' + b.dataset.code;
+      try { await navigator.clipboard.writeText(t); toast('Copié : ' + t); } catch { toast(t); }
+      return;
+    }
+    if ((a === 'supprimer' || a === 'lien_supprimer' || a === 'court_supprimer') && !confirm('Supprimer définitivement ?')) return;
+    b.disabled = true;
+    await action({ action: a, id, code: b.dataset.code, sens: +b.dataset.sens });
+  });
+
+  /* ---------- Connexion + statut ---------- */
   $('#connexion').addEventListener('submit', async (e) => {
     e.preventDefault(); cle = $('#cle').value; $('#erreur').textContent = '';
     try { await charger(); sessionStorage.setItem('cle', cle); } catch (err) { $('#erreur').textContent = err.message; }
   });
   $('#form-statut').addEventListener('submit', async (e) => {
     e.preventDefault();
-    await appel('POST', { action: 'statut', valeur: $('#statut').value });
-    e.target.querySelector('button').textContent = 'Enregistré ✓';
-    setTimeout(() => e.target.querySelector('button').textContent = 'Enregistrer', 1500);
-  });
-  document.addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-action]'); if (!b) return;
-    if (b.dataset.action === 'supprimer' && !confirm('Supprimer ce message ?')) return;
-    await appel('POST', { action: b.dataset.action, id: +b.dataset.id }); charger();
+    if (await action({ action: 'statut', valeur: $('#statut').value })) toast('Enregistré');
   });
   if (cle) charger().catch(() => {});
 }

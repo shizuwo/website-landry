@@ -126,9 +126,7 @@
   /* ---------- Boutons ---------- */
   .liens { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: .875rem; }
   .liens li { animation: monte .6s cubic-bezier(.2,.9,.3,1) both; }
-  .liens li:nth-child(1) { animation-delay: 2.45s; }
-  .liens li:nth-child(2) { animation-delay: 2.6s; }
-  .liens li:nth-child(3) { animation-delay: 2.75s; }
+  .liens li { animation-delay: calc(2.45s + var(--i, 0) * .15s); }
   .liens a {
     display: flex; align-items: center; gap: .9rem;
     min-height: 60px; padding: .9rem 1.25rem;
@@ -269,14 +267,14 @@
   <!-- ✏️ Ta bio : modifie le texte dans le dictionnaire TEXTES en bas de page (fr, en, ty) -->
   <p class="bio" data-t="bio">Ia ora na ! Je vis à Tahiti, entre le lagon et la montagne. Retrouve-moi ici 🌺</p>
 
-  <ul class="liens">
-    <li>
-      <a href="https://landrypf.com/insta" data-clic="insta">
+  <ul class="liens" id="liste-liens">
+    <li id="lien-defaut">
+      <a href="https://landrypf.com/insta">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4ZM17.3 5.5a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4ZM21.9 7c-.1-1.6-.4-3-1.6-4.2S17.6 1.2 16 1.1C14.3 1 9.7 1 8 1.1 6.4 1.2 5 1.5 3.8 2.7S2.2 5.4 2.1 7C2 8.7 2 13.3 2.1 15c.1 1.6.4 3 1.6 4.2s2.6 1.5 4.2 1.6c1.7.1 6.3.1 8 0 1.6-.1 3-.4 4.2-1.6s1.5-2.6 1.6-4.2c.1-1.7.1-6.3.2-8Zm-2.2 10a3.3 3.3 0 0 1-1.8 1.8c-1.3.5-4.3.4-5.9.4s-4.6.1-5.9-.4A3.3 3.3 0 0 1 4.3 17c-.5-1.3-.4-4.3-.4-5.9s-.1-4.6.4-5.9A3.3 3.3 0 0 1 6.1 3.4C7.4 2.9 10.4 3 12 3s4.6-.1 5.9.4a3.3 3.3 0 0 1 1.8 1.8c.5 1.3.4 4.3.4 5.9s.1 4.6-.4 5.9Z"/></svg>
         <span class="txt"><span data-t="insta">Me suivre sur Instagram</span><small data-t="instaSous">Photos et stories de Tahiti</small></span>
       </a>
     </li>
-    <li>
+    <li id="lien-monde">
       <a href="./">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c1.2 0 2.6 2 3.3 5H8.7C9.4 6 10.8 4 12 4Zm-3.9 1A13 13 0 0 0 6.7 9H4.9a8 8 0 0 1 3.2-4Zm7.8 0a8 8 0 0 1 3.2 4h-1.8a13 13 0 0 0-1.4-4ZM4.3 11h2.2a16 16 0 0 0 0 2H4.3a8 8 0 0 1 0-2Zm4.2 0h7a14 14 0 0 1 0 2h-7a14 14 0 0 1 0-2Zm9 0h2.2a8 8 0 0 1 0 2h-2.2a16 16 0 0 0 0-2ZM4.9 15h1.8a13 13 0 0 0 1.4 4 8 8 0 0 1-3.2-4Zm3.8 0h6.6c-.7 3-2.1 5-3.3 5s-2.6-2-3.3-5Zm8.6 0h1.8a8 8 0 0 1-3.2 4 13 13 0 0 0 1.4-4Z"/></svg>
         <span class="txt"><span data-t="monde">Découvrir mon monde</span><small data-t="mondeSous">Une balade animée à travers Tahiti</small></span>
@@ -341,6 +339,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="menu.js"></script>
+<script src="icones.js"></script>
 <script>
 {
   /* ================= RÉGLAGES (à remplir) ================= */
@@ -538,6 +537,32 @@
   motif.addEventListener('click', direMerci);
   motif.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); direMerci(); } });
 
+  /* ---------- Liens de la bio (gérés depuis /admin) ---------- */
+  const chargerLiens = async () => {
+    try {
+      const { liens } = await api('/api/liens');
+      const ul = $('#liste-liens'), ref = $('#lien-monde');
+      const defaut = $('#lien-defaut'); if (defaut) defaut.remove();
+      liens.forEach(l => {
+        const li = document.createElement('li');
+        const icone = (window.ICONES && (ICONES[l.icone] || ICONES.lien)) || { d: '' };
+        li.innerHTML = `<a href="/l/${l.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone.d}"/></svg><span class="txt">${echappe(l.titre)}${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}</span></a>`;
+        ul.insertBefore(li, ref);
+        li.dataset.nouveau = '1';
+      });
+    } catch { /* hors ligne ou aperçu : on garde le lien Instagram par défaut */ }
+    numeroter();
+  };
+  const numeroter = () => {
+    const ecoule = performance.now() / 1000;
+    [...$('#liste-liens').children].forEach((li, i) => {
+      li.style.setProperty('--i', i);
+      // un lien ajouté après le chargement démarre son animation plus tard : on compense
+      if (li.dataset.nouveau) li.style.animationDelay = Math.max(0, 2.45 + i * 0.15 - ecoule).toFixed(2) + 's';
+    });
+  };
+  numeroter();
+
   /* ---------- Spotify via Lanyard ---------- */
   const chargerMusique = async () => {
     if (!CONFIG.discordUtilisateurId) return;
@@ -611,7 +636,7 @@
   const langueNav = (navigator.language || 'fr').slice(0, 2);
   langue(stock.lire('langue') || (langueNav === 'en' ? 'en' : 'fr'));
   setInterval(majHeure, 30000);
-  chargerInfos(); chargerMots(); chargerMusique();
+  chargerInfos(); chargerLiens(); chargerMots(); chargerMusique();
   setInterval(chargerMusique, 30000);
 }
 </script>

@@ -12,14 +12,15 @@ et ton domaine reste branché dessus : rien à refaire de ce côté.
 | `public/_redirects` | Renvoie l'ancienne adresse /monde vers l'accueil |
 | `public/menu.js` | Le menu « tissu » qui se déroule |
 | `public/admin.html` | Ton espace privé (landrypf.com/admin) |
-| `src/worker.js` | Le serveur : compteurs, livre d'or, clics, lien /insta |
+| `src/worker.js` | Le serveur : compteurs, livre d'or, liens de la bio, liens courts |
+| `public/icones.js` | Les icônes proposées pour les liens de la bio |
 | `wrangler.jsonc` | Les réglages du Worker (nom, base de données, liens) |
 | `schema.sql` | La base de données (déjà créée : `landry-db`) |
 
 ## Déjà fait ✅
 
 - Base de données D1 `landry-db` créée, tables installées, reliée dans `wrangler.jsonc`.
-- Lien Instagram (landry.pf) configuré : landrypf.com/insta y mène et compte les clics.
+- Lien Instagram (landry.pf) ajouté à la bio, et lien court landrypf.com/insta créé.
 
 ## À faire
 
@@ -42,7 +43,11 @@ et ton domaine reste branché dessus : rien à refaire de ce côté.
 
 ## Au quotidien
 
-- **landrypf.com/admin** : chiffres, ligne « En ce moment », modération du livre d'or.
+- **landrypf.com/admin** :
+  - **Liens de la page bio** : ajouter, modifier, masquer, réordonner (↑ ↓), supprimer. Chaque lien compte ses clics.
+  - **Liens courts** : crée landrypf.com/ce-que-tu-veux vers n'importe quelle adresse (code en minuscules,
+    chiffres et tirets). Quelques codes sont réservés par le site : bio, admin, api…
+  - Ligne « En ce moment » et modération du livre d'or.
 - Tester le mode nuit en journée : **landrypf.com/bio?moment=nuit**
 - Easter egg : touche la fleur 7 fois rapidement 🌺
 
