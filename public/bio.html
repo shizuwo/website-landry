@@ -76,10 +76,11 @@
     cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: 50%;
     touch-action: manipulation;
   }
+  .motif { outline: none; }
   .motif:focus-visible { outline: 3px solid var(--blanc); outline-offset: 6px; }
   .tourne { transform-origin: 200px 200px; animation: tourne 80s linear 2.6s infinite; }
   .tourne-clic { transform-origin: 200px 200px; }
-  .spin .tourne-clic { animation: clic .9s cubic-bezier(.3,1.4,.5,1); }
+  .spin .tourne-clic { animation: clic 1s cubic-bezier(.3,1.15,.5,1); }
   .feuille { transform-origin: 200px 200px; transform-box: view-box; animation: pose .55s cubic-bezier(.2,1.3,.4,1) both; }
   .nervure { stroke-dasharray: 120; stroke-dashoffset: 120; animation: trace .5s ease-out forwards; }
   .coeur   { transform-origin: 200px 200px; transform-box: view-box; animation: pose .5s cubic-bezier(.2,1.3,.4,1) 1.5s both; }
@@ -91,7 +92,7 @@
   @keyframes eclot { from { transform: scale(0) rotate(-40deg); } to { transform: none; } }
   @keyframes trace { to { stroke-dashoffset: 0; } }
   @keyframes tourne { to { transform: rotate(360deg); } }
-  @keyframes clic  { to { transform: rotate(180deg); } }
+  @keyframes clic  { to { transform: rotate(360deg); } }
 
   /* ---------- Compteur Mauruuru ---------- */
   .merci { display: flex; flex-direction: column; align-items: center; gap: .15rem; margin-bottom: 1.25rem; animation: apparait .6s ease 2.1s both; }
