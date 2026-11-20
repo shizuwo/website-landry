@@ -159,9 +159,28 @@
   .filante.pars { animation: file 1.1s cubic-bezier(.4,0,.6,1) forwards; }
   @keyframes file { 0% { opacity: 0; transform: translateX(0) scaleX(.3); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateX(min(55vw, 600px)) scaleX(1); } }
 
-  .horizon svg { width: 100%; height: 100%; display: block; }
+  /* Dans le lagon : une honu (tortue) et un banc de poissons */
+  .lagon-vie { position: absolute; left: 0; right: 0; bottom: 0; height: 20%; z-index: 1; pointer-events: none; overflow: hidden; opacity: calc(.9 - var(--etoiles, 0) * .55); }
+  .honu { position: absolute; left: 0; top: 30%; width: clamp(80px, 10vw, 130px); animation: nage 46s linear infinite; }
+  .honu svg { display: block; width: 100%; animation: ondule 4s ease-in-out infinite; }
+  .honu .na { transform-box: view-box; animation: rame 2.2s ease-in-out infinite; }
+  .honu .na.ar { animation-delay: -1.1s; }
+  @keyframes nage { from { transform: translateX(-140px); } to { transform: translateX(calc(100vw + 40px)); } }
+  @keyframes ondule { 50% { transform: translateY(-8px) rotate(-3deg); } }
+  @keyframes rame { 50% { transform: rotate(-22deg); } }
+  .poissons { position: absolute; right: 0; top: 12%; width: clamp(70px, 9vw, 110px); animation: banc 30s linear infinite; animation-delay: -9s; }
+  .poissons svg { display: block; width: 100%; }
+  .poissons g { animation: fretille .9s ease-in-out infinite; transform-box: fill-box; }
+  .poissons g:nth-child(2) { animation-delay: -.3s; } .poissons g:nth-child(3) { animation-delay: -.6s; }
+  @keyframes banc { from { transform: translateX(160px); } to { transform: translateX(calc(-100vw - 60px)); } }
+  @keyframes fretille { 50% { transform: translateY(3px); } }
+  .horizon svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .phrases { position: absolute; left: 0; right: 0; top: 11%; z-index: 2; display: grid; place-items: center; }
   .phrase { grid-area: 1 / 1; margin: 0; padding: 0 5vw; color: #fff; text-align: center; font-size: clamp(2.3rem, 8vw, 5.6rem); line-height: .92; max-width: 15ch; text-wrap: balance; opacity: 0; text-shadow: 0 3px 0 rgba(0,0,0,.12); }
+  /* Tant que le ciel est clair, les premières phrases sont foncées pour rester lisibles */
+  .phrase:nth-child(1) { color: var(--mape); text-shadow: none; }
+  .phrase:nth-child(2) { color: #4A1630; text-shadow: none; }
+  @media (max-width: 600px) { .matarii { left: 62%; top: 40%; } }
   .soir-boutons { position: absolute; left: 0; right: 0; bottom: 9%; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding: 0 16px; opacity: 0; pointer-events: none; }
   .soir-boutons.vu { pointer-events: auto; }
   .pilule {
@@ -219,8 +238,8 @@
   .calme .scene { position: relative; height: auto; min-height: 100svh; }
   .calme .piste { flex-wrap: wrap; justify-content: center; padding: 12vh 5vw; transform: none !important; }
   .calme .ile-texte, .calme .phrase:last-child, .calme .soir-boutons { opacity: 1; pointer-events: auto; }
-  .calme .l > span, .calme .descends svg, .calme .fin-tiare, .calme .matarii i { animation: none; }
-  .calme .filante { display: none; }
+  .calme .l > span, .calme .descends svg, .calme .fin-tiare, .calme .honu, .calme .honu *, .calme .poissons, .calme .poissons *, .calme .matarii i { animation: none; }
+  .calme .honu { left: 20%; } .calme .poissons { right: 25%; } .calme .filante { display: none; }
 </style>
 </head>
 <body>
@@ -396,13 +415,31 @@
       </div>
       <div class="astre" aria-hidden="true"></div>
       <div class="horizon" aria-hidden="true">
-        <svg viewBox="0 0 1600 360" preserveAspectRatio="none">
+        <!-- Moorea garde ses proportions (sur téléphone on la voit de plus près au lieu de l'écraser) -->
+        <svg viewBox="0 0 1600 360" preserveAspectRatio="xMidYMax slice">
           <path d="M0 150 L120 140 L210 96 L260 112 L330 40 L370 70 L420 20 L470 64 L520 52 L600 110 L700 120 L780 136 L1600 140 V360 H0Z" fill="var(--moorea, #1C3B46)" transform="translate(500 0)"/>
+        </svg>
+        <svg viewBox="0 0 1600 360" preserveAspectRatio="none">
           <rect y="146" width="1600" height="214" fill="var(--mer, #1A9EB0)"/>
           <g stroke="var(--reflet, #FFE07A)" stroke-width="6" stroke-linecap="round" opacity=".8">
             <path d="M720 176 H880"/><path d="M745 204 H855"/><path d="M770 234 H830"/><path d="M786 266 H814"/>
           </g>
         </svg>
+      </div>
+      <div class="lagon-vie" aria-hidden="true">
+        <div class="honu"><svg viewBox="0 0 120 80">
+          <g fill="#3E6B4A"><path class="na" style="transform-origin:72px 26px" d="M72 26 C80 8 96 2 104 6 C98 14 88 22 76 30Z"/><path class="na" style="transform-origin:72px 54px;animation-direction:reverse" d="M72 54 C80 72 96 78 104 74 C98 66 88 58 76 50Z"/>
+          <path class="na ar" style="transform-origin:34px 30px" d="M34 30 C26 22 14 20 10 24 C16 30 26 34 36 36Z"/><path class="na ar" style="transform-origin:34px 50px;animation-direction:reverse" d="M34 50 C26 58 14 60 10 56 C16 50 26 46 36 44Z"/>
+          <ellipse cx="100" cy="40" rx="12" ry="9"/><path d="M28 40 L14 37 L14 43Z"/></g>
+          <ellipse cx="56" cy="40" rx="32" ry="24" fill="#8A6A35"/><ellipse cx="56" cy="40" rx="26" ry="19" fill="#A9853F"/>
+          <g fill="none" stroke="#6E5228" stroke-width="2.4" stroke-linejoin="round"><path d="M48 32 L56 26 L64 32 L64 46 L56 52 L48 46Z"/><path d="M48 32 L36 30 M64 32 L76 30 M48 46 L36 50 M64 46 L76 50 M56 26 L56 18 M56 52 L56 62"/></g>
+          <circle cx="106" cy="36" r="1.6" fill="#13261C"/><circle cx="106" cy="44" r="1.6" fill="#13261C"/>
+        </svg></div>
+        <div class="poissons"><svg viewBox="0 0 110 50">
+          <g fill="#FFC93C"><path d="M10 12 C16 6 26 6 32 12 C26 18 16 18 10 12Z"/><path d="M32 12 L40 6 L40 18Z"/></g>
+          <g fill="#FF8A5B"><path d="M40 30 C46 24 56 24 62 30 C56 36 46 36 40 30Z"/><path d="M62 30 L70 24 L70 36Z"/></g>
+          <g fill="#FFFDF8"><path d="M70 16 C76 10 86 10 92 16 C86 22 76 22 70 16Z"/><path d="M92 16 L100 10 L100 22Z"/></g>
+        </svg></div>
       </div>
       <div class="phrases">
         <p class="phrase d" data-txt="soir1">Le soir…</p>
