@@ -1,16 +1,17 @@
 /* Menu "Tire-moi" : un bout de tissu tifaifai qui pend en haut de l'écran et se déroule. */
 (() => {
   const T = {
-    fr: { menu: 'Menu', accueil: 'Accueil', galerie: 'Galerie', liens: 'Mes liens' },
-    en: { menu: 'Menu', accueil: 'Home', galerie: 'Gallery', liens: 'My links' },
-    ty: { menu: 'Menu', accueil: 'Fare', galerie: 'Galerie', liens: 'Mes liens' }
+    fr: { menu: 'Menu', accueil: 'Accueil', galerie: 'Galerie', album: 'Album 🔒', liens: 'Mes liens' },
+    en: { menu: 'Menu', accueil: 'Home', galerie: 'Gallery', album: 'Album 🔒', liens: 'My links' },
+    ty: { menu: 'Menu', accueil: 'Fare', galerie: 'Galerie', album: 'Album 🔒', liens: 'Mes liens' }
   };
   const pages = [
-    { cle: 'accueil', href: './' },
-    { cle: 'galerie', href: 'galerie.html' },
-    { cle: 'liens', href: 'bio.html' }
+    { cle: 'accueil', href: '/' },
+    { cle: 'galerie', href: '/galerie' },
+    { cle: 'album', href: '/album' },
+    { cle: 'liens', href: '/bio' }
   ];
-  const ici = /bio/.test(location.pathname) ? 'liens' : /galerie/.test(location.pathname) ? 'galerie' : 'accueil';
+  const ici = /bio/.test(location.pathname) ? 'liens' : /galerie/.test(location.pathname) ? 'galerie' : /album/.test(location.pathname) ? 'album' : /^\/(index(\.html)?)?$/.test(location.pathname) ? 'accueil' : '';
 
   const css = `
   .tire{position:fixed;top:0;right:max(14px,3vw);z-index:100;font:600 15px/1.2 "Instrument Sans",system-ui,sans-serif;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22))}
