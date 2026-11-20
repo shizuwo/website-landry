@@ -110,11 +110,12 @@
 
   .statut, .musique {
     display: flex; align-items: center; gap: .6rem; text-align: left;
-    padding: .55rem .9rem; border-radius: 14px; margin: 0; max-width: 100%;
+    padding: .55rem .9rem; border-radius: 14px; margin: 0 0 .875rem; max-width: 100%;
     background: color-mix(in srgb, var(--blanc) 13%, transparent);
     font-size: .9375rem; animation: apparait .6s ease 2.2s both;
   }
   .statut b, .musique b { font-weight: 600; }
+  .infos .musique { margin: 0; }
   .point { width: 9px; height: 9px; border-radius: 50%; background: #7CF29A; flex: none; box-shadow: 0 0 0 0 #7CF29A88; animation: pouls 2s infinite; }
   @keyframes pouls { 70% { box-shadow: 0 0 0 8px #7CF29A00; } 100% { box-shadow: 0 0 0 0 #7CF29A00; } }
   .musique img { width: 40px; height: 40px; border-radius: 6px; flex: none; }
@@ -152,6 +153,15 @@
   .liens .txt { flex: 1; }
   .liens small { display: block; font-weight: 400; font-size: .875rem; color: var(--btn-sous); }
   @keyframes secoue { 25% { transform: rotate(-12deg); } 60% { transform: rotate(10deg); } }
+  /* Lien mis en avant : un reflet passe dessus et l'icône se dandine de temps en temps */
+  .liens li.avant a { position: relative; overflow: hidden; box-shadow: 0 4px 0 var(--fonce), 0 0 0 3px color-mix(in srgb, var(--blanc) 45%, transparent); }
+  .liens li.avant a::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%); transform: translateX(-120%);
+    animation: reflet 4s ease-in-out 3.2s infinite; }
+  .liens li.avant svg { animation: dandine 4s ease-in-out 3.2s infinite; }
+  @keyframes reflet { 0%, 55% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
+  @keyframes dandine { 0%, 60%, 100% { transform: none; } 66% { transform: rotate(-14deg) scale(1.12); } 74% { transform: rotate(12deg) scale(1.12); } 82% { transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .liens li.avant a::after, .liens li.avant svg { animation: none; } }
 
   .partage { display: flex; gap: .75rem; margin-top: 1.25rem; animation: apparait .6s ease 2.9s both; }
   .petit-btn {
@@ -334,8 +344,8 @@
   <h1 id="nom">Landry</h1>
   <a class="direct" id="direct" hidden target="_blank" rel="noopener"><span class="rond" aria-hidden="true"></span><span id="direct-texte">En direct</span></a>
 
-  <div class="infos" id="infos">
   <p class="statut" id="statut" hidden><span class="point" aria-hidden="true"></span><span><b data-t="enCeMoment">En ce moment :</b> <span id="statut-texte"></span></span></p>
+  <div class="infos" id="infos">
   <a class="evenement" id="evenement" hidden>
     <span class="cal" aria-hidden="true"><b id="evt-jour"></b><small id="evt-mois"></small></span>
     <span><span class="quoi" id="evt-titre"></span><span class="quand" id="evt-quand"></span></span>
@@ -809,6 +819,7 @@
       liens.forEach(l => {
         const li = document.createElement('li');
         const icone = (window.ICONES && (ICONES[l.icone] || ICONES.lien)) || { d: '' };
+        if (l.avant) li.className = 'avant';
         li.innerHTML = `<a href="/l/${l.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${icone.d}"/></svg><span class="txt">${echappe(l.titre)}${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}</span></a>`;
         ul.insertBefore(li, ref);
       });

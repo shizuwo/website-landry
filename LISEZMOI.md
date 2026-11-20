@@ -24,7 +24,7 @@ Sur téléphone, les onglets sont en bas de l'écran ; sur ordinateur, en haut. 
 L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cherche partout.
 
 - **Tableau de bord** : ce qui est à traiter (messages, mots, photos), jauge de stockage, chiffres sur 30 jours.
-- **Page bio** : disposition (liens en haut ou infos en haut), liens (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
+- **Page bio** : disposition (liens en haut ou infos en haut ; « En ce moment » reste toujours sous ton nom), liens (menu ⋯ → « Mettre en avant ✨ » pour faire briller un lien) (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
   événement, badge « en direct », lecteur de musique avec playlist, blocs intégrés
   (Instagram, TikTok, YouTube, Spotify, SoundCloud). Sur ordinateur, un aperçu en direct de la bio s'affiche à droite.
 - **Page d'accueil** : tes photos à la place des dessins (bouton **Recadrer** : glisse et zoome), et tous les textes.
