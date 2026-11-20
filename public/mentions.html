@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentions légales · Landry</title>
+<meta name="description" content="Mentions légales et données personnelles du site landrypf.com.">
+<link rel="canonical" href="https://landrypf.com/mentions">
+<meta name="theme-color" content="#B3212E">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" href="/icone-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /*
+    IDÉE : une simple feuille de papier, posée sur le rouge tifaifai du site.
+    TYPO : Young Serif pour les titres, Instrument Sans pour le texte.
+  */
+  :root { --rouge: #B3212E; --papier: #FFFDF8; --encre: #2A2A2A; --menu-fond: #FFFDF8; --menu-texte: #B3212E; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--rouge); color: var(--encre); font: 400 1rem/1.65 "Instrument Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .feuille { max-width: 680px; margin: clamp(80px, 12vh, 120px) auto 60px; background: var(--papier); padding: clamp(24px, 5vw, 48px); border-radius: 6px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  h1 { font: 400 clamp(2rem, 6vw, 2.6rem)/1.1 "Young Serif", Georgia, serif; margin: 0 0 .5rem; color: var(--rouge); }
+  h2 { font: 400 1.35rem/1.2 "Young Serif", Georgia, serif; margin: 2rem 0 .5rem; color: var(--rouge); }
+  p, li { margin: 0 0 .6rem; }
+  ul { padding-left: 1.2rem; margin: 0 0 .6rem; }
+  a { color: var(--rouge); text-underline-offset: .2em; }
+  a:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
+  .maj { color: #777; font-size: .875rem; }
+  .retour { position: absolute; top: 22px; left: max(16px, 3vw); color: #fff; font: 400 1.25rem "Young Serif", Georgia, serif; text-decoration: none; }
+  .retour:focus-visible { outline-color: #fff; }
+</style>
+</head>
+<body>
+<a class="retour" href="bio.html">Landry</a>
+<main class="feuille">
+  <h1>Mentions légales</h1>
+  <p class="maj">Le minimum pour savoir qui est derrière ce site et ce qu'il fait de tes données.</p>
+
+  <h2>Éditeur</h2>
+  <p>landrypf.com est un site personnel, sans activité professionnelle, édité par <strong id="nom">Landry</strong>.
+     Conformément à la loi, son identité complète a été communiquée à l'hébergeur.</p>
+  <p id="contact">Pour le contacter : le formulaire « Me contacter » de la page <a href="bio.html">Mes liens</a>.</p>
+
+  <h2>Hébergeur</h2>
+  <p>Cloudflare, Inc. — 101 Townsend St, San Francisco, CA 94107, États-Unis — +1 (650) 319-8930 — <a href="https://www.cloudflare.com" rel="noopener">cloudflare.com</a></p>
+
+  <h2>Tes données</h2>
+  <ul>
+    <li><strong>Formulaire de contact</strong> : ton prénom, ton e-mail (facultatif) et ton message servent uniquement à te répondre. Ils ne sont ni partagés ni revendus, et sont effacés au plus tard un an après.</li>
+    <li><strong>Livre d'or</strong> : ton prénom et ton mot sont publiés sur le site après validation.</li>
+    <li><strong>Statistiques</strong> : les visites et les clics sont comptés de façon anonyme, sans cookie. Ton adresse IP n'est pas enregistrée.</li>
+    <li><strong>Cookies</strong> : aucun cookie publicitaire ni de suivi. Un seul cookie technique, si tu ouvres l'album privé. Ta langue est mémorisée dans ton navigateur.</li>
+    <li><strong>Services extérieurs</strong> : les polices (Google Fonts) et la météo (Open-Meteo) sont chargées depuis leurs serveurs. Les contenus Instagram, TikTok, YouTube, Spotify ou SoundCloud ne se chargent que si tu appuies dessus. Ces services reçoivent alors ton adresse IP.</li>
+  </ul>
+  <p>Tu peux demander à voir, corriger ou supprimer tes messages à tout moment, via le formulaire de contact<span id="contact-mail"></span>.</p>
+
+  <h2>Contenus</h2>
+  <p>Les textes, photos et créations du site appartiennent à leur auteur. Merci de demander avant de les réutiliser.</p>
+</main>
+<script src="menu.js"></script>
+<script>
+{
+  fetch('/api/infos').then(r => r.ok ? r.json() : null).then(d => {
+    if (!d || !d.legal) return;
+    if (d.legal.nom) document.getElementById('nom').textContent = d.legal.nom;
+    if (d.legal.email) {
+      const a = `<a href="mailto:${encodeURIComponent(d.legal.email).replace('%40', '@')}">${d.legal.email.replace(/[<>&"]/g, '')}</a>`;
+      document.getElementById('contact').innerHTML = `Pour le contacter : ${a}, ou le formulaire « Me contacter » de la page <a href="bio.html">Mes liens</a>.`;
+      document.getElementById('contact-mail').innerHTML = ` ou par e-mail (${a})`;
+    }
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>

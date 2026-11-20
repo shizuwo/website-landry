@@ -14,37 +14,87 @@
 <meta name="apple-mobile-web-app-title" content="Admin Landry">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
-  :root { --rouge: #B3212E; --rouge-pale: #F6E3E1; --fond: #F6F3EE; --carte: #fff; --encre: #1E1E1E; --doux: #666; --trait: #DDD6CC; --vert: #1E7A43; }
+  :root { --rouge: #B3212E; --rouge-pale: #F6E3E1; --fond: #F6F3EE; --carte: #fff; --encre: #1E1E1E; --doux: #666; --trait: #DDD6CC; --vert: #1E7A43; --bas: 0px; }
   * { box-sizing: border-box; min-width: 0; }
   [hidden] { display: none !important; }
-  html { scroll-padding-top: 70px; }
+  html { scroll-padding-top: calc(var(--haut-entete, 104px) + 60px); }
   body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, -apple-system, sans-serif; }
-  header.barre { position: sticky; top: 0; z-index: 20; background: var(--rouge); color: #fff; padding: calc(env(safe-area-inset-top) + 10px) 14px 0; }
-  header.barre .haut { display: flex; justify-content: space-between; align-items: center; gap: 10px; max-width: 760px; margin: 0 auto; }
-  header.barre h1 { font: 600 1.15rem/1.2 system-ui, sans-serif; margin: 0; }
-  header.barre a { color: #fff; font-size: .9rem; }
-  nav.onglets { display: flex; gap: 4px; overflow-x: auto; max-width: 760px; margin: 8px auto 0; scrollbar-width: none; }
+
+  /* ---------- En-tête ---------- */
+  header.barre { position: sticky; top: 0; z-index: 30; background: var(--rouge); color: #fff; padding: calc(env(safe-area-inset-top) + 10px) 14px 0; }
+  .haut { display: flex; align-items: center; gap: 10px; max-width: 1180px; margin: 0 auto; padding-bottom: 8px; }
+  .haut h1 { font: 600 1.15rem/1.2 system-ui, sans-serif; margin: 0; flex: none; }
+  .haut .voir { color: #fff; font-size: .9rem; margin-left: auto; flex: none; }
+  .recherche { position: relative; flex: 1; max-width: 420px; margin-left: 12px; }
+  .recherche input { background: rgba(255,255,255,.18); border: 0; color: #fff; padding: .5rem .8rem .5rem 2.1rem; min-height: 40px; }
+  .recherche input::placeholder { color: rgba(255,255,255,.8); }
+  .recherche input:focus { background: #fff; color: var(--encre); }
+  .recherche::before { content: "⌕"; position: absolute; left: .7rem; top: 50%; translate: 0 -52%; font-size: 1.2rem; opacity: .9; pointer-events: none; }
+  .recherche kbd { position: absolute; right: .6rem; top: 50%; translate: 0 -50%; font: 600 .7rem system-ui; opacity: .8; border: 1px solid rgba(255,255,255,.6); border-radius: 4px; padding: 0 4px; pointer-events: none; }
+  .recherche input:focus + kbd { display: none; }
+  .resultats { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #fff; color: var(--encre); border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.25); overflow: hidden; max-height: 60vh; overflow-y: auto; }
+  .resultats button { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #EEE; }
+  .resultats button:hover, .resultats button:focus-visible { background: var(--rouge-pale); }
+  .resultats small { display: block; color: var(--doux); }
+  .resultats .rien { padding: 12px 14px; color: var(--doux); }
+  @media (max-width: 720px) { .recherche { display: none; margin: 0; max-width: none; } .recherche.ouverte { display: block; position: absolute; left: 10px; right: 10px; top: calc(env(safe-area-inset-top) + 6px); } .btn-loupe { display: inline-grid !important; } }
+  .btn-loupe { display: none !important; place-items: center; width: 40px; height: 40px; min-height: 0; padding: 0; background: rgba(255,255,255,.18); font-size: 1.2rem; border-radius: 10px; margin-left: auto; }
+
+  /* Onglets du haut (ordinateur) */
+  nav.onglets { display: flex; gap: 2px; overflow-x: auto; max-width: 1180px; margin: 0 auto; scrollbar-width: none; }
   nav.onglets::-webkit-scrollbar { display: none; }
-  nav.onglets a { flex: none; color: #fff; text-decoration: none; font-weight: 600; font-size: .9rem; padding: 10px 12px; border-bottom: 3px solid transparent; white-space: nowrap; }
+  nav.onglets a, .barre-bas a { color: #fff; text-decoration: none; font-weight: 600; }
+  nav.onglets a { flex: none; font-size: .95rem; padding: 10px 14px; border-bottom: 3px solid transparent; white-space: nowrap; }
   nav.onglets a.actif { border-bottom-color: #fff; }
-  nav.onglets .pastille { display: inline-block; min-width: 1.3em; padding: 0 .35em; margin-left: .3em; border-radius: 999px; background: #fff; color: var(--rouge); font-size: .75rem; text-align: center; }
-  main { max-width: 760px; margin: 0 auto; padding: 16px 14px calc(env(safe-area-inset-bottom) + 80px); }
-  section { padding-top: 18px; }
+  .pastille { display: inline-block; min-width: 1.3em; padding: 0 .35em; margin-left: .3em; border-radius: 999px; background: #fff; color: var(--rouge); font-size: .72rem; text-align: center; line-height: 1.5; }
+
+  /* Barre du bas (téléphone) */
+  .barre-bas { display: none; }
+  @media (max-width: 720px) {
+    :root { --bas: calc(64px + env(safe-area-inset-bottom)); }
+    nav.onglets { display: none; }
+    .barre-bas { display: grid; grid-template-columns: repeat(6, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: #fff; border-top: 1px solid var(--trait); padding: 4px 2px env(safe-area-inset-bottom); box-shadow: 0 -4px 16px rgba(0,0,0,.06); }
+    .barre-bas a, .barre-bas button { all: unset; box-sizing: border-box; display: grid; justify-items: center; gap: 1px; padding: 6px 0; color: #7A6F66; font: 600 .68rem/1.1 system-ui, sans-serif; cursor: pointer; position: relative; text-align: center; }
+    .barre-bas .i { font-size: 1.35rem; line-height: 1.1; }
+    .barre-bas .actif { color: var(--rouge); }
+    .barre-bas .pastille { position: absolute; top: 2px; left: 52%; background: var(--rouge); color: #fff; margin: 0; }
+    .barre-bas a:focus-visible, .barre-bas button:focus-visible { outline: 3px solid var(--rouge); outline-offset: -3px; border-radius: 8px; }
+  }
+  .feuille-plus { position: fixed; left: 8px; right: 8px; bottom: calc(var(--bas) + 8px); z-index: 31; background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.25); padding: 6px; display: grid; }
+  .feuille-plus a { padding: 14px 16px; border-radius: 10px; color: var(--encre); text-decoration: none; font-weight: 600; }
+  .feuille-plus a:hover { background: var(--rouge-pale); }
+
+  /* ---------- Mise en page ---------- */
+  .page { max-width: 1180px; margin: 0 auto; padding: 0 14px calc(var(--bas) + 80px); }
+  .colonnes { display: grid; gap: 24px; }
+  main { max-width: 760px; width: 100%; margin: 0 auto; }
+  @media (min-width: 1100px) { body.avec-apercu .colonnes { grid-template-columns: minmax(0, 1fr) 360px; } body.avec-apercu main { margin: 0; } }
+  .sous-onglets { position: sticky; top: var(--haut-entete, 104px); z-index: 20; display: flex; gap: 6px; overflow-x: auto; padding: 12px 0 10px; background: var(--fond); scrollbar-width: none; }
+  .sous-onglets::-webkit-scrollbar { display: none; }
+  .sous-onglets button { flex: none; min-height: 38px; padding: .3rem .95rem; border-radius: 999px; background: #EAE4DB; color: var(--encre); font-size: .9rem; }
+  .sous-onglets button.actif { background: var(--encre); color: #fff; }
+  section { padding-top: 6px; scroll-margin-top: calc(var(--haut-entete, 104px) + 60px); }
+  body.tout section { padding-top: 26px; }
+  .titre-tout { display: none; font-size: .8rem; font-weight: 700; color: var(--rouge); margin-bottom: 2px; }
+  body.tout .titre-tout { display: block; }
   h2 { font-size: 1.25rem; margin: 0 0 .25rem; }
   h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; }
   .aide { color: var(--doux); font-size: .9375rem; margin: 0 0 .9rem; }
   .boite { background: var(--carte); border-radius: 14px; padding: 16px; box-shadow: 0 1px 0 var(--trait); }
   .alerte { background: #FFF4D6; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-size: .9375rem; }
+
+  /* ---------- Champs et boutons ---------- */
   label { display: grid; gap: 4px; font-weight: 600; font-size: .9375rem; }
   label.case { display: flex; align-items: center; gap: 8px; font-weight: 500; }
-  label.case input { width: 20px; height: 20px; }
+  label.case input { width: 20px; height: 20px; flex: none; }
   input, textarea, select { font: inherit; font-size: 16px; width: 100%; padding: .6rem .75rem; border: 1px solid #CCC; border-radius: 10px; background: #fff; color: inherit; }
   input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
   button { font: inherit; font-weight: 600; min-height: 44px; padding: .5rem 1rem; border-radius: 10px; border: 0; background: var(--rouge); color: #fff; cursor: pointer; }
   button.gris { background: #EAE4DB; color: var(--encre); }
   button.petit { min-height: 40px; min-width: 40px; padding: .35rem .7rem; font-size: .9rem; }
+  button.lien { background: none; color: var(--rouge); padding: .3rem 0; min-height: 0; text-decoration: underline; }
   button:disabled { opacity: .5; cursor: default; }
-  a.lien-btn { display: inline-flex; align-items: center; min-height: 40px; padding: .35rem .8rem; border-radius: 10px; background: var(--rouge); color: #fff; font-weight: 600; font-size: .9rem; text-decoration: none; }
+  a.lien-btn { display: inline-flex; align-items: center; min-height: 40px; padding: .35rem .8rem; border-radius: 10px; background: #EAE4DB; color: var(--encre); font-weight: 600; font-size: .9rem; text-decoration: none; }
   .ligne { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
   .grille { display: grid; gap: 10px; }
   @media (min-width: 560px) { .grille.deux { grid-template-columns: 1fr 1fr; } }
@@ -53,60 +103,7 @@
   .prefixe input { border: 0; padding-left: 0; }
   .erreur { color: var(--rouge); font-weight: 600; margin: .5rem 0 0; }
   .vide { color: var(--doux); }
-
-  /* Chiffres et graphique */
-  .tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
-  .tuile { background: var(--carte); border-radius: 12px; padding: 12px; box-shadow: 0 1px 0 var(--trait); }
-  .tuile b { display: block; font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .tuile span { font-size: .85rem; color: var(--doux); }
-  .graphique { position: relative; margin-top: 12px; }
-  .graphique svg { display: block; width: 100%; height: 190px; overflow: visible; }
-  .graphique .bulle { position: absolute; pointer-events: none; background: #1E1E1E; color: #fff; font-size: .85rem; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -110%); opacity: 0; transition: opacity .12s; }
-  .graphique .bulle.vu { opacity: 1; }
-  details { margin-top: 10px; }
-  summary { cursor: pointer; color: var(--doux); font-size: .9rem; }
-  table { width: 100%; border-collapse: collapse; font-size: .875rem; margin-top: 6px; }
-  th, td { padding: 4px 6px; border-bottom: 1px solid var(--trait); text-align: right; font-variant-numeric: tabular-nums; }
-  th:first-child, td:first-child { text-align: left; }
-
-  /* Cartes de liste */
-  .carte { background: var(--carte); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 1px 0 var(--trait); }
-  .carte.eteint { opacity: .55; }
-  .carte.non-lu { border-left: 4px solid var(--rouge); }
-  .carte .ico { width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--rouge-pale); color: var(--rouge); display: grid; place-items: center; overflow: hidden; }
-  .carte .ico svg { width: 20px; height: 20px; fill: currentColor; }
-  .carte .ico img { width: 100%; height: 100%; object-fit: cover; }
-  .carte .corps { flex: 1; }
-  .carte .titre { font-weight: 600; overflow-wrap: anywhere; }
-  .carte small { display: block; color: var(--doux); overflow-wrap: anywhere; }
-  .carte .texte { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
-  .carte .chiffre { font-size: .85rem; color: var(--vert); font-weight: 600; white-space: nowrap; }
-  .badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--rouge-pale); color: var(--rouge); margin: 2px 4px 0 0; }
-
-  /* Envoi de fichiers */
-  .depot { border: 2px dashed #C9BFB2; border-radius: 14px; padding: 22px 14px; text-align: center; background: #fff; cursor: pointer; }
-  .depot.survol { border-color: var(--rouge); background: var(--rouge-pale); }
-  .depot b { color: var(--rouge); }
-  .envois { margin-top: 10px; display: grid; gap: 6px; }
-  .envoi { font-size: .9rem; }
-  .envoi progress { width: 100%; height: 8px; accent-color: var(--rouge); }
-
-  /* Photos de l'accueil */
-  .groupe-textes { border: 0; padding: 0; margin: 0 0 6px; display: grid; gap: 10px; }
-  .groupe-textes legend { font-weight: 700; margin-bottom: 4px; color: var(--rouge); }
-  .compte { font-weight: 400; color: var(--doux); font-size: .8rem; }
-  .statut-ligne { display: flex; gap: 8px; align-items: center; }
-  .idee { background: var(--rouge-pale); color: var(--rouge); border-radius: 999px; padding: .35rem .8rem; min-height: 36px; font-weight: 600; font-size: .875rem; }
-  .emplacements { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-  .emplacement { background: var(--carte); border-radius: 12px; padding: 10px; box-shadow: 0 1px 0 var(--trait); }
-  .emplacement .apercu { aspect-ratio: 4 / 3; border-radius: 8px; background: #EEE8DF; display: grid; place-items: center; color: var(--doux); font-size: .85rem; overflow: hidden; margin-bottom: 6px; }
-  .emplacement .apercu img { width: 100%; height: 100%; object-fit: cover; }
-  .emplacement b { display: block; font-size: .875rem; margin-bottom: 4px; }
-
-  .jauge { display: flex; align-items: center; gap: 14px; }
-  .jauge svg { width: 64px; height: 64px; flex: none; transform: rotate(-90deg); }
-  .jauge .pct { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .jauge small { display: block; color: var(--doux); }
+  .ajouter { width: 100%; background: #fff; color: var(--rouge); border: 2px dashed #E0B9BC; margin-bottom: 10px; }
   .interrupteur { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--trait); font-weight: 600; }
   .interrupteur:last-child { border-bottom: 0; }
   .interrupteur small { display: block; font-weight: 400; color: var(--doux); }
@@ -117,54 +114,163 @@
   .bascule input:checked + span { background: var(--rouge); }
   .bascule input:checked + span::after { transform: translateX(22px); }
   .bascule input:focus-visible + span { outline: 3px solid var(--rouge); outline-offset: 2px; }
-  .sous-bloc { margin: 4px 0 12px; display: grid; gap: 10px; }
+  .choix { display: grid; gap: 8px; }
+  .choix label { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--trait); border-radius: 12px; padding: 10px 12px; cursor: pointer; font-weight: 600; }
+  .choix label:has(input:checked) { border-color: var(--rouge); background: var(--rouge-pale); }
+  .choix input { width: 18px; height: 18px; flex: none; accent-color: var(--rouge); }
+  .choix small { display: block; font-weight: 400; color: var(--doux); }
+  details.options { margin-top: 10px; }
+  details.options summary { cursor: pointer; color: var(--doux); font-weight: 600; font-size: .9rem; }
+
+  /* ---------- Tableau de bord ---------- */
+  .a-traiter { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .a-traiter button { all: unset; box-sizing: border-box; cursor: pointer; background: #fff; border-radius: 14px; padding: 14px; box-shadow: 0 1px 0 var(--trait); display: flex; align-items: center; gap: 12px; border-left: 5px solid var(--rouge); }
+  .a-traiter button.calme { border-left-color: var(--trait); }
+  .a-traiter b { font-size: 1.6rem; line-height: 1; font-variant-numeric: tabular-nums; min-width: 1.4em; }
+  .a-traiter span { font-weight: 600; }
+  .a-traiter small { display: block; color: var(--doux); font-weight: 400; }
+  .a-traiter button:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
+  .tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+  .tuile { background: var(--carte); border-radius: 12px; padding: 12px; box-shadow: 0 1px 0 var(--trait); }
+  .tuile b { display: block; font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .tuile span { font-size: .85rem; color: var(--doux); }
+  .graphique { position: relative; margin-top: 12px; }
+  .graphique svg { display: block; width: 100%; height: 190px; overflow: visible; }
+  .graphique .bulle { position: absolute; pointer-events: none; background: #1E1E1E; color: #fff; font-size: .85rem; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, -110%); opacity: 0; transition: opacity .12s; }
+  .graphique .bulle.vu { opacity: 1; }
+  details summary { cursor: pointer; color: var(--doux); font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; margin-top: 6px; }
+  th, td { padding: 4px 6px; border-bottom: 1px solid var(--trait); text-align: right; font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; }
+  .jauge { display: flex; align-items: center; gap: 14px; }
+  .jauge svg { width: 64px; height: 64px; flex: none; transform: rotate(-90deg); }
+  .jauge .pct { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .jauge small { display: block; color: var(--doux); }
+
+  /* ---------- Cartes de liste ---------- */
+  .liste { display: grid; gap: 8px; }
+  .carte { position: relative; background: var(--carte); border-radius: 12px; padding: 10px 12px; display: flex; gap: 10px; align-items: center; box-shadow: 0 1px 0 var(--trait); transition: opacity .2s; }
+  .carte.eteint { opacity: .55; }
+  .carte.non-lu { border-left: 4px solid var(--rouge); }
+  .carte.flash { animation: flash 1.6s ease; }
+  @keyframes flash { 0%, 40% { box-shadow: 0 0 0 3px var(--rouge); } }
+  .carte .ico { width: 42px; height: 42px; flex: none; border-radius: 10px; background: var(--rouge-pale); color: var(--rouge); display: grid; place-items: center; overflow: hidden; font-size: 1.2rem; }
+  .carte .ico svg { width: 20px; height: 20px; fill: currentColor; }
+  .carte .ico img { width: 100%; height: 100%; object-fit: cover; }
+  .carte .corps { flex: 1; }
+  .carte .titre { font-weight: 600; overflow-wrap: anywhere; line-height: 1.3; }
+  .carte small { display: block; color: var(--doux); overflow-wrap: anywhere; line-height: 1.35; }
+  .carte .texte { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
+  .carte .chiffre { font-size: .8rem; color: var(--vert); font-weight: 600; white-space: nowrap; }
+  .carte .actions { display: flex; gap: 6px; align-items: center; flex: none; }
+  .badge { display: inline-block; font-size: .72rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--rouge-pale); color: var(--rouge); margin: 3px 4px 0 0; }
+  .poignee { flex: none; width: 28px; height: 40px; display: grid; place-items: center; color: #A89E92; cursor: grab; touch-action: none; border-radius: 8px; font-size: 1.1rem; user-select: none; -webkit-user-select: none; }
+  .poignee:active { cursor: grabbing; }
+  .carte.glisse { z-index: 5; box-shadow: 0 14px 30px rgba(0,0,0,.2); opacity: .95; }
+  .trous { all: unset; flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; cursor: pointer; font-size: 1.3rem; color: #5A524A; }
+  .trous:hover { background: #F0EBE4; }
+  .trous:focus-visible { outline: 3px solid var(--rouge); }
+  .menu { position: absolute; z-index: 40; min-width: 210px; background: #fff; border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.22); padding: 6px; display: grid; }
+  .menu button { all: unset; box-sizing: border-box; padding: 11px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+  .menu button:hover, .menu button:focus-visible { background: var(--rouge-pale); }
+  .menu button.danger { color: var(--rouge); font-weight: 600; }
+  .filtres { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 10px; }
+  .filtres button { min-height: 36px; padding: .25rem .85rem; border-radius: 999px; background: #EAE4DB; color: var(--encre); font-size: .875rem; }
+  .filtres button.actif { background: var(--encre); color: #fff; }
+
+  /* ---------- Fichiers ---------- */
+  .depot { display: block; border: 2px dashed #C9BFB2; border-radius: 14px; padding: 22px 14px; text-align: center; background: #fff; cursor: pointer; font-weight: 500; }
+  .depot.survol { border-color: var(--rouge); background: var(--rouge-pale); }
+  .depot b { color: var(--rouge); }
+  .envois { margin-top: 10px; display: grid; gap: 6px; }
+  .envoi { font-size: .9rem; overflow-wrap: anywhere; }
+  .envoi progress { width: 100%; height: 8px; accent-color: var(--rouge); }
   .a-valider { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .a-valider figure { margin: 0; background: var(--carte); border-radius: 12px; padding: 8px; box-shadow: 0 1px 0 var(--trait); }
   .a-valider img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; display: block; }
   .a-valider figcaption { font-size: .8rem; color: var(--doux); margin: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .a-valider .ligne { margin-top: 4px; gap: 6px; }
-  .a-valider button { flex: 1; padding: .3rem .4rem; }
-  dialog { border: 0; border-radius: 18px; padding: 20px; width: min(380px, 92vw); }
+  .a-valider .ligne { margin-top: 4px; gap: 4px; }
+  .a-valider button { flex: 1; padding: .3rem .3rem; font-size: .8rem; min-height: 36px; }
+
+  /* ---------- Accueil, phrases, textes ---------- */
+  .emplacements { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .emplacement { background: var(--carte); border-radius: 12px; padding: 10px; box-shadow: 0 1px 0 var(--trait); }
+  .emplacement .apercu { aspect-ratio: 4 / 3; border-radius: 8px; background: #EEE8DF; display: grid; place-items: center; color: var(--doux); font-size: .85rem; overflow: hidden; margin-bottom: 6px; }
+  .emplacement .apercu img { width: 100%; height: 100%; object-fit: cover; }
+  .emplacement b { display: block; font-size: .875rem; margin-bottom: 4px; }
+  .groupe-textes { border: 0; padding: 0; margin: 0 0 6px; display: grid; gap: 10px; }
+  .groupe-textes legend { font-weight: 700; margin-bottom: 4px; color: var(--rouge); }
+  .compte { font-weight: 400; color: var(--doux); font-size: .8rem; }
+  .statut-ligne { display: flex; gap: 8px; align-items: center; }
+  .idee { background: var(--rouge-pale); color: var(--rouge); border-radius: 999px; padding: .35rem .8rem; min-height: 36px; font-weight: 600; font-size: .875rem; }
+  .piste { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; background: #fff; border-radius: 12px; padding: 8px; box-shadow: 0 1px 0 var(--trait); }
+  .piste .champs { display: grid; gap: 6px; }
+  @media (min-width: 560px) { .piste .champs { grid-template-columns: 1fr 1fr; } }
+  .piste .nom { grid-column: 1 / -1; font-size: .8rem; color: var(--doux); }
+
+  /* ---------- Aperçu en direct ---------- */
+  aside.apercu { display: none; }
+  @media (min-width: 1100px) { body.avec-apercu aside.apercu { display: block; position: sticky; top: 130px; align-self: start; padding-top: 12px; } }
+  .telephone { width: 340px; height: min(680px, calc(100vh - 180px)); border-radius: 36px; background: #1E1E1E; padding: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .telephone iframe { width: 100%; height: 100%; border: 0; border-radius: 26px; background: #B3212E; }
+  .apercu .legende { text-align: center; color: var(--doux); font-size: .85rem; margin-top: 8px; }
+  .btn-apercu { position: fixed; right: 14px; bottom: calc(var(--bas) + 14px); z-index: 25; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+  @media (min-width: 1100px) { .btn-apercu { display: none; } }
+
+  /* ---------- Fenêtres ---------- */
+  dialog { border: 0; border-radius: 18px; padding: 20px; width: min(400px, 92vw); max-height: 90vh; overflow: auto; }
   dialog::backdrop { background: rgba(0,0,0,.5); }
   dialog h3 { margin-top: 0; }
+  dialog.plein { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; padding: 0; background: #1E1E1E; }
+  dialog.plein iframe { width: 100%; height: calc(100% - 56px); border: 0; background: #B3212E; }
+  dialog.plein .ligne { justify-content: space-between; margin: 0; padding: 8px 12px; color: #fff; }
   #qr-zone { display: grid; place-items: center; min-height: 240px; }
   #qr-zone img, #qr-zone canvas { width: 240px; height: 240px; }
-  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px); translate: -50% 0; z-index: 50; background: #1E1E1E; color: #fff; padding: .6rem 1rem; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; text-align: center; }
-  .toast.vu { opacity: 1; }
+  .toast { position: fixed; left: 50%; bottom: calc(var(--bas) + 20px); translate: -50% 0; z-index: 50; background: #1E1E1E; color: #fff; padding: .55rem .6rem .55rem 1rem; border-radius: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 92vw; display: flex; align-items: center; gap: 12px; }
+  .toast.vu { opacity: 1; pointer-events: auto; }
+  .toast button { background: #fff; color: var(--encre); min-height: 36px; padding: .2rem .8rem; }
   #connexion { max-width: 420px; margin: 40px auto; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
 <header class="barre">
-  <div class="haut"><h1>Admin 🌺</h1><a href="/bio" target="_blank" rel="noopener">Voir le site</a></div>
-  <nav class="onglets" id="onglets" hidden aria-label="Sections">
-    <a href="#s-stats">Chiffres</a>
-    <a href="#s-liens">Liens bio</a>
-    <a href="#s-courts">Liens courts</a>
-    <a href="#s-fichiers">Fichiers</a>
-    <a href="#s-galerie">Galerie</a>
-    <a href="#s-accueil">Accueil</a>
-    <a href="#s-evenement">Événement</a>
-    <a href="#s-site">Réglages</a>
-    <a href="#s-messages">Messages<span class="pastille" id="n-non-lus" hidden></span></a>
-    <a href="#s-livre">Livre d'or<span class="pastille" id="n-attente" hidden></span></a>
-  </nav>
+  <div class="haut">
+    <h1>Admin 🌺</h1>
+    <div class="recherche" id="recherche" hidden>
+      <input id="champ-recherche" type="search" placeholder="Rechercher un lien, un fichier, un message…" autocomplete="off" aria-label="Rechercher dans l'admin">
+      <kbd>Ctrl K</kbd>
+      <div class="resultats" id="resultats" hidden></div>
+    </div>
+    <button class="btn-loupe" id="btn-loupe" type="button" aria-label="Rechercher" hidden>⌕</button>
+    <a class="voir" href="/bio" target="_blank" rel="noopener">Voir le site</a>
+  </div>
+  <nav class="onglets" id="onglets" hidden aria-label="Onglets"></nav>
 </header>
+<nav class="barre-bas" id="barre-bas" hidden aria-label="Onglets"></nav>
+<div class="feuille-plus" id="feuille-plus" hidden></div>
 
-<main>
+<div class="page">
   <form id="connexion" class="boite">
     <label for="cle">Mot de passe admin (ADMIN_KEY)</label>
     <div class="ligne"><input id="cle" type="password" autocomplete="current-password" required style="flex:1"><button>Entrer</button></div>
     <p id="erreur" class="erreur" role="alert"></p>
   </form>
 
-  <div id="panneau" hidden>
+  <div class="colonnes" id="panneau" hidden>
+  <main>
+    <div class="sous-onglets" id="sous-onglets" role="tablist"></div>
 
-    <!-- ================= CHIFFRES ================= -->
-    <section id="s-stats">
+    <!-- ================= TABLEAU DE BORD ================= -->
+    <section data-onglet="tableau" data-nom="À traiter" id="s-traiter">
+      <h2>À traiter</h2>
+      <div class="a-traiter" id="a-traiter"></div>
+      <div class="boite jauge" id="jauge-tableau"></div>
+    </section>
+    <section data-onglet="tableau" data-nom="Chiffres" id="s-stats">
       <h2>Les 30 derniers jours</h2>
       <div class="tuiles" id="tuiles"></div>
-      <div class="boite graphique" style="margin-top:12px">
+      <div class="boite graphique">
         <strong>Visites par jour</strong>
         <svg id="graph" role="img" aria-label="Visites par jour sur 30 jours"></svg>
         <div class="bulle" id="bulle"></div>
@@ -173,28 +279,35 @@
       <p class="aide" id="etat-notifs" style="margin-top:10px"></p>
     </section>
 
-    <!-- ================= LIENS BIO ================= -->
-    <section id="s-liens">
-      <h2>Liens de la page bio</h2>
-      <p class="aide">Les boutons de landrypf.com/bio, dans cet ordre. « Découvrir mon monde » reste en dernier.</p>
-      <div id="liste-liens"></div>
-      <form id="form-lien" class="boite" novalidate>
-        <strong id="form-lien-titre">Ajouter un lien</strong>
+    <!-- ================= PAGE BIO ================= -->
+    <section data-onglet="bio" data-nom="Liens" id="s-liens">
+      <h2>Liens de la bio</h2>
+      <p class="aide">Glisse avec ⠿ pour changer l'ordre. « Découvrir mon monde » reste toujours en dernier.</p>
+      <button class="ajouter" type="button" data-ouvre="form-lien">+ Ajouter un lien</button>
+      <form id="form-lien" class="boite" novalidate hidden style="margin-bottom:12px">
+        <strong id="form-lien-titre">Nouveau lien</strong>
         <div class="grille deux" style="margin-top:10px">
           <label>Titre<input name="titre" maxlength="60" placeholder="ex. Ma chaîne YouTube" required></label>
           <label>Sous-titre (facultatif)<input name="sous_titre" maxlength="80" placeholder="ex. Mes vlogs à Tahiti"></label>
           <label>Adresse<input name="url" inputmode="url" placeholder="https://… ou /galerie" required></label>
           <label>Icône<select name="icone" id="choix-icone"></select></label>
-          <label>Afficher à partir du (facultatif)<input name="debut" type="datetime-local"></label>
-          <label>Jusqu'au (facultatif)<input name="fin" type="datetime-local"></label>
         </div>
-        <div class="ligne"><button id="btn-lien">Ajouter</button><button type="button" class="gris" id="annuler-lien" hidden>Annuler</button></div>
+        <details class="options"><summary>Programmer (dates de début et de fin)</summary>
+          <div class="grille deux" style="margin-top:8px">
+            <label>Afficher à partir du<input name="debut" type="datetime-local"></label>
+            <label>Jusqu'au<input name="fin" type="datetime-local"></label>
+          </div>
+        </details>
+        <div class="ligne"><button id="btn-lien">Ajouter</button><button type="button" class="gris" data-ferme="form-lien">Annuler</button></div>
         <p class="erreur" id="err-lien" role="alert"></p>
       </form>
+      <div class="liste" id="liste-liens" data-tri="liens"></div>
+    </section>
 
-      <h3>En ce moment</h3>
+    <section data-onglet="bio" data-nom="En ce moment" id="s-statuts">
+      <h2>En ce moment</h2>
       <form id="form-statut" class="boite" novalidate>
-        <p class="aide" style="margin-top:0">La petite ligne sous ton nom sur la bio. Mets-en plusieurs : une est tirée au hasard à chaque visite.</p>
+        <p class="aide" style="margin-top:0">La petite ligne sous ton nom. Mets-en plusieurs : une est tirée au hasard à chaque visite.</p>
         <div id="liste-statuts" class="grille"></div>
         <div class="ligne"><button type="button" class="gris" id="statut-ajouter">+ Ajouter une phrase</button><button type="button" class="gris" id="statut-idees">💡 Des idées</button></div>
         <div id="idees" class="ligne" hidden></div>
@@ -203,132 +316,214 @@
       </form>
     </section>
 
-    <!-- ================= LIENS COURTS ================= -->
-    <section id="s-courts">
-      <h2>Liens courts</h2>
-      <p class="aide">landrypf.com/ton-code redirige où tu veux. Chaque lien a son QR code.</p>
-      <form id="form-court" class="boite" novalidate>
-        <div class="grille">
-          <label>Lien court<span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span></label>
-          <label>Redirige vers<input name="url" inputmode="url" placeholder="https://…" required></label>
-        </div>
-        <div class="ligne"><button>Créer le lien court</button><button type="button" class="gris" id="code-hasard">Code au hasard</button></div>
-        <p class="erreur" id="err-court" role="alert"></p>
-      </form>
-      <div id="liste-courts" style="margin-top:12px"></div>
-    </section>
-
-    <!-- ================= FICHIERS ================= -->
-    <section id="s-fichiers">
-      <h2>Fichiers</h2>
-      <p class="aide">Envoie un fichier (100 Mo max) et obtiens un lien landrypf.com/f/… à partager.</p>
-      <div class="boite jauge" style="margin-bottom:12px">
-        <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="#EAE4DB" stroke-width="8"/><circle id="jauge-arc" cx="32" cy="32" r="27" fill="none" stroke="#1E7A43" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 999"/></svg>
-        <div><span class="pct" id="jauge-pct">0 %</span><small id="jauge-texte">du stockage gratuit utilisé</small></div>
-      </div>
-      <div class="alerte" id="pas-de-stockage" hidden>Le stockage n'est pas encore branché : active <b>R2</b> dans Cloudflare, puis préviens Claude.</div>
-      <div class="boite" id="zone-envoi">
-        <div class="grille deux">
-          <label class="case"><input type="checkbox" id="opt-optimiser" checked> Optimiser les photos (plus légères, qualité préservée)</label>
-          <label>Expiration
-            <select id="opt-expire">
-              <option value="">Jamais</option><option value="1">Après 1 jour</option><option value="7">Après 7 jours</option><option value="30">Après 30 jours</option>
-            </select>
-          </label>
-          <label>Mot de passe (facultatif)<input id="opt-mdp" type="text" autocomplete="off" placeholder="laisser vide = public"></label>
-        </div>
-        <label class="depot" id="depot" style="margin-top:12px">
-          <input type="file" id="choix-fichiers" multiple hidden>
-          <span>📎 <b>Choisis des fichiers</b> ou glisse-les ici</span>
-        </label>
-        <div class="envois" id="envois"></div>
-      </div>
-      <div id="liste-fichiers" style="margin-top:12px"></div>
-    </section>
-
-    <!-- ================= GALERIE ================= -->
-    <section id="s-galerie">
-      <h2>Galerie</h2>
-      <div id="bloc-valider" hidden>
-        <h3>Photos à valider</h3>
-        <p class="aide">Tes nouvelles images. Rien n'est publié sans ton accord.</p>
-        <div class="a-valider" id="a-valider"></div>
-      </div>
-      <h3>Dans la galerie</h3>
-      <p class="aide">Affichées sur landrypf.com/galerie, dans cet ordre.</p>
-      <div id="liste-galerie"></div>
-    </section>
-
-    <!-- ================= PHOTOS ACCUEIL ================= -->
-    <section id="s-accueil">
-      <h2>Page d'accueil</h2>
-      <h3>Photos</h3>
-      <p class="aide">Remplace les dessins par tes photos (envoie-les d'abord dans Fichiers, sans mot de passe ni expiration). Format paysage conseillé.</p>
-      <div class="emplacements" id="emplacements"></div>
-      <h3>Textes</h3>
-      <p class="aide">Laisse un champ vide pour garder le texte d'origine (affiché en gris). Les très grands mots se resserrent tout seuls s'ils sont trop longs pour l'écran.</p>
-      <form id="form-textes" class="boite grille" novalidate></form>
-    </section>
-
-    <!-- ================= ÉVÉNEMENT ================= -->
-    <section id="s-evenement">
+    <section data-onglet="bio" data-nom="Événement" id="s-evenement">
       <h2>Prochain événement</h2>
-      <p class="aide">S'affiche sur la page bio avec un compte à rebours, puis disparaît 6 h après l'heure prévue.</p>
+      <p class="aide">Affiché sur la bio avec un compte à rebours, puis masqué 6 h après l'heure prévue.</p>
       <form id="form-evt" class="boite" novalidate>
         <div class="grille deux">
           <label>Nom<input name="titre" maxlength="80" placeholder="ex. Live Insta au coucher de soleil"></label>
           <label>Date et heure<input name="date" type="datetime-local"></label>
           <label>Lien (facultatif)<input name="lien" inputmode="url" placeholder="https://…"></label>
         </div>
-        <div class="ligne"><button>Enregistrer</button><button type="button" class="gris" id="evt-effacer">Effacer l'événement</button></div>
+        <div class="ligne"><button>Enregistrer</button><button type="button" class="gris" id="evt-effacer">Effacer</button></div>
         <p class="erreur" id="err-evt" role="alert"></p>
       </form>
     </section>
 
-    <!-- ================= RÉGLAGES DU SITE ================= -->
-    <section id="s-site">
-      <h2>Réglages du site</h2>
-      <p class="aide">Active ou coupe les fonctionnalités de la page bio, et gère la bannière et la musique.</p>
-      <form id="form-site" class="boite" novalidate>
-        <label class="interrupteur"><span>Livre d'or<small>La section où les visiteurs laissent un mot public</small></span><span class="bascule"><input type="checkbox" name="livre_actif"><span></span></span></label>
-        <label class="interrupteur"><span>Formulaire « Me contacter »<small>Les messages privés qui arrivent dans ta boîte</small></span><span class="bascule"><input type="checkbox" name="contact_actif"><span></span></span></label>
-
-        <label class="interrupteur"><span>Bannière d'annonce<small>Un message en bas de toutes les pages</small></span><span class="bascule"><input type="checkbox" name="banniere_active"><span></span></span></label>
-        <div class="sous-bloc" id="bloc-banniere">
-          <label>Texte de l'annonce<input name="banniere_texte" maxlength="140" placeholder="ex. Nouvelle vidéo dispo sur Insta !"></label>
-          <label>Lien (facultatif)<input name="banniere_lien" inputmode="url" placeholder="https://… ou /galerie"></label>
+    <section data-onglet="bio" data-nom="Direct" id="s-direct">
+      <h2>Badge « en direct »</h2>
+      <p class="aide">Active-le quand tu lances un live : un badge rouge clignotant apparaît sur la bio, avec ton lien.</p>
+      <form id="form-live" class="boite" novalidate>
+        <label class="interrupteur"><span>Je suis en direct</span><span class="bascule"><input type="checkbox" name="actif"><span></span></span></label>
+        <div class="grille deux" style="margin-top:8px">
+          <label>Texte du badge<input name="texte" maxlength="40" placeholder="En direct sur Insta"></label>
+          <label>Lien du direct<input name="lien" inputmode="url" placeholder="https://instagram.com/landry.pf"></label>
         </div>
-
-        <label class="interrupteur"><span>Lecteur de musique sur la bio<small>Le visiteur appuie sur lecture, rien ne démarre tout seul</small></span><span class="bascule"><input type="checkbox" name="musique_active"><span></span></span></label>
-        <div class="sous-bloc" id="bloc-musique">
-          <label>Morceau<select name="musique_id" id="choix-musique"></select></label>
-          <div class="grille deux">
-            <label>Titre affiché<input name="musique_titre" maxlength="80" placeholder="ex. Nom du morceau"></label>
-            <label>Artiste<input name="musique_artiste" maxlength="80" placeholder="ex. Landry"></label>
-          </div>
-          <p class="aide" style="margin:0">Mets uniquement des morceaux à toi ou que tu as le droit de diffuser publiquement.</p>
-        </div>
-
-        <div class="ligne"><button>Enregistrer les réglages</button></div>
-        <p class="erreur" id="err-site" role="alert"></p>
+        <div class="ligne"><button>Enregistrer</button></div>
+        <p class="erreur" id="err-live" role="alert"></p>
       </form>
     </section>
 
-    <!-- ================= MESSAGES ================= -->
-    <section id="s-messages">
-      <h2>Messages reçus</h2>
-      <p class="aide">Les messages du formulaire « Me contacter » de la page bio.</p>
-      <div id="liste-contacts"></div>
+    <section data-onglet="bio" data-nom="Musique" id="s-musique">
+      <h2>Lecteur de musique</h2>
+      <div class="boite">
+        <label class="interrupteur"><span>Afficher le lecteur sur la bio<small>Le visiteur appuie sur lecture, rien ne démarre tout seul</small></span><span class="bascule"><input type="checkbox" id="musique-active"><span></span></span></label>
+        <h3 style="margin-top:12px">Playlist</h3>
+        <p class="aide">Glisse avec ⠿ pour l'ordre. Mets uniquement des morceaux à toi ou que tu as le droit de diffuser.</p>
+        <div class="liste" id="liste-pistes" data-tri="pistes"></div>
+        <div class="ligne"><select id="ajout-piste" style="flex:1"></select><button type="button" class="gris" id="btn-ajout-piste">Ajouter</button></div>
+        <div class="ligne"><button id="playlist-enregistrer" type="button">Enregistrer la playlist</button></div>
+        <p class="erreur" id="err-playlist" role="alert"></p>
+      </div>
     </section>
 
-    <!-- ================= LIVRE D'OR ================= -->
-    <section id="s-livre">
-      <h2>Livre d'or</h2>
-      <h3>À valider</h3><div id="attente"></div>
-      <h3>Publiés</h3><div id="valides"></div>
+    <section data-onglet="bio" data-nom="Blocs" id="s-blocs">
+      <h2>Blocs intégrés</h2>
+      <p class="aide">Colle le lien d'une publication Instagram, d'une vidéo TikTok ou YouTube, ou d'un titre Spotify ou SoundCloud : il apparaît sur ta bio. Le contenu ne se charge que si le visiteur appuie dessus (plus léger et respectueux de sa vie privée).</p>
+      <form id="form-bloc" class="boite" novalidate style="margin-bottom:12px">
+        <label>Lien<input name="url" inputmode="url" placeholder="https://www.instagram.com/p/…" required></label>
+        <div class="ligne"><button>Ajouter le bloc</button></div>
+        <p class="erreur" id="err-bloc" role="alert"></p>
+      </form>
+      <div class="liste" id="liste-blocs" data-tri="blocs"></div>
     </section>
+
+    <!-- ================= PAGE D'ACCUEIL ================= -->
+    <section data-onglet="accueil" data-nom="Photos" id="s-photos">
+      <h2>Photos de l'accueil</h2>
+      <p class="aide">Remplace les dessins par tes photos (envoie-les d'abord dans Fichiers, sans mot de passe ni expiration). Format paysage conseillé.</p>
+      <div class="emplacements" id="emplacements"></div>
+    </section>
+    <section data-onglet="accueil" data-nom="Textes" id="s-textes">
+      <h2>Textes de l'accueil</h2>
+      <p class="aide">Laisse un champ vide pour garder le texte d'origine (en gris). Les très grands mots se resserrent tout seuls s'ils sont trop longs.</p>
+      <form id="form-textes" class="boite grille" novalidate></form>
+    </section>
+
+    <!-- ================= FICHIERS ================= -->
+    <section data-onglet="fichiers" data-nom="Mes fichiers" id="s-fichiers">
+      <h2>Fichiers</h2>
+      <div class="boite jauge" id="jauge-fichiers" style="margin-bottom:12px"></div>
+      <div class="alerte" id="pas-de-stockage" hidden>Le stockage n'est pas encore branché : active <b>R2</b> dans Cloudflare.</div>
+      <div class="boite" id="zone-envoi">
+        <label class="depot" id="depot">
+          <input type="file" id="choix-fichiers" multiple hidden>
+          📎 <b>Choisis des fichiers</b> ou glisse-les ici <small style="display:block;color:var(--doux);font-weight:400">100 Mo maximum par fichier</small>
+        </label>
+        <details class="options"><summary>Options d'envoi</summary>
+          <div class="grille deux" style="margin-top:8px">
+            <label class="case"><input type="checkbox" id="opt-optimiser" checked> Optimiser les photos (plus légères, qualité préservée)</label>
+            <label>Expiration<select id="opt-expire"><option value="">Jamais</option><option value="1">Après 1 jour</option><option value="7">Après 7 jours</option><option value="30">Après 30 jours</option></select></label>
+            <label>Mot de passe (facultatif)<input id="opt-mdp" type="text" autocomplete="off" placeholder="laisser vide = public"></label>
+          </div>
+        </details>
+        <div class="envois" id="envois"></div>
+      </div>
+      <div class="filtres" id="filtres-fichiers" role="group" aria-label="Filtrer les fichiers">
+        <button type="button" data-filtre="tous" class="actif">Tous</button><button type="button" data-filtre="image">Images</button><button type="button" data-filtre="video">Vidéos</button><button type="button" data-filtre="audio">Sons</button><button type="button" data-filtre="doc">Documents</button>
+      </div>
+      <div class="liste" id="liste-fichiers"></div>
+    </section>
+
+    <section data-onglet="fichiers" data-nom="Galerie" id="s-galerie">
+      <h2>Galerie</h2>
+      <div id="bloc-valider" hidden>
+        <h3>Photos à valider</h3>
+        <p class="aide">Tes nouvelles images. Rien n'est publié sans ton accord.</p>
+        <div class="a-valider" id="a-valider"></div>
+      </div>
+      <h3>Dans la galerie publique</h3>
+      <p class="aide">Glisse avec ⠿ pour l'ordre. Visible sur landrypf.com/galerie.</p>
+      <div class="liste" id="liste-galerie" data-tri="galerie"></div>
+    </section>
+
+    <section data-onglet="fichiers" data-nom="Album privé" id="s-album">
+      <h2>Album privé</h2>
+      <p class="aide">Des photos visibles seulement avec un mot de passe, sur landrypf.com/album. Pratique pour la famille ou les amis.</p>
+      <form id="form-album" class="boite" novalidate style="margin-bottom:12px">
+        <p id="etat-album" style="margin-top:0;font-weight:600"></p>
+        <label>Nouveau mot de passe de l'album<input name="mdp" type="text" autocomplete="off" minlength="4" placeholder="au moins 4 caractères"></label>
+        <div class="ligne"><button>Enregistrer le mot de passe</button><button type="button" class="gris" id="album-fermer">Fermer l'album</button><a class="lien-btn" href="/album" target="_blank" rel="noopener">Voir l'album</a></div>
+        <p class="aide" style="margin:.6rem 0 0">Changer le mot de passe déconnecte toutes les personnes qui avaient l'ancien.</p>
+        <p class="erreur" id="err-album" role="alert"></p>
+      </form>
+      <div class="liste" id="liste-album" data-tri="album"></div>
+    </section>
+
+    <!-- ================= MESSAGES ================= -->
+    <section data-onglet="messages" data-nom="Contact" id="s-messages">
+      <h2>Messages reçus</h2>
+      <p class="aide">Ce que les visiteurs t'envoient avec « Me contacter ».</p>
+      <div class="liste" id="liste-contacts"></div>
+    </section>
+    <section data-onglet="messages" data-nom="Livre d'or" id="s-livre">
+      <h2>Livre d'or</h2>
+      <h3>À valider</h3><div class="liste" id="attente"></div>
+      <h3>Publiés</h3><div class="liste" id="valides"></div>
+    </section>
+
+    <!-- ================= RÉGLAGES ================= -->
+    <section data-onglet="reglages" data-nom="Site" id="s-site">
+      <h2>Fonctionnalités de la bio</h2>
+      <form id="form-site" class="boite" novalidate>
+        <label class="interrupteur"><span>Livre d'or<small>Les visiteurs laissent un mot public (après ta validation)</small></span><span class="bascule"><input type="checkbox" name="livre_actif"><span></span></span></label>
+        <label class="interrupteur"><span>Formulaire « Me contacter »<small>Les messages privés qui arrivent dans ta boîte</small></span><span class="bascule"><input type="checkbox" name="contact_actif"><span></span></span></label>
+      </form>
+    </section>
+
+    <section data-onglet="reglages" data-nom="Bannière" id="s-banniere">
+      <h2>Bannière d'annonce</h2>
+      <form id="form-banniere" class="boite" novalidate>
+        <label class="interrupteur"><span>Afficher la bannière<small>Un message en bas de toutes les pages</small></span><span class="bascule"><input type="checkbox" name="banniere_active"><span></span></span></label>
+        <div class="grille" style="margin-top:8px">
+          <label>Texte<input name="banniere_texte" maxlength="140" placeholder="ex. Nouvelle vidéo dispo sur Insta !"></label>
+          <label>Lien (facultatif)<input name="banniere_lien" inputmode="url" placeholder="https://… ou /galerie"></label>
+          <div class="grille deux">
+            <label>À partir du (facultatif)<input name="banniere_debut" type="datetime-local"></label>
+            <label>Jusqu'au (facultatif)<input name="banniere_fin" type="datetime-local"></label>
+          </div>
+        </div>
+        <div class="ligne"><button>Enregistrer</button></div>
+        <p class="erreur" id="err-banniere" role="alert"></p>
+      </form>
+    </section>
+
+    <section data-onglet="reglages" data-nom="Liens courts" id="s-courts">
+      <h2>Liens courts</h2>
+      <p class="aide">landrypf.com/ton-code redirige où tu veux.</p>
+      <button class="ajouter" type="button" data-ouvre="form-court">+ Créer un lien court</button>
+      <form id="form-court" class="boite" novalidate hidden style="margin-bottom:12px">
+        <div class="grille">
+          <label>Lien court<span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span></label>
+          <label>Redirige vers<input name="url" inputmode="url" placeholder="https://…" required></label>
+        </div>
+        <div class="ligne"><button>Créer</button><button type="button" class="gris" id="code-hasard">Code au hasard</button><button type="button" class="gris" data-ferme="form-court">Annuler</button></div>
+        <p class="erreur" id="err-court" role="alert"></p>
+      </form>
+      <div class="liste" id="liste-courts"></div>
+    </section>
+
+    <section data-onglet="reglages" data-nom="Thème" id="s-theme">
+      <h2>Thème saisonnier</h2>
+      <p class="aide">Une petite touche festive sur le site (pluie de fleurs, d'étoiles ou de confettis, et un message).</p>
+      <form id="form-theme" class="boite choix" novalidate></form>
+    </section>
+
+    <section data-onglet="reglages" data-nom="Mentions légales" id="s-legal">
+      <h2>Mentions légales</h2>
+      <p class="aide">Le minimum obligatoire pour un site personnel est déjà en ligne sur <a href="/mentions" target="_blank" rel="noopener">landrypf.com/mentions</a>, avec un lien en bas de chaque page. Tu peux rester anonyme : ton hébergeur (Cloudflare) a tes informations.</p>
+      <form id="form-legal" class="boite" novalidate>
+        <div class="grille deux">
+          <label>Nom affiché<input name="nom" maxlength="60" placeholder="Landry"></label>
+          <label>E-mail de contact (facultatif)<input name="email" type="email" maxlength="120" placeholder="laisse vide pour ne pas l'afficher"></label>
+        </div>
+        <div class="ligne"><button>Enregistrer</button></div>
+        <p class="erreur" id="err-legal" role="alert"></p>
+      </form>
+    </section>
+
+    <section data-onglet="reglages" data-nom="Sauvegarde" id="s-sauvegarde">
+      <h2>Sauvegarde et entretien</h2>
+      <div class="boite grille">
+        <div><strong>Sauvegarder mes données</strong><p class="aide" style="margin:.2rem 0 .5rem">Liens, messages, statistiques, réglages… dans un fichier à garder au chaud. Les photos et sons restent dans le stockage.</p><button type="button" id="btn-export">Télécharger la sauvegarde</button></div>
+        <div><strong>Nettoyage</strong><p class="aide" style="margin:.2rem 0 .5rem">Chaque nuit, les fichiers expirés sont supprimés automatiquement pour libérer de la place. Tu peux aussi le faire maintenant.</p><button type="button" class="gris" id="btn-nettoyer">Nettoyer maintenant</button></div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="apercu" id="apercu-cote" aria-label="Aperçu de la bio">
+    <div class="telephone"><iframe id="apercu-iframe" title="Aperçu de la page bio" loading="lazy"></iframe></div>
+    <p class="legende">Aperçu en direct de la bio</p>
+  </aside>
   </div>
-</main>
+</div>
+
+<button class="btn-apercu" id="btn-apercu" type="button" hidden>👁 Aperçu</button>
+
+<dialog id="fen-apercu" class="plein" aria-label="Aperçu de la bio">
+  <div class="ligne"><strong>Aperçu de la bio</strong><button class="petit" type="button" id="fermer-apercu">Fermer</button></div>
+  <iframe id="apercu-plein" title="Aperçu de la page bio"></iframe>
+</dialog>
 
 <dialog id="fen-qr" aria-labelledby="qr-titre">
   <h3 id="qr-titre">QR code</h3>
@@ -341,8 +536,10 @@
   <h3 id="ff-titre">Réglages du fichier</h3>
   <form id="form-fichier" class="grille" novalidate>
     <label>Nom du fichier<input name="nom" maxlength="120" required></label>
-    <label>Légende (pour la galerie)<input name="legende" maxlength="120"></label>
-    <label class="case"><input type="checkbox" name="galerie"> Dans la galerie</label>
+    <label>Légende (galerie, album)<input name="legende" maxlength="120"></label>
+    <label>Où l'afficher ?
+      <select name="place"><option value="">Nulle part (juste un lien)</option><option value="galerie">Galerie publique</option><option value="album">Album privé</option></select>
+    </label>
     <label>Expiration<input name="expire" type="datetime-local"></label>
     <label>Mot de passe
       <select name="mdp_mode"><option value="garder">Ne pas changer</option><option value="changer">Définir un nouveau mot de passe</option><option value="retirer">Retirer le mot de passe</option></select>
@@ -353,14 +550,17 @@
   </form>
 </dialog>
 
-<div class="toast" id="toast" role="status"></div>
+<div class="toast" id="toast" role="status"><span id="toast-texte"></span><button type="button" id="toast-annuler" hidden>Annuler</button></div>
 
 <script src="icones.js"></script>
 <script>
 {
-  const $ = (s) => document.querySelector(s);
+  /* =====================================================================
+     Outils
+     ===================================================================== */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('vu'); clearTimeout(toast.x); toast.x = setTimeout(() => t.classList.remove('vu'), 2200); };
   const ico = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${(ICONES[k] || ICONES.lien).d}"/></svg>`;
   const SITE = location.origin.includes('localhost') ? location.origin : 'https://landrypf.com';
   const nb = (n) => (n || 0).toLocaleString('fr-FR');
@@ -369,10 +569,17 @@
   const versLocal = (t) => { if (!t) return ''; const d = new Date(t); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); };
   const depuisLocal = (v) => (v ? new Date(v).getTime() : null);
   const taille = (o) => o < 1e3 ? o + ' o' : o < 1e6 ? Math.round(o / 1e3) + ' Ko' : o < 1e9 ? (o / 1e6).toFixed(1).replace('.', ',') + ' Mo' : (o / 1e9).toFixed(2).replace('.', ',') + ' Go';
+  const genre = (t) => t.startsWith('image/') ? 'image' : t.startsWith('video/') ? 'video' : t.startsWith('audio/') ? 'audio' : 'doc';
+  const EMOJI_GENRE = { image: '🖼️', video: '🎬', audio: '🎵', doc: '📄' };
   let cle = sessionStorage.getItem('cle') || localStorage.getItem('cle-admin') || '';
-  let D = null, enEdition = null, fichierEdite = null;
+  let D = null, enEdition = null, fichierEdite = null, filtreFichiers = 'tous', playlist = [];
 
-  $('#choix-icone').innerHTML = Object.entries(ICONES).map(([k, v]) => `<option value="${k}">${v.nom}</option>`).join('');
+  const toastEl = $('#toast');
+  const toast = (m, annuler) => {
+    $('#toast-texte').textContent = m;
+    const b = $('#toast-annuler'); b.hidden = !annuler; b.onclick = annuler ? () => { annuler(); toastEl.classList.remove('vu'); } : null;
+    toastEl.classList.add('vu'); clearTimeout(toast.x); toast.x = setTimeout(() => toastEl.classList.remove('vu'), annuler ? 5000 : 2200);
+  };
 
   const appel = async (methode, corps) => {
     const r = await fetch('/api/admin', { method: methode, headers: { 'x-cle': cle, 'content-type': 'application/json' }, body: corps ? JSON.stringify(corps) : undefined });
@@ -381,52 +588,203 @@
     if (!r.ok) throw new Error(d.erreur || 'Erreur du serveur (' + r.status + ').');
     return d;
   };
-  const action = async (corps, zone) => {
+  const action = async (corps, zone, sansRecharge) => {
     if (zone) zone.textContent = '';
-    try { await appel('POST', corps); await charger(); return true; }
+    try { const d = await appel('POST', corps); if (!sansRecharge) await charger(); rafraichirApercu(); return d || true; }
     catch (e) { if (zone) zone.textContent = e.message; else toast(e.message); return false; }
   };
   const copier = async (texte) => { try { await navigator.clipboard.writeText(texte); toast('Copié : ' + texte); } catch { toast(texte); } };
 
-  /* ================= Chiffres ================= */
-  const jours30 = () => {
-    const l = [];
-    for (let i = 29; i >= 0; i--) l.push(new Date(Date.now() - i * 864e5).toLocaleDateString('en-CA', { timeZone: 'Pacific/Tahiti' }));
-    return l;
+  /* =====================================================================
+     Suppression avec « Annuler » (5 secondes)
+     ===================================================================== */
+  const enAttente = new Map();
+  const supprimer = (corps, element, libelle) => {
+    const k = JSON.stringify(corps);
+    if (element) element.hidden = true;
+    const t = setTimeout(async () => { enAttente.delete(k); await action(corps); }, 5000);
+    enAttente.set(k, { corps, t });
+    toast(`${libelle} supprimé`, () => { clearTimeout(t); enAttente.delete(k); if (element) element.hidden = false; });
   };
+  // Si on quitte la page pendant les 5 secondes, la suppression est quand même envoyée
+  addEventListener('pagehide', () => {
+    enAttente.forEach(({ corps, t }) => { clearTimeout(t); fetch('/api/admin', { method: 'POST', keepalive: true, headers: { 'x-cle': cle, 'content-type': 'application/json' }, body: JSON.stringify(corps) }); });
+    enAttente.clear();
+  });
+
+  /* =====================================================================
+     Onglets : un seul écran à la fois (ou « Tout »)
+     ===================================================================== */
+  const ONGLETS = [
+    { id: 'tableau', nom: 'Tableau de bord', court: 'Accueil', i: '🏠' },
+    { id: 'bio', nom: 'Page bio', court: 'Bio', i: '🌺' },
+    { id: 'accueil', nom: "Page d'accueil", court: 'Site', i: '🌊' },
+    { id: 'fichiers', nom: 'Fichiers', court: 'Fichiers', i: '📁' },
+    { id: 'messages', nom: 'Messages', court: 'Messages', i: '💬' },
+    { id: 'reglages', nom: 'Réglages', court: 'Réglages', i: '⚙️' },
+    { id: 'tout', nom: 'Tout', court: 'Tout', i: '☰' }
+  ];
+  const sections = $$('main section');
+  sections.forEach(s => {
+    const o = ONGLETS.find(x => x.id === s.dataset.onglet);
+    s.insertAdjacentHTML('afterbegin', `<div class="titre-tout">${o.nom} › ${s.dataset.nom}</div>`);
+  });
+  const pastilleHTML = (id) => `<span class="pastille" data-pastille="${id}" hidden></span>`;
+  $('#onglets').innerHTML = ONGLETS.map(o => `<a href="#${o.id}" data-onglet="${o.id}">${o.nom}${pastilleHTML(o.id)}</a>`).join('');
+  $('#barre-bas').innerHTML = ONGLETS.slice(0, 5).map(o => `<a href="#${o.id}" data-onglet="${o.id}"><span class="i" aria-hidden="true">${o.i}</span>${o.court}${pastilleHTML(o.id)}</a>`).join('')
+    + `<button type="button" id="btn-plus" aria-expanded="false"><span class="i" aria-hidden="true">⋯</span>Plus</button>`;
+  $('#feuille-plus').innerHTML = ONGLETS.slice(5).map(o => `<a href="#${o.id}">${o.i} ${o.nom}</a>`).join('');
+  $('#btn-plus').addEventListener('click', (e) => { e.stopPropagation(); const f = $('#feuille-plus'); f.hidden = !f.hidden; $('#btn-plus').setAttribute('aria-expanded', String(!f.hidden)); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#feuille-plus, #btn-plus')) $('#feuille-plus').hidden = true; });
+
+  let ongletActif = 'tableau', sousActif = null;
+  const aller = (onglet, sous, defiler = true) => {
+    if (!ONGLETS.find(o => o.id === onglet)) onglet = 'tableau';
+    ongletActif = onglet;
+    const tout = onglet === 'tout';
+    document.body.classList.toggle('tout', tout);
+    document.body.classList.toggle('avec-apercu', onglet === 'bio' || tout);
+    $('#btn-apercu').hidden = onglet !== 'bio';
+    $$('[data-onglet]', $('#onglets')).concat($$('[data-onglet]', $('#barre-bas'))).forEach(a => a.classList.toggle('actif', a.dataset.onglet === onglet));
+    $('#btn-plus').classList.toggle('actif', ['reglages', 'tout'].includes(onglet));
+    $('#feuille-plus').hidden = true;
+    const mesSections = sections.filter(s => tout || s.dataset.onglet === onglet);
+    sousActif = tout ? null : (mesSections.find(s => s.id === sous) || mesSections[0]).id;
+    sections.forEach(s => { s.hidden = !(tout ? true : s.id === sousActif); });
+    $('#sous-onglets').hidden = tout || mesSections.length < 2;
+    $('#sous-onglets').innerHTML = tout ? '' : mesSections.map(s => `<button type="button" role="tab" aria-selected="${s.id === sousActif}" class="${s.id === sousActif ? 'actif' : ''}" data-sous="${s.id}">${s.dataset.nom}${s.id === 's-messages' || s.id === 's-livre' || s.id === 's-galerie' ? pastilleHTML(s.id) : ''}</button>`).join('');
+    majPastilles();
+    if (onglet === 'bio' || tout) chargerApercu();
+    const h = '#' + onglet + (sousActif && !tout ? '/' + sousActif.slice(2) : '');
+    if (location.hash !== h) history.replaceState(null, '', h);
+    try { localStorage.setItem('admin-onglet', h); } catch {}
+    if (defiler) {
+      const cible = tout && sous ? $('#' + sous) : null;
+      if (cible) cible.scrollIntoView({ block: 'start' }); else scrollTo(0, 0);
+    }
+  };
+  const lireHash = () => {
+    const [o, s] = (location.hash || '').slice(1).split('/');
+    return [o || 'tableau', s ? 's-' + s : null];
+  };
+  addEventListener('hashchange', () => { const [o, s] = lireHash(); aller(o, s); });
+  $('#sous-onglets').addEventListener('click', (e) => { const b = e.target.closest('[data-sous]'); if (b) aller(ongletActif, b.dataset.sous); });
+
+  const majPastilles = () => {
+    if (!D) return;
+    const nonLus = D.contacts.filter(c => !c.lu).length, attente = D.attente.length, photos = aValider().length;
+    const valeurs = { messages: nonLus + attente, fichiers: photos, 's-messages': nonLus, 's-livre': attente, 's-galerie': photos, tableau: 0 };
+    $$('[data-pastille]').forEach(p => { const v = valeurs[p.dataset.pastille] || 0; p.textContent = v; p.hidden = !v; });
+  };
+
+  /* =====================================================================
+     Formulaires repliés et menus ⋯
+     ===================================================================== */
+  document.addEventListener('click', (e) => {
+    const o = e.target.closest('[data-ouvre]');
+    if (o) { const f = $('#' + o.dataset.ouvre); f.hidden = false; o.hidden = true; const champ = f.querySelector('input'); if (champ) champ.focus(); }
+    const fe = e.target.closest('[data-ferme]');
+    if (fe) fermerForm(fe.dataset.ferme);
+  });
+  const fermerForm = (id) => { const f = $('#' + id); f.hidden = true; f.reset(); const o = $(`[data-ouvre="${id}"]`); if (o) o.hidden = false; if (id === 'form-lien') finEdition(); };
+
+  let menuOuvert = null;
+  const fermerMenu = () => { if (menuOuvert) { menuOuvert.remove(); menuOuvert = null; } };
+  const ouvrirMenu = (bouton, items) => {
+    fermerMenu();
+    const m = document.createElement('div'); m.className = 'menu'; m.setAttribute('role', 'menu');
+    items.filter(Boolean).forEach(it => {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.textContent = it.l; if (it.danger) b.className = 'danger';
+      b.addEventListener('click', () => { fermerMenu(); it.f(); });
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    const r = bouton.getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight;
+    let top = r.bottom + scrollY + 4; if (r.bottom + mh > innerHeight - 70) top = r.top + scrollY - mh - 4;
+    m.style.top = top + 'px'; m.style.left = Math.max(8, Math.min(innerWidth - mw - 8, r.right - mw)) + 'px';
+    m.querySelector('button').focus();
+    menuOuvert = m;
+  };
+  document.addEventListener('click', (e) => { if (menuOuvert && !e.target.closest('.menu, .trous')) fermerMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { fermerMenu(); $('#resultats').hidden = true; } });
+  const trous = (type, id) => `<button type="button" class="trous" data-menu="${type}" data-id="${echappe(id)}" aria-label="Plus d'actions">⋯</button>`;
+  const poignee = '<span class="poignee" aria-hidden="true">⠿</span>';
+
+  /* =====================================================================
+     Glisser-déposer (souris et doigt)
+     ===================================================================== */
+  const quandOrdre = {};
+  document.addEventListener('pointerdown', (e) => {
+    const p = e.target.closest('.poignee'); if (!p) return;
+    const item = p.closest('[data-id]'), liste = item && item.parentElement;
+    if (!liste || !liste.dataset.tri) return;
+    e.preventDefault();
+    let base = e.clientY;
+    item.classList.add('glisse');
+    const lacher = () => {
+      removeEventListener('pointermove', suivre); removeEventListener('pointerup', lacher); removeEventListener('pointercancel', lacher);
+      item.classList.remove('glisse'); item.style.transform = '';
+      const ids = [...liste.children].map(x => x.dataset.id).filter(Boolean);
+      (quandOrdre[liste.dataset.tri] || (() => {}))(ids);
+    };
+    const suivre = (ev) => {
+      item.style.transform = `translateY(${ev.clientY - base}px)`;
+      const milieu = ev.clientY;
+      const avant = item.previousElementSibling, apres = item.nextElementSibling;
+      if (avant && milieu < avant.getBoundingClientRect().top + avant.offsetHeight / 2) { liste.insertBefore(item, avant); base -= avant.offsetHeight + 8; item.style.transform = `translateY(${ev.clientY - base}px)`; }
+      else if (apres && milieu > apres.getBoundingClientRect().top + apres.offsetHeight / 2) { liste.insertBefore(apres, item); base += apres.offsetHeight + 8; item.style.transform = `translateY(${ev.clientY - base}px)`; }
+    };
+    addEventListener('pointermove', suivre); addEventListener('pointerup', lacher); addEventListener('pointercancel', lacher);
+  });
+  const ordonner = (cible) => (ids) => action({ action: 'ordonner', cible, ids: ids.map(x => /^\d+$/.test(x) ? +x : x) }).then(ok => ok && toast('Ordre enregistré'));
+  quandOrdre.liens = ordonner('liens'); quandOrdre.blocs = ordonner('blocs'); quandOrdre.galerie = ordonner('galerie'); quandOrdre.album = ordonner('album');
+  quandOrdre.pistes = (ids) => { playlist = ids.map(i => playlist[+i]); afficherPlaylist(); toast('Pense à enregistrer la playlist'); };
+
+  /* =====================================================================
+     Tableau de bord
+     ===================================================================== */
+  const aValider = () => D.fichiers.filter(f => f.type.startsWith('image/') && !f.galerie && !f.album && !f.vu_galerie && !f.protege && !(f.expire && f.expire < Date.now()));
+  const afficherTableau = () => {
+    const nonLus = D.contacts.filter(c => !c.lu).length, attente = D.attente.length, photos = aValider().length;
+    const cartes = [
+      [nonLus, 'message', 'Messages de contact non lus', 'messages', 's-messages'],
+      [attente, 'mot', "Mots du livre d'or à valider", 'messages', 's-livre'],
+      [photos, 'photo', 'Photos à valider', 'fichiers', 's-galerie']
+    ];
+    $('#a-traiter').innerHTML = cartes.map(([n, , l, o, s]) => `<button type="button" class="${n ? '' : 'calme'}" data-aller="${o}" data-sous="${s}"><b>${n}</b><span>${l}<small>${n ? 'Ouvrir' : 'Rien à faire 🌺'}</small></span></button>`).join('');
+    afficherJauge('#jauge-tableau');
+  };
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-aller]'); if (b) aller(b.dataset.aller, b.dataset.sous); });
+
+  const afficherJauge = (sel) => {
+    const u = D.stockage_utilise || 0, max = D.stockage_max || 1e10, ratio = Math.min(1, u / max);
+    const pct = ratio * 100, txt = pct < 1 && u > 0 ? '< 1 %' : Math.round(pct) + ' %';
+    const couleur = ratio >= .95 ? '#B3212E' : ratio >= .8 ? '#C97A00' : '#1E7A43', tour = 2 * Math.PI * 27;
+    $(sel).innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="#EAE4DB" stroke-width="8"/><circle cx="32" cy="32" r="27" fill="none" stroke="${couleur}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${Math.max(u > 0 ? 2 : 0, ratio * tour)} ${tour}"/></svg>
+      <div><span class="pct">${txt}</span><small>du stockage gratuit utilisé : ${taille(u)} sur 10 Go · reste ${taille(Math.max(0, max - u))}</small></div>`;
+  };
+
+  const jours30 = () => { const l = []; for (let i = 29; i >= 0; i--) l.push(new Date(Date.now() - i * 864e5).toLocaleDateString('en-CA', { timeZone: 'Pacific/Tahiti' })); return l; };
   const afficherStats = () => {
     const jours = jours30(), parJour = {};
     jours.forEach(j => parJour[j] = { vues: 0, clic: 0, court: 0, telechargement: 0, mauruuru: 0 });
-    D.stats.forEach(s => {
-      const j = parJour[s.jour]; if (!j) return;
-      if (s.cle.startsWith('vue:')) j.vues += s.valeur; else if (s.cle in j) j[s.cle] += s.valeur;
-    });
+    D.stats.forEach(s => { const j = parJour[s.jour]; if (!j) return; if (s.cle.startsWith('vue:')) j.vues += s.valeur; else if (s.cle in j) j[s.cle] += s.valeur; });
     const somme = (k) => jours.reduce((a, j) => a + parJour[j][k], 0);
-    const tuiles = [['vues', 'visites'], ['clic', 'clics sur la bio'], ['court', 'clics liens courts'], ['telechargement', 'téléchargements'], ['mauruuru', 'mauruuru']];
-    $('#tuiles').innerHTML = tuiles.map(([k, l]) => `<div class="tuile"><b>${nb(somme(k))}</b><span>${l}</span></div>`).join('')
-      + `<div class="tuile"><b>${nb(D.compteurs.mauruuru)}</b><span>mauruuru au total</span></div>`
-      + `<div class="tuile"><b>${taille(D.stockage_utilise || 0)}</b><span>stockage utilisé sur 10 Go</span></div>`;
-
-    // Graphique en barres (une seule série : les visites)
+    $('#tuiles').innerHTML = [['vues', 'visites'], ['clic', 'clics sur la bio'], ['court', 'clics liens courts'], ['telechargement', 'téléchargements'], ['mauruuru', 'mauruuru']]
+      .map(([k, l]) => `<div class="tuile"><b>${nb(somme(k))}</b><span>${l}</span></div>`).join('')
+      + `<div class="tuile"><b>${nb(D.compteurs.mauruuru)}</b><span>mauruuru au total</span></div>`;
     const svg = $('#graph'), W = svg.clientWidth || 600, H = 190, bas = 22, haut = 10;
     const max = Math.max(4, ...jours.map(j => parJour[j].vues));
-    const pas = Math.pow(10, Math.floor(Math.log10(max))); const plafond = Math.ceil(max / pas) * pas;
-    const larg = W / jours.length, barre = Math.max(2, larg - 2);
-    const y = (v) => H - bas - (v / plafond) * (H - bas - haut);
+    const pas = Math.pow(10, Math.floor(Math.log10(max))), plafond = Math.ceil(max / pas) * pas;
+    const larg = W / jours.length, barre = Math.max(2, larg - 2), y = (v) => H - bas - (v / plafond) * (H - bas - haut);
     let s = '';
-    [0, plafond / 2, plafond].forEach(v => {
-      s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#E4DDD3" stroke-width="1"/>`;
-      s += `<text x="0" y="${y(v) - 3}" font-size="11" fill="#666">${nb(v)}</text>`;
-    });
+    [0, plafond / 2, plafond].forEach(v => { s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#E4DDD3"/><text x="0" y="${y(v) - 3}" font-size="11" fill="#666">${nb(v)}</text>`; });
     jours.forEach((j, i) => {
       const v = parJour[j].vues, h = H - bas - y(v), x = i * larg + 1;
-      if (v > 0) s += `<path d="M${x},${H - bas} v${-(h - 4)} q0,-4 4,-4 h${barre - 8} q4,0 4,4 v${h - 4} z" fill="#B3212E"/>`;
+      if (v > 0) s += `<path d="M${x},${H - bas} v${-(Math.max(h, 4) - 4)} q0,-4 4,-4 h${Math.max(0, barre - 8)} q4,0 4,4 v${Math.max(h, 4) - 4} z" fill="#B3212E"/>`;
       s += `<rect class="cible" data-i="${i}" x="${i * larg}" y="0" width="${larg}" height="${H - bas}" fill="transparent"/>`;
     });
-    [0, 14, 29].forEach(i => {
-      const [, m, d] = jours[i].split('-');
-      s += `<text x="${Math.min(W - 30, Math.max(0, i * larg))}" y="${H - 6}" font-size="11" fill="#666">${d}/${m}</text>`;
-    });
+    [0, 14, 29].forEach(i => { const [, m, d] = jours[i].split('-'); s += `<text x="${Math.min(W - 30, Math.max(0, i * larg))}" y="${H - 6}" font-size="11" fill="#666">${d}/${m}</text>`; });
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
     const bulle = $('#bulle');
     svg.onpointermove = (e) => {
@@ -441,218 +799,63 @@
     svg.onpointerleave = () => bulle.classList.remove('vu');
     $('#table-stats').innerHTML = '<tr><th>Jour</th><th>Visites</th><th>Clics bio</th><th>Liens courts</th><th>Téléch.</th><th>Mauruuru</th></tr>'
       + jours.slice().reverse().map(j => { const p = parJour[j], [, m, d] = j.split('-'); return `<tr><td>${d}/${m}</td><td>${p.vues}</td><td>${p.clic}</td><td>${p.court}</td><td>${p.telechargement}</td><td>${p.mauruuru}</td></tr>`; }).join('');
-    $('#etat-notifs').innerHTML = D.notifications
-      ? '🔔 Notifications sur ton téléphone : activées.'
-      : '🔕 Notifications sur ton téléphone : pas encore activées (voir le guide LISEZMOI, étape « ntfy »).';
+    $('#etat-notifs').innerHTML = D.notifications ? '🔔 Notifications sur ton téléphone : activées.' : '🔕 Notifications sur ton téléphone : pas encore activées (voir le guide LISEZMOI, étape « ntfy »).';
   };
 
-  /* ================= Listes ================= */
+  /* =====================================================================
+     Page bio
+     ===================================================================== */
+  $('#choix-icone').innerHTML = Object.entries(ICONES).map(([k, v]) => `<option value="${k}">${v.nom}</option>`).join('');
   const afficherLiens = () => {
     const now = Date.now();
-    $('#liste-liens').innerHTML = D.liens.length ? D.liens.map((l, i) => {
+    $('#liste-liens').innerHTML = D.liens.length ? D.liens.map(l => {
       let prog = '';
       if (l.debut && l.debut > now) prog = `<span class="badge">à partir du ${dateFr(l.debut)}</span>`;
       if (l.fin) prog += `<span class="badge">${l.fin > now ? "jusqu'au " + dateFr(l.fin) : 'terminé'}</span>`;
-      return `<div class="carte${l.actif ? '' : ' eteint'}">
+      return `<div class="carte${l.actif ? '' : ' eteint'}" data-id="${l.id}" id="item-lien-${l.id}">${poignee}
         <div class="ico">${ico(l.icone)}</div>
-        <div class="corps">
-          <div class="titre">${echappe(l.titre)}${l.actif ? '' : ' (masqué)'}</div>
-          ${l.sous_titre ? `<small>${echappe(l.sous_titre)}</small>` : ''}<small>${echappe(l.url)}</small>${prog}
-          <div class="ligne">
-            <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
-            <button class="petit gris" data-a="lien_bouger" data-id="${l.id}" data-sens="1" ${i === D.liens.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
-            <button class="petit gris" data-a="editer-lien" data-id="${l.id}">Modifier</button>
-            <button class="petit gris" data-a="lien_basculer" data-id="${l.id}">${l.actif ? 'Masquer' : 'Afficher'}</button>
-            <button class="petit gris" data-a="lien_supprimer" data-id="${l.id}">Supprimer</button>
-          </div>
-        </div>
-        <span class="chiffre">${pluriel(l.clics, 'clic')}</span>
+        <div class="corps"><div class="titre">${echappe(l.titre)}${l.actif ? '' : ' (masqué)'}</div><small>${echappe(l.url)}</small>${prog}</div>
+        <span class="chiffre">${pluriel(l.clics, 'clic')}</span>${trous('lien', l.id)}
       </div>`;
     }).join('') : '<p class="vide">Aucun lien pour l\'instant.</p>';
   };
 
-  const afficherCourts = () => {
-    $('#liste-courts').innerHTML = D.courts.length ? D.courts.map(c => `
-      <div class="carte">
-        <div class="ico">${ico('lien')}</div>
-        <div class="corps">
-          <div class="titre">landrypf.com/${echappe(c.code)}</div><small>${echappe(c.url)}</small>
-          <div class="ligne">
-            <button class="petit gris" data-a="copier" data-texte="${SITE}/${echappe(c.code)}">Copier</button>
-            <button class="petit gris" data-a="qr" data-texte="${SITE}/${echappe(c.code)}" data-nom="${echappe(c.code)}">QR code</button>
-            <button class="petit gris" data-a="court_supprimer" data-code="${echappe(c.code)}">Supprimer</button>
-          </div>
-        </div>
-        <span class="chiffre">${pluriel(c.clics, 'clic')}</span>
-      </div>`).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
-  };
-
-  const afficherJauge = () => {
-    const u = D.stockage_utilise || 0, max = D.stockage_max || 1e10, ratio = Math.min(1, u / max);
-    const pct = ratio * 100, txt = pct < 1 && u > 0 ? '< 1 %' : Math.round(pct) + ' %';
-    const couleur = ratio >= .95 ? '#B3212E' : ratio >= .8 ? '#C97A00' : '#1E7A43';
-    const tour = 2 * Math.PI * 27;
-    const arc = $('#jauge-arc'); arc.setAttribute('stroke', couleur); arc.setAttribute('stroke-dasharray', `${Math.max(u > 0 ? 2 : 0, ratio * tour)} ${tour}`);
-    $('#jauge-pct').textContent = txt;
-    $('#jauge-texte').textContent = `${taille(u)} utilisés sur 10 Go · reste ${taille(Math.max(0, max - u))}`;
-  };
-
-  const vignette = (f) => f.type.startsWith('image/') && !f.protege ? `<img src="${f.url}" alt="" loading="lazy">` : ico(f.type.startsWith('image/') ? 'monde' : 'lien');
-  const afficherFichiers = () => {
-    const now = Date.now();
-    $('#pas-de-stockage').hidden = D.stockage;
-    $('#zone-envoi').hidden = !D.stockage;
-    $('#liste-fichiers').innerHTML = D.fichiers.length ? D.fichiers.map(f => {
-      const expire = f.expire ? (f.expire > now ? `<span class="badge">expire le ${dateFr(f.expire)}</span>` : '<span class="badge">expiré</span>') : '';
-      return `<div class="carte">
-        <div class="ico">${vignette(f)}</div>
-        <div class="corps">
-          <div class="titre">${echappe(f.nom)}</div>
-          <small>landrypf.com${f.court} · ${taille(f.taille)} · ${dateFr(f.cree)}</small>
-          ${f.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}${expire}${f.galerie ? '<span class="badge">galerie</span>' : ''}
-          <div class="ligne">
-            <button class="petit gris" data-a="copier" data-texte="${SITE}${f.court}">Copier le lien</button>
-            <button class="petit gris" data-a="qr" data-texte="${SITE}${f.court}" data-nom="${echappe(f.nom)}">QR code</button>
-            <button class="petit gris" data-a="ouvrir" data-url="${f.url}">Ouvrir</button>
-            <button class="petit gris" data-a="regler-fichier" data-id="${f.id}">Réglages</button>
-            <button class="petit gris" data-a="fichier_supprimer" data-id="${f.id}">Supprimer</button>
-          </div>
-        </div>
-        <span class="chiffre">${pluriel(f.telechargements, 'vue')}</span>
-      </div>`;
-    }).join('') : '<p class="vide">Aucun fichier pour l\'instant.</p>';
-
-    const aValider = D.fichiers.filter(f => f.type.startsWith('image/') && !f.galerie && !f.vu_galerie && !f.protege && !(f.expire && f.expire < now));
-    $('#bloc-valider').hidden = !aValider.length;
-    $('#a-valider').innerHTML = aValider.map(f => `
-      <figure><img src="${f.url}" alt="" loading="lazy"><figcaption>${echappe(f.nom)}</figcaption>
-        <div class="ligne"><button class="petit" data-a="galerie-oui" data-id="${f.id}">Ajouter</button><button class="petit gris" data-a="galerie-non" data-id="${f.id}">Ignorer</button></div>
-      </figure>`).join('');
-
-    const gal = D.fichiers.filter(f => f.galerie).sort((a, b) => a.ordre - b.ordre || b.cree - a.cree);
-    $('#liste-galerie').innerHTML = gal.length ? gal.map((f, i) => `
-      <div class="carte">
-        <div class="ico">${vignette(f)}</div>
-        <div class="corps">
-          <div class="titre">${echappe(f.legende || f.nom)}</div>${f.protege || (f.expire && f.expire < now) ? '<small>Invisible dans la galerie (privé ou expiré)</small>' : ''}
-          <div class="ligne">
-            <button class="petit gris" data-a="fichier_bouger" data-id="${f.id}" data-sens="-1" ${i === 0 ? 'disabled' : ''} aria-label="Monter">↑</button>
-            <button class="petit gris" data-a="fichier_bouger" data-id="${f.id}" data-sens="1" ${i === gal.length - 1 ? 'disabled' : ''} aria-label="Descendre">↓</button>
-            <button class="petit gris" data-a="regler-fichier" data-id="${f.id}">Légende</button>
-            <button class="petit gris" data-a="retirer-galerie" data-id="${f.id}">Retirer</button>
-          </div>
-        </div>
-      </div>`).join('') : '<p class="vide">La galerie est vide.</p>';
-
-    const images = D.fichiers.filter(f => f.type.startsWith('image/') && !f.protege && !f.expire);
-    const noms = { p1: 'Carte postale 1 (lagon)', p2: 'Carte postale 2 (tiare)', p3: 'Carte postale 3 (coucher)', c1: 'Mot 1 : le lagon', c2: 'Mot 2 : la montagne', c3: "Mot 3 : le va'a", c4: 'Mot 4 : la tiare', c5: 'Mot 5 : le Heiva' };
-    $('#emplacements').innerHTML = Object.entries(noms).map(([k, n]) => {
-      const choisi = D.fichiers.find(f => f.id === D.photos[k]);
-      return `<div class="emplacement">
-        <b>${n}</b>
-        <div class="apercu">${choisi ? `<img src="${choisi.url}" alt="">` : 'Dessin d\'origine'}</div>
-        <select data-emplacement="${k}" aria-label="Photo pour ${n}">
-          <option value="">Dessin d'origine</option>
-          ${images.map(f => `<option value="${f.id}" ${f.id === D.photos[k] ? 'selected' : ''}>${echappe(f.legende || f.nom)}</option>`).join('')}
-        </select>
-      </div>`;
-    }).join('');
-  };
-
-  const afficherContacts = () => {
-    const nonLus = D.contacts.filter(c => !c.lu).length;
-    $('#n-non-lus').textContent = nonLus; $('#n-non-lus').hidden = !nonLus;
-    $('#liste-contacts').innerHTML = D.contacts.length ? D.contacts.map(c => `
-      <div class="carte${c.lu ? '' : ' non-lu'}">
-        <div class="corps">
-          <div class="titre">${echappe(c.nom)}</div>
-          <small>${dateFr(c.cree)}${c.email ? ' · ' + echappe(c.email) : ''}</small>
-          <div class="texte">${echappe(c.message)}</div>
-          <div class="ligne">
-            ${c.email ? `<a class="lien-btn" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Re: ton message sur landrypf.com')}">Répondre</a>` : ''}
-            <button class="petit gris" data-a="contact_lu" data-id="${c.id}">${c.lu ? 'Marquer non lu' : 'Marquer lu'}</button>
-            <button class="petit gris" data-a="contact_supprimer" data-id="${c.id}">Supprimer</button>
-          </div>
-        </div>
-      </div>`).join('') : '<p class="vide">Aucun message pour l\'instant.</p>';
-  };
-
-  const fs = $('#form-site');
-  const majBlocsSite = () => { $('#bloc-banniere').hidden = !fs.banniere_active.checked; $('#bloc-musique').hidden = !fs.musique_active.checked; };
-  ['banniere_active', 'musique_active'].forEach(n => fs[n].addEventListener('change', majBlocsSite));
-  const afficherSite = () => {
-    if (fs.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return;
-    const r = D.site;
-    ['livre_actif', 'contact_actif', 'banniere_active', 'musique_active'].forEach(k => fs[k].checked = !!r[k]);
-    fs.banniere_texte.value = r.banniere_texte; fs.banniere_lien.value = r.banniere_lien;
-    fs.musique_titre.value = r.musique_titre; fs.musique_artiste.value = r.musique_artiste;
-    const audios = D.fichiers.filter(f => f.type.startsWith('audio/'));
-    $('#choix-musique').innerHTML = (audios.length ? '<option value="">Choisis un morceau…</option>' : '<option value="">Envoie d\'abord un fichier audio (section Fichiers)</option>')
-      + audios.map(f => `<option value="${f.id}" ${f.protege || f.expire ? 'disabled' : ''} ${f.id === r.musique_id ? 'selected' : ''}>${echappe(f.nom)}${f.protege ? ' (protégé)' : f.expire ? ' (expire)' : ''}</option>`).join('');
-    majBlocsSite();
-  };
-  fs.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const c = { action: 'reglages_site' };
-    ['livre_actif', 'contact_actif', 'banniere_active', 'musique_active'].forEach(k => c[k] = fs[k].checked);
-    ['banniere_texte', 'banniere_lien', 'musique_id', 'musique_titre', 'musique_artiste'].forEach(k => c[k] = fs[k].value.trim());
-    if (await action(c, $('#err-site'))) toast('Réglages enregistrés');
-  });
-  $('#choix-musique').addEventListener('change', () => {
-    const f = D.fichiers.find(x => x.id === $('#choix-musique').value);
-    if (f && !fs.musique_titre.value) fs.musique_titre.value = f.nom.replace(/\.[a-z0-9]+$/i, '');
-  });
-
-  const listeMsgs = (msgs, attente) => msgs.length ? msgs.map(m => `
-    <div class="carte"><div class="corps">
-      <div class="texte">${echappe(m.texte)}</div><small>${echappe(m.nom)} · ${dateFr(m.cree)}</small>
-      <div class="ligne">
-        ${attente ? `<button class="petit" data-a="valider" data-id="${m.id}">Publier</button>` : ''}
-        <button class="petit gris" data-a="supprimer" data-id="${m.id}">Supprimer</button>
-      </div>
-    </div></div>`).join('') : '<p class="vide">Rien ici.</p>';
-
-  const charger = async () => {
-    D = await appel('GET');
-    $('#connexion').hidden = true; $('#panneau').hidden = false; $('#onglets').hidden = false;
-    const fe = $('#form-evt');
-    if (!fe.contains(document.activeElement)) { fe.titre.value = D.evenement.titre; fe.date.value = versLocal(D.evenement.date); fe.lien.value = D.evenement.lien; }
-    afficherStats(); afficherLiens(); afficherCourts(); afficherFichiers(); afficherJauge(); afficherSite(); afficherStatuts(); afficherTextes(); afficherContacts();
-    $('#attente').innerHTML = listeMsgs(D.attente, true); $('#valides').innerHTML = listeMsgs(D.valides, false);
-    $('#n-attente').textContent = D.attente.length; $('#n-attente').hidden = !D.attente.length;
-  };
-
-  /* ================= Formulaires ================= */
   const fl = $('#form-lien');
-  const finEdition = () => { enEdition = null; fl.reset(); $('#form-lien-titre').textContent = 'Ajouter un lien'; $('#btn-lien').textContent = 'Ajouter'; $('#annuler-lien').hidden = true; };
-  $('#annuler-lien').addEventListener('click', finEdition);
+  const finEdition = () => { enEdition = null; fl.icone.value = 'lien'; $('#form-lien-titre').textContent = 'Nouveau lien'; $('#btn-lien').textContent = 'Ajouter'; };
+  finEdition();
   fl.addEventListener('submit', async (e) => {
     e.preventDefault();
     const corps = { action: enEdition ? 'lien_modifier' : 'lien_ajouter', id: enEdition, titre: fl.titre.value, sous_titre: fl.sous_titre.value,
       url: fl.url.value.trim(), icone: fl.icone.value, debut: depuisLocal(fl.debut.value), fin: depuisLocal(fl.fin.value) };
-    if (await action(corps, $('#err-lien'))) { toast(enEdition ? 'Lien modifié' : 'Lien ajouté'); finEdition(); }
+    if (await action(corps, $('#err-lien'))) { toast(enEdition ? 'Lien modifié' : 'Lien ajouté'); fermerForm('form-lien'); }
   });
   fl.url.addEventListener('input', () => {
     if (enEdition) return;
     const u = fl.url.value.toLowerCase();
     const devine = [['instagram', 'instagram'], ['tiktok', 'tiktok'], ['youtu', 'youtube'], ['facebook', 'facebook'], ['snapchat', 'snapchat'], ['spotify', 'spotify'],
-      ['twitter', 'x'], ['x.com', 'x'], ['wa.me', 'whatsapp'], ['whatsapp', 'whatsapp'], ['mailto:', 'email'], ['/galerie', 'monde']].find(([m]) => u.includes(m));
+      ['twitter', 'x'], ['x.com', 'x'], ['wa.me', 'whatsapp'], ['whatsapp', 'whatsapp'], ['mailto:', 'email'], ['/galerie', 'monde'], ['/album', 'monde']].find(([m]) => u.includes(m));
     if (devine) fl.icone.value = devine[1];
   });
+  const editerLien = (id) => {
+    const l = D.liens.find(x => x.id === id); if (!l) return;
+    enEdition = id; fl.hidden = false; $('[data-ouvre="form-lien"]').hidden = true;
+    fl.titre.value = l.titre; fl.sous_titre.value = l.sous_titre; fl.url.value = l.url; fl.icone.value = l.icone;
+    fl.debut.value = versLocal(l.debut); fl.fin.value = versLocal(l.fin);
+    $('#form-lien-titre').textContent = 'Modifier « ' + l.titre + ' »'; $('#btn-lien').textContent = 'Enregistrer';
+    fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.titre.focus({ preventScroll: true });
+  };
+  const deplacerDansListe = (liste, id, sens, cible) => {
+    const ids = liste.map(x => x.id), i = ids.indexOf(id), j = i + sens;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    action({ action: 'ordonner', cible, ids });
+  };
 
-  const fc = $('#form-court');
-  fc.code.addEventListener('input', () => { fc.code.value = fc.code.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
-  $('#code-hasard').addEventListener('click', () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join(''); });
-  fc.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (await action({ action: 'court_ajouter', code: fc.code.value, url: fc.url.value.trim() }, $('#err-court'))) { toast('Créé : landrypf.com/' + fc.code.value); fc.reset(); }
-  });
-
-  /* ---------- Phrases « En ce moment » ---------- */
+  // ----- Phrases « En ce moment » -----
   const IDEES = ["Au bord du lagon 🌊", "Pause coco sous un cocotier 🥥", "Sortie va'a ce matin 🛶", "En mode chill à la maison 🌺",
     "Au soleil, comme d'hab ☀️", "Coucher de soleil sur Moorea 🌅", "En plein montage d'une vidéo 🎬", "Je réponds à vos messages 💬",
     "Ia ora na à tous ! 🤙", "Concentré sur mes projets 💪", "Petit tour à Papeete 🛵", "Casque sur les oreilles 🎧",
-    "Une nouvelle photo dans la galerie 📸", "Ça bouge sur Insta 👀", "Mā'a tahiti ce midi 🐟", "Mauruuru d'être passé 🌺"];
+    "Une nouvelle photo dans la galerie 📸", "Ça bouge sur Insta 👀", "Lagon calme, esprit calme 🌴", "Mauruuru d'être passé 🌺"];
   const listeStatuts = $('#liste-statuts');
   const ligneStatut = (texte = '') => {
     const d = document.createElement('div'); d.className = 'statut-ligne';
@@ -670,24 +873,82 @@
   $('#statut-ajouter').addEventListener('click', () => { const l = ligneStatut(); listeStatuts.appendChild(l); l.querySelector('input').focus(); });
   $('#statut-idees').addEventListener('click', () => {
     const zone = $('#idees'); zone.hidden = !zone.hidden;
-    const deja = [...listeStatuts.querySelectorAll('input')].map(i => i.value.trim());
+    const deja = $$('input', listeStatuts).map(i => i.value.trim());
     zone.innerHTML = IDEES.filter(t => !deja.includes(t)).map(t => `<button type="button" class="idee">${echappe(t)}</button>`).join('');
   });
   $('#idees').addEventListener('click', (e) => {
     const b = e.target.closest('.idee'); if (!b) return;
-    const existantes = [...listeStatuts.querySelectorAll('input')].map(i => i.value.trim());
-    if (existantes.includes(b.textContent)) { b.remove(); return; }
-    const vide = [...listeStatuts.querySelectorAll('input')].find(i => !i.value.trim());
+    const vide = $$('input', listeStatuts).find(i => !i.value.trim());
     if (vide) vide.value = b.textContent; else listeStatuts.appendChild(ligneStatut(b.textContent));
     b.remove(); toast('Ajoutée, pense à enregistrer');
   });
   $('#form-statut').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const liste = [...listeStatuts.querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+    const liste = $$('input', listeStatuts).map(i => i.value.trim()).filter(Boolean);
     if (await action({ action: 'statuts', liste, hasard: $('#statut-hasard').checked })) toast('Phrases enregistrées');
   });
 
-  /* ---------- Textes de la page d'accueil ---------- */
+  // ----- Événement -----
+  const fe = $('#form-evt');
+  fe.addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'evenement', titre: fe.titre.value, date: depuisLocal(fe.date.value), lien: fe.lien.value.trim() }, $('#err-evt'))) toast('Événement enregistré'); });
+  $('#evt-effacer').addEventListener('click', async () => { fe.reset(); if (await action({ action: 'evenement', titre: '' }, $('#err-evt'))) toast('Événement effacé'); });
+
+  // ----- Direct -----
+  const fd = $('#form-live');
+  fd.addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'live', actif: fd.actif.checked, texte: fd.texte.value.trim(), lien: fd.lien.value.trim() }, $('#err-live'))) toast(fd.actif.checked ? 'Badge en direct activé 🔴' : 'Badge en direct coupé'); });
+  fd.actif.addEventListener('change', () => fd.requestSubmit());
+
+  // ----- Musique / playlist -----
+  const audiosPossibles = () => D.fichiers.filter(f => f.type.startsWith('audio/') && !f.protege && !f.expire && !f.album);
+  const afficherPlaylist = () => {
+    const parId = Object.fromEntries(D.fichiers.map(f => [f.id, f]));
+    $('#liste-pistes').innerHTML = playlist.length ? playlist.map((p, i) => `
+      <div class="piste" data-id="${i}">${poignee}
+        <div class="champs"><input data-piste="${i}" data-champ="titre" value="${echappe(p.titre)}" placeholder="Titre" aria-label="Titre"><input data-piste="${i}" data-champ="artiste" value="${echappe(p.artiste)}" placeholder="Artiste" aria-label="Artiste">
+          <span class="nom">🎵 ${echappe(parId[p.id] ? parId[p.id].nom : 'fichier introuvable')}</span></div>
+        <button type="button" class="petit gris" data-retirer-piste="${i}" aria-label="Retirer ce morceau">✕</button>
+      </div>`).join('') : '<p class="vide">Aucun morceau. Envoie d\'abord des fichiers audio dans Fichiers.</p>';
+    const dispo = audiosPossibles().filter(f => !playlist.some(p => p.id === f.id));
+    $('#ajout-piste').innerHTML = dispo.length ? dispo.map(f => `<option value="${f.id}">${echappe(f.nom)}</option>`).join('') : '<option value="">Aucun autre fichier audio</option>';
+    $('#btn-ajout-piste').disabled = !dispo.length;
+  };
+  $('#liste-pistes').addEventListener('input', (e) => { const c = e.target.closest('[data-piste]'); if (c) playlist[+c.dataset.piste][c.dataset.champ] = c.value; });
+  $('#liste-pistes').addEventListener('click', (e) => { const b = e.target.closest('[data-retirer-piste]'); if (b) { playlist.splice(+b.dataset.retirerPiste, 1); afficherPlaylist(); } });
+  $('#btn-ajout-piste').addEventListener('click', () => {
+    const f = D.fichiers.find(x => x.id === $('#ajout-piste').value); if (!f) return;
+    playlist.push({ id: f.id, titre: f.nom.replace(/\.[a-z0-9]+$/i, ''), artiste: '' }); afficherPlaylist();
+  });
+  $('#playlist-enregistrer').addEventListener('click', async () => { if (await action({ action: 'playlist', pistes: playlist }, $('#err-playlist'))) toast('Playlist enregistrée'); });
+  $('#musique-active').addEventListener('change', () => enregistrerSite({ musique_active: $('#musique-active').checked }, $('#musique-active').checked ? 'Lecteur affiché' : 'Lecteur masqué'));
+
+  // ----- Blocs intégrés -----
+  const NOMS_BLOCS = { instagram: ['📸', 'Publication Instagram'], tiktok: ['🎵', 'Vidéo TikTok'], youtube: ['▶️', 'Vidéo YouTube'], spotify: ['🎧', 'Spotify'], soundcloud: ['☁️', 'SoundCloud'] };
+  const afficherBlocs = () => {
+    $('#liste-blocs').innerHTML = D.blocs.length ? D.blocs.map(b => `
+      <div class="carte${b.actif ? '' : ' eteint'}" data-id="${b.id}" id="item-bloc-${b.id}">${poignee}
+        <div class="ico">${NOMS_BLOCS[b.type][0]}</div>
+        <div class="corps"><div class="titre">${NOMS_BLOCS[b.type][1]}${b.actif ? '' : ' (masqué)'}</div><small>${echappe(b.url)}</small></div>${trous('bloc', b.id)}
+      </div>`).join('') : '<p class="vide">Aucun bloc pour l\'instant.</p>';
+  };
+  $('#form-bloc').addEventListener('submit', async (e) => { e.preventDefault(); const f = e.target; if (await action({ action: 'bloc_ajouter', url: f.url.value.trim() }, $('#err-bloc'))) { f.reset(); toast('Bloc ajouté'); } });
+
+  /* =====================================================================
+     Page d'accueil (photos + textes)
+     ===================================================================== */
+  const afficherEmplacements = () => {
+    const images = D.fichiers.filter(f => f.type.startsWith('image/') && !f.protege && !f.expire && !f.album);
+    const noms = { p1: 'Carte postale 1 (lagon)', p2: 'Carte postale 2 (tiare)', p3: 'Carte postale 3 (coucher)', c1: 'Mot 1', c2: 'Mot 2', c3: 'Mot 3', c4: 'Mot 4', c5: 'Mot 5' };
+    $('#emplacements').innerHTML = Object.entries(noms).map(([k, n]) => {
+      const choisi = D.fichiers.find(f => f.id === D.photos[k]);
+      return `<div class="emplacement"><b>${n}</b><div class="apercu">${choisi ? `<img src="${choisi.url}" alt="" loading="lazy">` : 'Dessin d\'origine'}</div>
+        <select data-emplacement="${k}" aria-label="Photo pour ${n}"><option value="">Dessin d'origine</option>${images.map(f => `<option value="${f.id}" ${f.id === D.photos[k] ? 'selected' : ''}>${echappe(f.legende || f.nom)}</option>`).join('')}</select></div>`;
+    }).join('');
+  };
+  document.addEventListener('change', async (e) => {
+    const s = e.target.closest('select[data-emplacement]'); if (!s) return;
+    if (await action({ action: 'photo_accueil', emplacement: s.dataset.emplacement, id: s.value || null })) toast("Photo de l'accueil mise à jour");
+  });
+
   const GROUPES = [
     ['Le titre', [['hero1', 'Ligne 1 du grand titre', 'Ia ora', 12], ['hero2', 'Ligne 2 du grand titre', 'na !', 12], ['descends', 'Petite note manuscrite', 'descends doucement', 40]]],
     ['Le bandeau', [['bande', 'Phrase qui défile (sépare les morceaux par ✿)', 'Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru', 120], ['badge', 'Texte du badge rond', 'Fait à Tahiti', 18]]],
@@ -707,42 +968,82 @@
     <label>${l} <span class="compte" data-compte="${k}"></span>
       ${long ? `<textarea name="${k}" rows="${k === 'tour_titre' ? 4 : 2}" maxlength="${max}" placeholder="${echappe(def)}"></textarea>` : `<input name="${k}" maxlength="${max}" placeholder="${echappe(def)}">`}
     </label>`).join('')}</fieldset>`).join('')
-    + '<div class="ligne"><button>Enregistrer les textes</button><a class="lien-btn" href="/" target="_blank" rel="noopener" style="background:#EAE4DB;color:#1E1E1E">Voir l\'accueil</a></div><p class="erreur" id="err-textes" role="alert"></p>';
+    + '<div class="ligne"><button>Enregistrer les textes</button><a class="lien-btn" href="/" target="_blank" rel="noopener">Voir l\'accueil</a></div><p class="erreur" id="err-textes" role="alert"></p>';
   const compter = (champ) => { const c = ft.querySelector(`[data-compte="${champ.name}"]`); if (c) c.textContent = champ.value ? `${champ.value.length}/${champ.maxLength}` : ''; };
   ft.addEventListener('input', (e) => { if (e.target.name) compter(e.target); });
   const afficherTextes = () => {
     if (ft.contains(document.activeElement) && document.activeElement.tagName !== 'BUTTON') return;
-    ft.querySelectorAll('input, textarea').forEach(ch => { ch.value = D.accueil_textes[ch.name] || ''; compter(ch); });
+    $$('input, textarea', ft).forEach(ch => { ch.value = D.accueil_textes[ch.name] || ''; compter(ch); });
   };
   ft.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const textes = {}; ft.querySelectorAll('input, textarea').forEach(ch => { if (ch.value.trim()) textes[ch.name] = ch.value.trim(); });
+    const textes = {}; $$('input, textarea', ft).forEach(ch => { if (ch.value.trim()) textes[ch.name] = ch.value.trim(); });
     if (await action({ action: 'accueil_textes', textes }, $('#err-textes'))) toast("Textes de l'accueil enregistrés");
   });
 
-  const fe = $('#form-evt');
-  fe.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (await action({ action: 'evenement', titre: fe.titre.value, date: depuisLocal(fe.date.value), lien: fe.lien.value.trim() }, $('#err-evt'))) toast('Événement enregistré');
-  });
-  $('#evt-effacer').addEventListener('click', async () => { fe.reset(); if (await action({ action: 'evenement', titre: '' }, $('#err-evt'))) toast('Événement effacé'); });
+  /* =====================================================================
+     Fichiers, galerie, album
+     ===================================================================== */
+  const vignette = (f) => f.type.startsWith('image/') && !f.protege ? `<img src="${f.url}" alt="" loading="lazy">` : EMOJI_GENRE[genre(f.type)];
+  const afficherFichiers = () => {
+    const now = Date.now();
+    $('#pas-de-stockage').hidden = D.stockage; $('#zone-envoi').hidden = !D.stockage;
+    afficherJauge('#jauge-fichiers');
+    const liste = D.fichiers.filter(f => filtreFichiers === 'tous' || genre(f.type) === filtreFichiers);
+    $('#liste-fichiers').innerHTML = liste.length ? liste.map(f => {
+      const expire = f.expire ? (f.expire > now ? `<span class="badge">expire le ${dateFr(f.expire)}</span>` : '<span class="badge">expiré</span>') : '';
+      return `<div class="carte" data-id="${f.id}" id="item-fichier-${f.id}">
+        <div class="ico">${vignette(f)}</div>
+        <div class="corps"><div class="titre">${echappe(f.nom)}</div><small>landrypf.com${f.court} · ${taille(f.taille)} · ${dateFr(f.cree)}</small>
+          ${f.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}${expire}${f.galerie ? '<span class="badge">galerie</span>' : ''}${f.album ? '<span class="badge">album privé</span>' : ''}</div>
+        <span class="chiffre">${pluriel(f.telechargements, 'vue')}</span>${trous('fichier', f.id)}
+      </div>`;
+    }).join('') : `<p class="vide">${D.fichiers.length ? 'Aucun fichier de ce type.' : 'Aucun fichier pour l\'instant.'}</p>`;
 
-  /* ================= Envoi de fichiers ================= */
+    const av = aValider();
+    $('#bloc-valider').hidden = !av.length;
+    $('#a-valider').innerHTML = av.map(f => `<figure><img src="${f.url}" alt="" loading="lazy"><figcaption>${echappe(f.nom)}</figcaption>
+      <div class="ligne"><button class="petit" data-decider="galerie" data-id="${f.id}">Galerie</button><button class="petit gris" data-decider="album" data-id="${f.id}">Album</button></div>
+      <div class="ligne"><button class="petit gris" data-decider="" data-id="${f.id}">Ignorer</button></div></figure>`).join('');
+
+    const triees = (col) => D.fichiers.filter(f => f[col]).sort((a, b) => a.ordre - b.ordre || b.cree - a.cree);
+    const carteImage = (f, type) => `<div class="carte" data-id="${f.id}" id="item-${type}-${f.id}">${poignee}<div class="ico">${vignette(f)}</div>
+      <div class="corps"><div class="titre">${echappe(f.legende || f.nom)}</div>${f.protege || (f.expire && f.expire < now) ? '<small>Invisible (privé ou expiré)</small>' : ''}</div>${trous(type, f.id)}</div>`;
+    const gal = triees('galerie'), alb = triees('album');
+    $('#liste-galerie').innerHTML = gal.length ? gal.map(f => carteImage(f, 'galerie')).join('') : '<p class="vide">La galerie est vide.</p>';
+    $('#liste-album').innerHTML = alb.length ? alb.map(f => carteImage(f, 'album')).join('') : '<p class="vide">L\'album est vide. Ajoute des photos depuis « Photos à valider » ou les réglages d\'un fichier.</p>';
+    $('#etat-album').textContent = D.album_ouvert ? '🔓 L\'album est ouvert (protégé par mot de passe).' : '🔒 L\'album est fermé : choisis un mot de passe pour l\'ouvrir.';
+    $('#album-fermer').hidden = !D.album_ouvert;
+  };
+  $('#filtres-fichiers').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-filtre]'); if (!b) return;
+    filtreFichiers = b.dataset.filtre; $$('[data-filtre]').forEach(x => x.classList.toggle('actif', x === b)); afficherFichiers();
+  });
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-decider]'); if (!b) return;
+    b.disabled = true;
+    const vers = b.dataset.decider;
+    if (await action({ action: 'galerie_decider', id: b.dataset.id, vers })) toast(vers === 'galerie' ? 'Ajoutée à la galerie' : vers === 'album' ? "Ajoutée à l'album privé" : 'Photo ignorée');
+  });
+
+  const fa = $('#form-album');
+  fa.addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'album_mdp', mdp: fa.mdp.value }, $('#err-album'))) { fa.reset(); ouvrirAlbumAdmin(); toast("Mot de passe de l'album enregistré"); } });
+  $('#album-fermer').addEventListener('click', async () => { if (await action({ action: 'album_mdp', fermer: true }, $('#err-album'))) toast('Album fermé'); });
+  const ouvrirAlbumAdmin = () => fetch('/api/admin/album', { method: 'POST', headers: { 'x-cle': cle } }).catch(() => {});
+
+  // ----- Envoi (avec optimisation des photos) -----
   const depot = $('#depot'), choix = $('#choix-fichiers');
-  // Optimisation : redimensionne à 2560 px maximum et recompresse légèrement (retire aussi la position GPS des photos)
   const optimiser = async (fichier) => {
     if (!$('#opt-optimiser').checked || !/^image\/(jpeg|png|webp)$/.test(fichier.type)) return fichier;
     try {
       const img = await createImageBitmap(fichier, { imageOrientation: 'from-image' });
-      const MAX = 2560, k = Math.min(1, MAX / Math.max(img.width, img.height));
+      const k = Math.min(1, 2560 / Math.max(img.width, img.height));
       const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      const png = fichier.type === 'image/png';
-      const type = png ? 'image/webp' : 'image/jpeg';
+      const png = fichier.type === 'image/png', type = png ? 'image/webp' : 'image/jpeg';
       const blob = await new Promise(r => c.toBlob(r, type, png ? 0.92 : 0.86));
       if (!blob || blob.size >= fichier.size) return fichier;
-      const nom = fichier.name.replace(/\.[a-z0-9]+$/i, '') + (png ? '.webp' : '.jpg');
-      return new File([blob], nom, { type });
+      return new File([blob], fichier.name.replace(/\.[a-z0-9]+$/i, '') + (png ? '.webp' : '.jpg'), { type });
     } catch { return fichier; }
   };
   const envoyer = (original) => new Promise(async (ok) => {
@@ -753,7 +1054,7 @@
     const gain = fichier !== original ? ` → ${taille(fichier.size)}` : '';
     ligne.querySelector('small').textContent = `(${taille(original.size)}${gain})`;
     if (fichier.size > 100e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : trop lourd (100 Mo max).</div>`; return ok(); }
-    if ((D.stockage_utilise || 0) + fichier.size > (D.stockage_max || 1e10) - 50e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : stockage presque plein. Supprime des fichiers d'abord.</div>`; return ok(); }
+    if ((D.stockage_utilise || 0) + fichier.size > (D.stockage_max || 1e10) - 50e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : stockage presque plein.</div>`; return ok(); }
     const p = new URLSearchParams({ nom: fichier.name });
     const j = +$('#opt-expire').value; if (j) p.set('expire', Date.now() + j * 864e5);
     const xhr = new XMLHttpRequest();
@@ -777,7 +1078,7 @@
   ['dragleave', 'drop'].forEach(t => depot.addEventListener(t, (e) => { e.preventDefault(); depot.classList.remove('survol'); }));
   depot.addEventListener('drop', (e) => envoyerTout([...e.dataTransfer.files]));
 
-  /* ================= Réglages d'un fichier ================= */
+  // ----- Réglages d'un fichier -----
   const ff = $('#form-fichier'), fenF = $('#fen-fichier');
   ff.mdp_mode.addEventListener('change', () => { ff.mdp.hidden = ff.mdp_mode.value !== 'changer'; });
   $('#ff-fermer').addEventListener('click', () => fenF.close());
@@ -785,7 +1086,9 @@
     const f = D.fichiers.find(x => x.id === id); if (!f) return;
     fichierEdite = f; ff.reset(); $('#err-fichier').textContent = '';
     $('#ff-titre').textContent = f.nom;
-    ff.nom.value = f.nom; ff.legende.value = f.legende; ff.galerie.checked = !!f.galerie; ff.galerie.disabled = !f.type.startsWith('image/');
+    ff.nom.value = f.nom; ff.legende.value = f.legende;
+    ff.place.value = f.galerie ? 'galerie' : f.album ? 'album' : '';
+    ff.place.disabled = !f.type.startsWith('image/');
     ff.expire.value = versLocal(f.expire); ff.mdp.hidden = true;
     fenF.showModal();
   };
@@ -793,77 +1096,237 @@
     e.preventDefault();
     const corps = { action: 'fichier_modifier', id: fichierEdite.id, nom: ff.nom.value.trim(), legende: ff.legende.value, expire: depuisLocal(ff.expire.value) };
     if (!corps.nom) { $('#err-fichier').textContent = 'Le nom ne peut pas être vide.'; return; }
-    if (!!fichierEdite.galerie !== ff.galerie.checked) corps.galerie = ff.galerie.checked;
+    const placeAvant = fichierEdite.galerie ? 'galerie' : fichierEdite.album ? 'album' : '';
+    if (!ff.place.disabled && ff.place.value !== placeAvant) { corps.galerie = ff.place.value === 'galerie'; corps.album = ff.place.value === 'album'; }
     if (ff.mdp_mode.value === 'changer') { if (!ff.mdp.value) { $('#err-fichier').textContent = 'Écris le nouveau mot de passe.'; return; } corps.mdp = ff.mdp.value; }
     if (ff.mdp_mode.value === 'retirer') corps.mdp = '';
     if (await action(corps, $('#err-fichier'))) { fenF.close(); toast('Réglages enregistrés'); }
   });
 
-  /* ================= QR codes ================= */
-  const fenQ = $('#fen-qr');
-  let nomQr = 'qr';
+  /* =====================================================================
+     Messages
+     ===================================================================== */
+  const afficherMessages = () => {
+    $('#liste-contacts').innerHTML = D.contacts.length ? D.contacts.map(c => `
+      <div class="carte${c.lu ? '' : ' non-lu'}" data-id="${c.id}" id="item-contact-${c.id}" style="align-items:flex-start">
+        <div class="corps"><div class="titre">${echappe(c.nom)}</div><small>${dateFr(c.cree)}${c.email ? ' · ' + echappe(c.email) : ''}</small><div class="texte">${echappe(c.message)}</div>
+          ${c.email ? `<a class="lien-btn" style="background:var(--rouge);color:#fff" href="mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent('Re: ton message sur landrypf.com')}">Répondre</a>` : ''}</div>
+        ${trous('contact', c.id)}
+      </div>`).join('') : '<p class="vide">Aucun message pour l\'instant.</p>';
+    const mot = (m, attente) => `<div class="carte" data-id="${m.id}" id="item-mot-${m.id}" style="align-items:flex-start">
+      <div class="corps"><div class="texte">${echappe(m.texte)}</div><small>${echappe(m.nom)} · ${dateFr(m.cree)}${m.reactions ? ` · 🌺 ${m.reactions}` : ''}</small>
+        ${attente ? `<div class="ligne"><button class="petit" data-publier="${m.id}">Publier</button></div>` : ''}</div>${trous('mot', m.id)}</div>`;
+    $('#attente').innerHTML = D.attente.length ? D.attente.map(m => mot(m, true)).join('') : '<p class="vide">Rien à valider.</p>';
+    $('#valides').innerHTML = D.valides.length ? D.valides.map(m => mot(m, false)).join('') : '<p class="vide">Aucun mot publié.</p>';
+  };
+  document.addEventListener('click', async (e) => { const b = e.target.closest('[data-publier]'); if (b) { b.disabled = true; if (await action({ action: 'valider', id: +b.dataset.publier })) toast('Mot publié'); } });
+
+  /* =====================================================================
+     Réglages
+     ===================================================================== */
+  const enregistrerSite = async (changements, message) => {
+    const r = D.site;
+    const c = { action: 'reglages_site', livre_actif: r.livre_actif, contact_actif: r.contact_actif, banniere_active: r.banniere_active, banniere_texte: r.banniere_texte,
+      banniere_lien: r.banniere_lien, banniere_debut: r.banniere_debut, banniere_fin: r.banniere_fin, musique_active: r.musique_active, ...changements };
+    const zone = c.zone || null; delete c.zone;
+    const ok = await action(c, zone);
+    if (ok && message) toast(message);
+    return ok;
+  };
+  const fs = $('#form-site');
+  ['livre_actif', 'contact_actif'].forEach(n => fs[n].addEventListener('change', () => enregistrerSite({ [n]: fs[n].checked }, 'Réglage enregistré')));
+  const fb = $('#form-banniere');
+  fb.addEventListener('submit', (e) => { e.preventDefault(); enregistrerSite({ banniere_active: fb.banniere_active.checked, banniere_texte: fb.banniere_texte.value.trim(), banniere_lien: fb.banniere_lien.value.trim(),
+    banniere_debut: depuisLocal(fb.banniere_debut.value), banniere_fin: depuisLocal(fb.banniere_fin.value), zone: $('#err-banniere') }, 'Bannière enregistrée'); });
+
+  const afficherCourts = () => {
+    $('#liste-courts').innerHTML = D.courts.length ? D.courts.map(c => `
+      <div class="carte" data-id="${echappe(c.code)}" id="item-court-${echappe(c.code)}"><div class="ico">${ico('lien')}</div>
+        <div class="corps"><div class="titre">landrypf.com/${echappe(c.code)}</div><small>${echappe(c.url)}</small></div>
+        <span class="chiffre">${pluriel(c.clics, 'clic')}</span>${trous('court', c.code)}</div>`).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
+  };
+  const fc = $('#form-court');
+  fc.code.addEventListener('input', () => { fc.code.value = fc.code.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
+  $('#code-hasard').addEventListener('click', () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join(''); });
+  fc.addEventListener('submit', async (e) => { e.preventDefault(); const code = fc.code.value; if (await action({ action: 'court_ajouter', code, url: fc.url.value.trim() }, $('#err-court'))) { toast('Créé : landrypf.com/' + code); fermerForm('form-court'); } });
+
+  const THEMES_LISTE = [['auto', 'Automatique', 'Heiva en juillet, Noël en décembre, Nouvel An fin décembre'], ['aucun', 'Aucun', 'Le site reste toujours le même'],
+    ['heiva', 'Heiva', 'Pluie de fleurs et « Heiva i Tahiti ! »'], ['noel', 'Noël', 'Pluie d\'étoiles et « Joyeux Noël »'], ['nouvel_an', 'Nouvel An', 'Confettis et « Bonne année »']];
+  const ftheme = $('#form-theme');
+  const afficherTheme = () => {
+    const actuel = D.theme_du_jour ? { heiva: 'Heiva', noel: 'Noël', nouvel_an: 'Nouvel An' }[D.theme_du_jour] : 'aucun pour l\'instant';
+    ftheme.innerHTML = THEMES_LISTE.map(([v, l, d]) => `<label><input type="radio" name="theme" value="${v}" ${D.theme === v ? 'checked' : ''}><span>${l}<small>${v === 'auto' ? d + ' (aujourd\'hui : ' + actuel + ')' : d}</small></span></label>`).join('');
+  };
+  ftheme.addEventListener('change', async (e) => { if (e.target.name === 'theme' && await action({ action: 'theme', valeur: e.target.value })) toast('Thème enregistré'); });
+
+  const fleg = $('#form-legal');
+  fleg.addEventListener('submit', async (e) => { e.preventDefault(); if (await action({ action: 'legal', nom: fleg.nom.value.trim(), email: fleg.email.value.trim() }, $('#err-legal'))) toast('Mentions légales enregistrées'); });
+
+  $('#btn-export').addEventListener('click', async () => {
+    try {
+      const r = await fetch('/api/admin/export', { headers: { 'x-cle': cle } }); if (!r.ok) throw new Error();
+      const blob = await r.blob(), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = `landry-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000); toast('Sauvegarde téléchargée');
+    } catch { toast('La sauvegarde a échoué, réessaie.'); }
+  });
+  $('#btn-nettoyer').addEventListener('click', async () => { const d = await action({ action: 'nettoyer' }); if (d) toast(d.supprimes ? `${pluriel(d.supprimes, 'fichier expiré')} supprimé${d.supprimes > 1 ? 's' : ''}` : 'Rien à nettoyer 🌺'); });
+
+  /* =====================================================================
+     Menus ⋯ de chaque élément
+     ===================================================================== */
+  const QR = $('#fen-qr'); let nomQr = 'qr';
   const montrerQr = (texte, nom) => {
     nomQr = 'qr-' + nom.replace(/[^a-z0-9-]+/gi, '-').slice(0, 40);
-    $('#qr-texte').textContent = texte; $('#qr-zone').innerHTML = ''; fenQ.showModal();
+    $('#qr-texte').textContent = texte; $('#qr-zone').innerHTML = ''; QR.showModal();
     const dessiner = () => new QRCode($('#qr-zone'), { text: texte, width: 720, height: 720, colorDark: '#B3212E', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
     if (window.QRCode) return dessiner();
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    s.onload = dessiner; s.onerror = () => { $('#qr-zone').textContent = 'Impossible de charger le générateur de QR code.'; };
-    document.head.appendChild(s);
+    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload = dessiner; s.onerror = () => { $('#qr-zone').textContent = 'Impossible de charger le générateur de QR code.'; }; document.head.appendChild(s);
   };
-  $('#qr-fermer').addEventListener('click', () => fenQ.close());
+  $('#qr-fermer').addEventListener('click', () => QR.close());
   $('#qr-telecharger').addEventListener('click', () => {
     const c = $('#qr-zone canvas'); if (!c) return;
-    // On ajoute une marge blanche autour pour que le QR soit bien lisible
     const m = 60, t = document.createElement('canvas'); t.width = c.width + 2 * m; t.height = c.height + 2 * m;
     const x = t.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(c, m, m);
     const a = document.createElement('a'); a.href = t.toDataURL('image/png'); a.download = nomQr + '.png'; a.click();
   });
 
-  /* ================= Boutons ================= */
-  document.addEventListener('change', async (e) => {
-    const s = e.target.closest('select[data-emplacement]'); if (!s) return;
-    if (await action({ action: 'photo_accueil', emplacement: s.dataset.emplacement, id: s.value || null })) toast('Photo de l\'accueil mise à jour');
-  });
-  document.addEventListener('click', async (e) => {
-    const b = e.target.closest('button[data-a]'); if (!b) return;
-    const a = b.dataset.a, id = /^\d+$/.test(b.dataset.id || '') ? +b.dataset.id : b.dataset.id;
-    if (a === 'editer-lien') {
-      const l = D.liens.find(x => x.id === id); if (!l) return;
-      enEdition = id;
-      fl.titre.value = l.titre; fl.sous_titre.value = l.sous_titre; fl.url.value = l.url; fl.icone.value = l.icone;
-      fl.debut.value = versLocal(l.debut); fl.fin.value = versLocal(l.fin);
-      $('#form-lien-titre').textContent = 'Modifier « ' + l.titre + ' »'; $('#btn-lien').textContent = 'Enregistrer'; $('#annuler-lien').hidden = false;
-      fl.scrollIntoView({ behavior: 'smooth', block: 'center' }); fl.titre.focus({ preventScroll: true });
-      return;
-    }
-    if (a === 'copier') return copier(b.dataset.texte);
-    if (a === 'qr') return montrerQr(b.dataset.texte, b.dataset.nom);
-    if (a === 'ouvrir') return window.open(b.dataset.url, '_blank', 'noopener');
-    if (a === 'regler-fichier') return reglerFichier(id);
-    if (a === 'retirer-galerie') return action({ action: 'fichier_modifier', id, galerie: false });
-    if (a === 'galerie-oui' || a === 'galerie-non') { b.disabled = true; if (await action({ action: 'galerie_decider', id, ajouter: a === 'galerie-oui' })) toast(a === 'galerie-oui' ? 'Ajoutée à la galerie' : 'Photo ignorée'); return; }
-    if (['supprimer', 'lien_supprimer', 'court_supprimer', 'fichier_supprimer', 'contact_supprimer'].includes(a) && !confirm('Supprimer définitivement ?')) return;
-    b.disabled = true;
-    await action({ action: a, id, code: b.dataset.code, sens: +b.dataset.sens });
+  const MENUS = {
+    lien: (id, el) => { const l = D.liens.find(x => x.id === +id); const i = D.liens.indexOf(l); return [
+      { l: 'Modifier', f: () => editerLien(l.id) },
+      { l: l.actif ? 'Masquer' : 'Afficher', f: () => action({ action: 'lien_basculer', id: l.id }) },
+      i > 0 && { l: 'Monter', f: () => deplacerDansListe(D.liens, l.id, -1, 'liens') },
+      i < D.liens.length - 1 && { l: 'Descendre', f: () => deplacerDansListe(D.liens, l.id, 1, 'liens') },
+      { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'lien_supprimer', id: l.id }, el, 'Lien') }]; },
+    court: (code, el) => [
+      { l: 'Copier le lien', f: () => copier(`${SITE}/${code}`) },
+      { l: 'QR code', f: () => montrerQr(`${SITE}/${code}`, code) },
+      { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'court_supprimer', code }, el, 'Lien court') }],
+    fichier: (id, el) => { const f = D.fichiers.find(x => x.id === id); return [
+      { l: 'Copier le lien', f: () => copier(SITE + f.court) },
+      { l: 'QR code', f: () => montrerQr(SITE + f.court, f.nom) },
+      { l: 'Ouvrir', f: () => window.open(f.url, '_blank', 'noopener') },
+      { l: 'Réglages (nom, galerie, album…)', f: () => reglerFichier(f.id) },
+      { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'fichier_supprimer', id: f.id }, el, 'Fichier') }]; },
+    galerie: (id) => [
+      { l: 'Légende', f: () => reglerFichier(id) },
+      { l: "Déplacer vers l'album privé", f: () => action({ action: 'fichier_modifier', id, album: true }) },
+      { l: 'Retirer de la galerie', f: () => action({ action: 'fichier_modifier', id, galerie: false }) }],
+    album: (id) => [
+      { l: 'Légende', f: () => reglerFichier(id) },
+      { l: 'Déplacer vers la galerie publique', f: () => action({ action: 'fichier_modifier', id, galerie: true, album: false }) },
+      { l: "Retirer de l'album", f: () => action({ action: 'fichier_modifier', id, album: false }) }],
+    bloc: (id, el) => { const b = D.blocs.find(x => x.id === +id); return [
+      { l: 'Ouvrir le lien', f: () => window.open(b.url, '_blank', 'noopener') },
+      { l: b.actif ? 'Masquer' : 'Afficher', f: () => action({ action: 'bloc_basculer', id: b.id }) },
+      { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'bloc_supprimer', id: b.id }, el, 'Bloc') }]; },
+    contact: (id, el) => { const c = D.contacts.find(x => x.id === +id); return [
+      { l: c.lu ? 'Marquer non lu' : 'Marquer lu', f: () => action({ action: 'contact_lu', id: c.id }) },
+      c.email && { l: "Copier l'e-mail", f: () => copier(c.email) },
+      { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'contact_supprimer', id: c.id }, el, 'Message') }]; },
+    mot: (id, el) => [{ l: 'Supprimer', danger: true, f: () => supprimer({ action: 'supprimer', id: +id }, el, 'Mot') }]
+  };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.trous'); if (!b) return;
+    e.stopPropagation();
+    if (menuOuvert && menuOuvert.dataset.pour === b.dataset.menu + b.dataset.id) return fermerMenu();
+    ouvrirMenu(b, MENUS[b.dataset.menu](b.dataset.id, b.closest('.carte')));
+    menuOuvert.dataset.pour = b.dataset.menu + b.dataset.id;
   });
 
-  /* ================= Onglet actif selon le défilement ================= */
-  const liensNav = [...document.querySelectorAll('#onglets a')];
-  const obs = new IntersectionObserver((entrees) => {
-    entrees.forEach(en => { if (en.isIntersecting) liensNav.forEach(l => l.classList.toggle('actif', l.getAttribute('href') === '#' + en.target.id)); });
-  }, { rootMargin: '-40% 0px -55% 0px' });
-  document.querySelectorAll('main section').forEach(s => obs.observe(s));
+  /* =====================================================================
+     Recherche rapide
+     ===================================================================== */
+  const champR = $('#champ-recherche'), zoneR = $('#resultats');
+  const indexer = () => {
+    if (!D) return [];
+    const l = [];
+    D.liens.forEach(x => l.push({ t: x.titre, s: 'Lien de la bio · ' + x.url, o: 'bio', sous: 's-liens', el: 'item-lien-' + x.id }));
+    D.courts.forEach(x => l.push({ t: 'landrypf.com/' + x.code, s: 'Lien court · ' + x.url, o: 'reglages', sous: 's-courts', el: 'item-court-' + x.code }));
+    D.fichiers.forEach(x => l.push({ t: x.nom, s: 'Fichier · ' + (x.legende || taille(x.taille)), o: 'fichiers', sous: 's-fichiers', el: 'item-fichier-' + x.id }));
+    D.contacts.forEach(x => l.push({ t: x.nom + ' : ' + x.message.slice(0, 60), s: 'Message · ' + dateFr(x.cree), o: 'messages', sous: 's-messages', el: 'item-contact-' + x.id }));
+    D.attente.concat(D.valides).forEach(x => l.push({ t: x.nom + ' : ' + x.texte.slice(0, 60), s: "Livre d'or", o: 'messages', sous: 's-livre', el: 'item-mot-' + x.id }));
+    D.blocs.forEach(x => l.push({ t: NOMS_BLOCS[x.type][1], s: 'Bloc · ' + x.url, o: 'bio', sous: 's-blocs', el: 'item-bloc-' + x.id }));
+    D.statuts.forEach(x => l.push({ t: x, s: 'En ce moment', o: 'bio', sous: 's-statuts' }));
+    sections.forEach(s => l.push({ t: s.dataset.nom, s: 'Section · ' + ONGLETS.find(o => o.id === s.dataset.onglet).nom, o: s.dataset.onglet, sous: s.id }));
+    return l;
+  };
+  const sansAccent = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  let resultats = [];
+  champR.addEventListener('input', () => {
+    const q = sansAccent(champR.value.trim());
+    if (!q) { zoneR.hidden = true; return; }
+    resultats = indexer().filter(r => sansAccent(r.t + ' ' + r.s).includes(q)).slice(0, 12);
+    zoneR.innerHTML = resultats.length ? resultats.map((r, i) => `<button type="button" data-res="${i}">${echappe(r.t)}<small>${echappe(r.s)}</small></button>`).join('') : '<div class="rien">Aucun résultat</div>';
+    zoneR.hidden = false;
+  });
+  champR.addEventListener('keydown', (e) => { if (e.key === 'Enter' && resultats[0]) { e.preventDefault(); ouvrirResultat(resultats[0]); } if (e.key === 'ArrowDown') { const b = zoneR.querySelector('button'); if (b) { e.preventDefault(); b.focus(); } } });
+  zoneR.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown') { e.preventDefault(); (document.activeElement.nextElementSibling || document.activeElement).focus(); } if (e.key === 'ArrowUp') { e.preventDefault(); (document.activeElement.previousElementSibling || champR).focus(); } });
+  zoneR.addEventListener('click', (e) => { const b = e.target.closest('[data-res]'); if (b) ouvrirResultat(resultats[+b.dataset.res]); });
+  const ouvrirResultat = (r) => {
+    zoneR.hidden = true; champR.value = ''; $('#recherche').classList.remove('ouverte');
+    if (r.el) { const el = document.getElementById(r.el); if (el && el.hidden) el.hidden = false; }
+    if (r.o === 'fichiers' && filtreFichiers !== 'tous') { filtreFichiers = 'tous'; $$('[data-filtre]').forEach(x => x.classList.toggle('actif', x.dataset.filtre === 'tous')); afficherFichiers(); }
+    aller(r.o, r.sous);
+    if (r.el) setTimeout(() => { const el = document.getElementById(r.el); if (el) { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); } }, 60);
+  };
+  document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && D) { e.preventDefault(); $('#recherche').classList.add('ouverte'); champR.focus(); champR.select(); } });
+  $('#btn-loupe').addEventListener('click', () => { const r = $('#recherche'); r.classList.toggle('ouverte'); if (r.classList.contains('ouverte')) champR.focus(); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#recherche, #btn-loupe')) { zoneR.hidden = true; $('#recherche').classList.remove('ouverte'); } });
 
-  /* ================= Connexion ================= */
+  /* =====================================================================
+     Aperçu en direct de la bio
+     ===================================================================== */
+  const iframeCote = $('#apercu-iframe'), iframePlein = $('#apercu-plein');
+  const urlApercu = () => '/bio?apercu=1&t=' + Date.now();
+  const chargerApercu = () => { if (innerWidth >= 1100 && !iframeCote.src) iframeCote.src = urlApercu(); };
+  let minuterieApercu;
+  const rafraichirApercu = () => {
+    clearTimeout(minuterieApercu);
+    minuterieApercu = setTimeout(() => {
+      if (iframeCote.src && innerWidth >= 1100 && document.body.classList.contains('avec-apercu')) iframeCote.src = urlApercu();
+      if ($('#fen-apercu').open) iframePlein.src = urlApercu();
+    }, 400);
+  };
+  $('#btn-apercu').addEventListener('click', () => { iframePlein.src = urlApercu(); $('#fen-apercu').showModal(); });
+  $('#fermer-apercu').addEventListener('click', () => $('#fen-apercu').close());
+
+  /* =====================================================================
+     Chargement des données
+     ===================================================================== */
+  const charger = async () => {
+    D = await appel('GET');
+    $('#connexion').hidden = true; $('#panneau').hidden = false; $('#onglets').hidden = false; $('#barre-bas').hidden = false; $('#recherche').hidden = false; $('#btn-loupe').hidden = false;
+    if (!$('#form-evt').contains(document.activeElement)) { fe.titre.value = D.evenement.titre; fe.date.value = versLocal(D.evenement.date); fe.lien.value = D.evenement.lien; }
+    if (!fd.contains(document.activeElement)) { fd.actif.checked = D.live.actif; fd.texte.value = D.live.texte; fd.lien.value = D.live.lien; }
+    if (!fb.contains(document.activeElement)) { fb.banniere_active.checked = D.site.banniere_active; fb.banniere_texte.value = D.site.banniere_texte; fb.banniere_lien.value = D.site.banniere_lien; fb.banniere_debut.value = versLocal(D.site.banniere_debut); fb.banniere_fin.value = versLocal(D.site.banniere_fin); }
+    fs.livre_actif.checked = D.site.livre_actif; fs.contact_actif.checked = D.site.contact_actif;
+    $('#musique-active').checked = D.site.musique_active;
+    if (!fleg.contains(document.activeElement)) { fleg.nom.value = D.legal.nom; fleg.email.value = D.legal.email; }
+    if (!$('#s-musique').contains(document.activeElement)) playlist = D.playlist.map(p => ({ ...p }));
+    afficherTableau(); afficherStats(); afficherLiens(); afficherStatuts(); afficherPlaylist(); afficherBlocs();
+    afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme();
+    majPastilles();
+  };
+
   $('#connexion').addEventListener('submit', async (e) => {
     e.preventDefault(); cle = $('#cle').value; $('#erreur').textContent = '';
-    try { await charger(); sessionStorage.setItem('cle', cle); try { localStorage.setItem('cle-admin', cle); } catch {} }
+    try { await demarrer(); sessionStorage.setItem('cle', cle); try { localStorage.setItem('cle-admin', cle); } catch {} }
     catch (err) { $('#erreur').textContent = err.message; }
   });
+  const demarrer = async () => {
+    await ouvrirAlbumAdmin();   // pour voir les vignettes de l'album privé
+    await charger();
+    let h = location.hash; if (!h) { try { h = localStorage.getItem('admin-onglet') || ''; } catch {} }
+    const [o, s] = (h || '#tableau').slice(1).split('/');
+    aller(o || 'tableau', s ? 's-' + s : null, false);
+  };
+  // Les sous-onglets restent collés juste sous l'en-tête, quelle que soit sa hauteur
+  const majEntete = () => document.documentElement.style.setProperty('--haut-entete', $('header.barre').offsetHeight + 'px');
+  new ResizeObserver(majEntete).observe($('header.barre'));
   addEventListener('resize', () => { if (D) afficherStats(); });
-  if (cle) charger().catch(() => { try { localStorage.removeItem('cle-admin'); } catch {} });
+  if (cle) demarrer().catch(() => { try { localStorage.removeItem('cle-admin'); } catch {} });
 }
 </script>
 </body>

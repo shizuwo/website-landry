@@ -19,6 +19,7 @@
   "r2_buckets": [
     { "binding": "FICHIERS", "bucket_name": "landry-fichiers" }
   ],
+  "triggers": { "crons": ["0 14 * * *"] },  // tous les jours à 4 h, heure de Tahiti
   "observability": { "enabled": true }
   // Secrets à ajouter dans le tableau de bord (Settings → Variables and Secrets) :
   //   ADMIN_KEY : ton mot de passe pour /admin
