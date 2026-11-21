@@ -235,10 +235,10 @@
         : lancerFfmpeg(f, (e, s) => ['-i', e, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', s], base + '.mp4', 'video/mp4');
     }
     if (mode === 'couper') {
-      const d = Math.max(0, +$('#o-debut').value || 0), fin = +$('#o-fin').value || duree;
-      if (!(fin > d)) throw new Error('la fin doit être après le début');
+      const d = Math.max(0, +$('#o-debut').value || 0), fin = +$('#o-fin').value || duree;   // fin vide = jusqu'au bout
+      if (fin && !(fin > d)) throw new Error('la fin doit être après le début');
       const ext = extension(f);
-      return lancerFfmpeg(f, (e, s) => ['-ss', String(d), '-i', e, '-t', String(fin - d), '-c', 'copy', '-avoid_negative_ts', 'make_zero', s], `${base}-extrait.${ext}`, f.type || 'application/octet-stream');
+      return lancerFfmpeg(f, (e, s) => ['-ss', String(d), '-i', e, ...(fin ? ['-t', String(fin - d)] : []), '-c', 'copy', '-avoid_negative_ts', 'make_zero', s], `${base}-extrait.${ext}`, f.type || 'application/octet-stream');
     }
     if (mode === 'gif') {
       const d = Math.max(0, +$('#o-debut').value || 0), t = Math.min(10, Math.max(1, +$('#o-duree').value || 5)), l = $('#o-largeur').value;
@@ -344,11 +344,15 @@
   if (test && MODES[test]) (async () => {
     choisirMode(test);
     const c = document.createElement('canvas'); c.width = 320; c.height = 240; const g = c.getContext('2d');
-    const flux = c.captureStream(15), rec = new MediaRecorder(flux, { mimeType: 'video/webm' }), morceaux = [];
+    const flux = c.captureStream(15), son = new AudioContext(), osc = son.createOscillator(), dest = son.createMediaStreamDestination();
+    osc.connect(dest); osc.start(); dest.stream.getAudioTracks().forEach(t => flux.addTrack(t));   // un petit « bip » pour tester le son
+    const rec = new MediaRecorder(flux, { mimeType: 'video/webm' }), morceaux = [];
     rec.ondataavailable = (e) => morceaux.push(e.data);
     let t = 0; const anim = setInterval(() => { g.fillStyle = `hsl(${t * 12},70%,50%)`; g.fillRect(0, 0, 320, 240); g.fillStyle = '#fff'; g.font = '48px sans-serif'; g.fillText('Test ' + t++, 60, 140); }, 66);
     rec.start(); await new Promise(r => setTimeout(r, 2500)); rec.stop(); await new Promise(r => rec.onstop = r); clearInterval(anim);
+    osc.stop();
     recevoir([new File(morceaux, 'test.webm', { type: 'video/webm' })]);
+    await new Promise(r => setTimeout(r, 800));
     $('#lancer').click();
   })();
 }
