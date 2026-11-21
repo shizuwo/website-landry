@@ -14,6 +14,9 @@ const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 't', 'n', 'bio', 'admi
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun', 'album', 'mentions']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
+// Numéro de version affiché dans l'admin (augmenté à chaque mise à jour)
+const VERSION = 'v20';
+const DEPOT = 'shizuwo/website-landry';
 const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
 const STOCKAGE_LIMITE = STOCKAGE_MAX - 50 * 1000 ** 2; // on bloque un peu avant, par sécurité
@@ -734,6 +737,25 @@ function appareilDe(request) {
   return 'ordi';
 }
 
+/* ================= Mises à jour disponibles (PR ouvertes sur GitHub) ================= */
+
+async function misesAJour() {
+  const url = `https://api.github.com/repos/${DEPOT}/pulls?state=open&base=main&sort=created&direction=desc`;
+  const cache = typeof caches !== 'undefined' ? caches.default : null, cle = new Request(url);
+  let r = cache && await cache.match(cle);
+  if (!r) {
+    try {
+      r = await fetch(url, { headers: { 'user-agent': 'landrypf-admin', accept: 'application/vnd.github+json' } });
+    } catch { return json({ erreur: 'GitHub injoignable' }, { status: 502 }); }
+    if (!r.ok) return json({ erreur: 'GitHub a répondu ' + r.status }, { status: 502 });
+    r = new Response(r.body, { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' } });   // 5 minutes
+    if (cache) await cache.put(cle, r.clone());
+  }
+  const prs = await r.json();
+  return json({ prs: prs.map(p => ({ numero: p.number, titre: p.title, url: p.html_url, date: Date.parse(p.created_at),
+    apercu: `https://${String(p.head && p.head.ref || '').toLowerCase().replace(/[^a-z0-9-]/g, '-')}-website-landry.contactlandry987.workers.dev` })) });
+}
+
 /* ================= Google : robots.txt et plan du site ================= */
 
 const ROBOTS = `User-agent: *
@@ -815,6 +837,7 @@ async function adminLire(env) {
       banniere_debut: +r.banniere_debut || null, banniere_fin: +r.banniere_fin || null,
       musique_active: actif(r.musique_active, false), musique_id: r.musique_id || '', musique_titre: r.musique_titre || '', musique_artiste: r.musique_artiste || ''
     },
+    version: { nom: VERSION, date: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp ? Date.parse(env.CF_VERSION_METADATA.timestamp) : null },
     outils, contacts: contacts.results, photos, cadres, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
   });
 }
@@ -1243,6 +1266,7 @@ export default {
           const envoiT = pathname.match(/^\/api\/admin\/transfert\/([a-z0-9]{8})$/);
           if (envoiT && m === 'PUT') return await envoyerTransfert(request, env, envoiT[1]);
           if (pathname === '/api/admin' && m === 'GET') return await adminLire(env);
+          if (pathname === '/api/admin/maj' && m === 'GET') return await misesAJour();
           if (pathname === '/api/admin' && m === 'POST') return await adminEcrire(request, env);
         }
         return erreur('introuvable', 404);
