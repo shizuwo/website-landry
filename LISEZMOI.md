@@ -45,6 +45,8 @@ L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cher
 
 **Sécurité** : après 5 mauvais mots de passe en 15 minutes, l'admin est bloqué 15 minutes pour ce réseau, et tu reçois une notification. Tes appareils déjà connectés une fois (« appareils de confiance ») ne sont jamais bloqués.
 
+L'admin s'actualise tout seul toutes les 20 secondes (jamais pendant que tu écris) et affiche ce qui vient d'arriver ; le bouton ↻ en haut actualise tout de suite. Quand l'admin est dans un autre onglet, le titre affiche le nombre de nouveautés, par exemple « (2) Admin ».
+
 Chaque suppression peut être annulée pendant 5 secondes. Le menu **⋯** de chaque élément regroupe ses actions.
 
 **Installer l'admin comme une appli** : ouvre landrypf.com/admin sur ton téléphone, puis
