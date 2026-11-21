@@ -4,6 +4,10 @@
    - son discret au clic, coupé par défaut, avec un bouton 🔈 en bas à gauche. */
 (() => {
   const calme = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Sur téléphone (écran tactile, pas de souris), les effets de survol sont coupés : ils rendent mal au doigt
+  const souris = matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const effets = !calme && souris;
+  if (souris) document.documentElement.classList.add('souris');
 
   /* ---------- Boutons élastiques ---------- */
   const ELASTIQUES = '.pilule, .mes-liens, .liens a, .petit-btn, .boutons a';
@@ -23,7 +27,7 @@
   @media (prefers-reduced-motion: reduce) { .elastique, .saut { transition: none !important; } }`;
   document.head.appendChild(st);
 
-  if (!calme) {
+  if (effets) {
     const relacher = (b) => { b.classList.remove('tire-el'); b.style.translate = ''; b.style.scale = ''; };
     document.addEventListener('pointermove', (e) => {
       const b = e.target.closest && e.target.closest(ELASTIQUES);
@@ -68,7 +72,7 @@
     if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
     marche(el); el.dataset.saut = '';
   };
-  if (!calme) document.addEventListener('pointerover', (e) => {
+  if (effets) document.addEventListener('pointerover', (e) => {
     const l = e.target.closest && e.target.closest('.saut'); if (!l) return;
     const zone = l.closest('[data-saut]'); if (!zone) return;
     const lettres = [...zone.querySelectorAll('.saut')], i = lettres.indexOf(l);
