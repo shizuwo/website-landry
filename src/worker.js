@@ -204,7 +204,7 @@ const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.ex
 async function infos(env) {
   const [mauruuru, { results }] = await Promise.all([
     compteur(env, 'mauruuru'),
-    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email','disposition','anniversaire','fete_messages','bio_palette','bio_meteo')").all()
+    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email','disposition','anniversaire','fete_messages','bio_palette')").all()
   ]);
   const r = Object.fromEntries(results.map(x => [x.cle, x.valeur]));
   const d = +r.evt_date || 0;
@@ -247,7 +247,7 @@ async function infos(env) {
     statuts: actif(r.statut_hasard, false) ? lireJSON(r.statuts, []).filter(Boolean) : null,
     livre: actif(r.livre_actif), contact: actif(r.contact_actif),
     live, theme, theme_texte: theme ? (messages[theme] || '') : '', prochaine, blocs,
-    palette: PALETTES.has(r.bio_palette) ? r.bio_palette : 'auto', meteo_theme: actif(r.bio_meteo), disposition: r.disposition === 'liens' ? 'liens' : 'infos', legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
+    palette: PALETTES.has(r.bio_palette) ? r.bio_palette : 'auto', disposition: r.disposition === 'liens' ? 'liens' : 'infos', legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
   }, { headers: { 'cache-control': 'public, max-age=15' } });
 }
 
@@ -556,7 +556,7 @@ async function adminLire(env) {
     playlist: (() => { const p = lireJSON(r.playlist, null); return Array.isArray(p) ? p : (r.musique_id ? [{ id: r.musique_id, titre: r.musique_titre || '', artiste: r.musique_artiste || '' }] : []); })(),
     live: { actif: actif(r.live_actif, false), lien: r.live_lien || '', texte: r.live_texte || '' },
     theme: r.theme || 'auto', theme_du_jour: themeDuJour(Date.now(), r.anniversaire || ''), anniversaire: r.anniversaire || '', fete_messages: lireJSON(r.fete_messages, {}),
-    palette: PALETTES.has(r.bio_palette) ? r.bio_palette : 'auto', meteo_theme: actif(r.bio_meteo), disposition: r.disposition === 'liens' ? 'liens' : 'infos', lien_avant: +r.lien_avant || 0,
+    palette: PALETTES.has(r.bio_palette) ? r.bio_palette : 'auto', disposition: r.disposition === 'liens' ? 'liens' : 'infos', lien_avant: +r.lien_avant || 0,
     legal: { nom: r.legal_nom || '', email: r.legal_email || '' },
     album_ouvert: !!r.album_mdp,
     accueil_textes: lireJSON(r.accueil_textes, {}),
@@ -731,9 +731,6 @@ async function adminEcrire(request, env) {
     case 'palette':
       if (!PALETTES.has(c.valeur)) return erreur('Thème inconnu.');
       await ecrireReglage(env, 'bio_palette', c.valeur);
-      break;
-    case 'meteo_theme':
-      await ecrireReglage(env, 'bio_meteo', c.actif ? '1' : '0');
       break;
 
     // --- Fêtes : anniversaire et messages personnalisés ---

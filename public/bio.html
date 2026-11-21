@@ -59,12 +59,7 @@
   html[data-palette="ocean"] .bulles { display: block; }
   .bulles i { position: absolute; bottom: -20px; border-radius: 50%; border: 1.5px solid rgba(191,227,245,.45); animation: bulle linear infinite; }
   @keyframes bulle { to { transform: translate(var(--dx, 10px), -110vh); } }
-  /* Météo : fines gouttes quand il pleut, lumière dorée par grand soleil */
-  .ciel-meteo { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 1.5s ease; }
-  [data-meteo="pluie"] .ciel-meteo { opacity: 1; background: repeating-linear-gradient(105deg, transparent 0 22px, rgba(255,255,255,.16) 22px 23px, transparent 23px 47px) 0 0 / 200px 200px; animation: pluie .5s linear infinite; }
-  @keyframes pluie { to { background-position: -40px 200px; } }
-  [data-meteo="soleil"] .ciel-meteo { opacity: 1; background: radial-gradient(circle at 88% 4%, rgba(255,214,120,.35), transparent 45%); }
-  @media (prefers-reduced-motion: reduce) { .ciel-meteo, .bulles i { animation: none !important; } }
+  @media (prefers-reduced-motion: reduce) { .bulles i { animation: none !important; } }
   .bascule-moment { border: 0; color: inherit; cursor: pointer; font: inherit; font-size: .875rem; font-weight: 600; }
   .bascule-moment:focus-visible { outline: 3px solid var(--blanc); outline-offset: 2px; }
 
@@ -338,7 +333,6 @@
 </head>
 <body>
 <div class="etoiles" id="etoiles" aria-hidden="true"></div>
-<div class="ciel-meteo" aria-hidden="true"></div>
 <div class="bulles" id="bulles" aria-hidden="true"></div>
 
 <div class="haut">
@@ -712,15 +706,6 @@
   setInterval(majCompteARebours, 1000);
 
   /* ---------- Météo et houle (Open-Meteo, gratuit, sans clé) ---------- */
-  // Thème météo : pluie quand il pleut à Papeete, lumière dorée par grand soleil (si activé dans l'admin)
-  let codeMeteo = null, jourMeteo = true, meteoTheme = true;
-  const appliquerMeteo = () => {
-    const c = codeMeteo, html = document.documentElement;
-    if (!meteoTheme || c == null) { delete html.dataset.meteo; return; }
-    if ((c >= 51 && c <= 67) || (c >= 80 && c <= 99)) html.dataset.meteo = 'pluie';
-    else if ((c === 0 || c === 1) && jourMeteo) html.dataset.meteo = 'soleil';
-    else delete html.dataset.meteo;
-  };
   const chargerMeteo = async () => {
     try {
       const [m, h] = await Promise.all([
@@ -728,7 +713,6 @@
         fetch('https://marine-api.open-meteo.com/v1/marine?latitude=-17.70&longitude=-149.62&current=wave_height').then(r => r.json()).catch(() => null)
       ]);
       const c = m.current, code = c.weather_code;
-      codeMeteo = code; jourMeteo = !!c.is_day; appliquerMeteo();
       const ciel = code === 0 ? (c.is_day ? '☀️' : '🌙') : code <= 2 ? (c.is_day ? '🌤️' : '🌙') : code === 3 ? '☁️' : code <= 48 ? '🌫️'
         : code <= 67 ? '🌧️' : code <= 77 ? '🌨️' : code <= 82 ? '🌦️' : '⛈️';
       let texte = `${ciel} ${Math.round(c.temperature_2m)}°`;
@@ -831,7 +815,6 @@
       const d = await api('/api/infos');
       compte = d.mauruuru || 0;
       document.documentElement.dataset.palette = d.palette || 'auto';
-      meteoTheme = d.meteo_theme !== false; appliquerMeteo();
       majHeure();
       $('main').classList.toggle('liens-d-abord', d.disposition === 'liens');
       const phrase = d.statuts && d.statuts.length ? d.statuts[Math.floor(Math.random() * d.statuts.length)] : d.statut;
