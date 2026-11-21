@@ -234,6 +234,7 @@
   .couleurs button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--encre); }
   .couleurs input[type=color] { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: none; }
   .etiquette { font-weight: 600; font-size: .9rem; }
+  .bouton-lien { display: inline-flex; align-items: center; min-height: 40px; padding: .35rem .8rem; border-radius: 10px; background: #EAE4DB; color: var(--encre); font-weight: 600; text-decoration: none; font-size: .9rem; white-space: nowrap; }
   .lien-cree { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .lien-cree code { flex: 1; min-width: 0; overflow-wrap: anywhere; background: var(--rouge-pale); padding: 8px 10px; border-radius: 8px; font-weight: 600; }
   .barre-detail { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: .9rem; }
@@ -508,7 +509,7 @@
       <form id="form-transfert" class="boite" novalidate hidden style="margin-bottom:12px">
         <label class="depot" id="depot-transfert">
           <input type="file" id="choix-transfert" multiple hidden>
-          📦 <b>Choisis des fichiers</b> ou glisse-les ici <small style="display:block;color:var(--doux);font-weight:400">100 Mo maximum par fichier</small>
+          📦 <b>Choisis des fichiers</b> ou glisse-les ici <small style="display:block;color:var(--doux);font-weight:400">5 Go maximum par fichier · l'envoi reprend tout seul si la connexion coupe</small>
         </label>
         <div class="envois" id="liste-transfert"></div>
         <div class="grille deux">
@@ -582,6 +583,23 @@
         <div class="qr-apercu" id="qr-apercu" role="img" aria-label="Aperçu du QR code"></div>
         <div class="ligne"><button type="button" id="qr-png">Télécharger en PNG</button><button type="button" class="gris" id="qr-svg">Télécharger en SVG</button></div>
       </div>
+    </section>
+
+    <section data-onglet="outils" data-nom="Demandes" id="s-demandes">
+      <h2>Demandes de fichiers</h2>
+      <p class="aide">L'inverse d'un transfert : tu envoies un lien, et les gens te déposent leurs photos ou documents. Tu reçois une notification à chaque fichier.</p>
+      <button class="ajouter" type="button" data-ouvre="form-demande">+ Nouvelle demande</button>
+      <form id="form-demande" class="boite" novalidate hidden style="margin-bottom:12px">
+        <label>Titre<input name="titre" maxlength="80" placeholder="Vos photos du mariage"></label>
+        <label>Message (facultatif)<textarea name="message" maxlength="600" rows="2" placeholder="Envoyez-moi vos plus belles photos !"></textarea></label>
+        <div class="grille deux">
+          <label>Taille totale maximum<select name="max_total"><option value="1000000000">1 Go</option><option value="2000000000" selected>2 Go</option><option value="5000000000">5 Go</option></select></label>
+          <label>Ouverte pendant<select name="expire"><option value="1">1 jour</option><option value="7" selected>7 jours</option><option value="30">30 jours</option><option value="">Toujours</option></select></label>
+        </div>
+        <div class="ligne"><button>Créer le lien</button><button type="button" class="gris" data-ferme="form-demande">Annuler</button></div>
+        <p class="erreur" id="err-demande" role="alert"></p>
+      </form>
+      <div class="liste" id="liste-demandes"></div>
     </section>
 
     <section data-onglet="outils" data-nom="Corbeille" id="s-corbeille">
@@ -684,6 +702,21 @@
   <div class="ligne" style="justify-content:flex-end"><button class="gris" type="button" id="stats-fermer">Fermer</button></div>
 </dialog>
 
+<dialog id="fen-transfert" aria-labelledby="mt-titre">
+  <h3 id="mt-titre">Modifier le transfert</h3>
+  <form id="form-modif-transfert" class="grille" novalidate>
+    <label>Titre<input name="titre" maxlength="80"></label>
+    <label>Message<textarea name="message" maxlength="600" rows="2"></textarea></label>
+    <label>Expire le<input name="expire" type="datetime-local"></label>
+    <label>Nombre de téléchargements <small id="mt-compte" style="font-weight:400;color:var(--doux)"></small><input name="max_dl" type="number" min="1" inputmode="numeric" placeholder="illimité"></label>
+    <label>Mot de passe<select name="mdp_mode"><option value="garder">Ne pas changer</option><option value="changer">Nouveau mot de passe</option><option value="retirer">Retirer le mot de passe</option></select></label>
+    <input name="mdp" type="text" autocomplete="off" placeholder="nouveau mot de passe" hidden>
+    <label class="case"><input type="checkbox" name="notifier"> Me prévenir à chaque téléchargement</label>
+    <div class="ligne"><button>Enregistrer</button><button type="button" class="gris" id="mt-fermer">Annuler</button></div>
+    <p class="erreur" id="err-modif-transfert" role="alert"></p>
+  </form>
+</dialog>
+
 <dialog id="fen-histo" aria-labelledby="histo-titre">
   <h3 id="histo-titre">Historique</h3>
   <div id="histo-liste"></div>
@@ -720,6 +753,7 @@
 <script src="icones.js"></script>
 <script src="cadre.js"></script>
 <script src="qr.js"></script>
+<script src="envoi.js"></script>
 <script>
 {
   /* =====================================================================
@@ -1240,7 +1274,7 @@
     ligne.innerHTML = `<div>${echappe(original.name)} <small>(${taille(original.size)}) · préparation…</small></div><progress max="100" value="0"></progress>`;
     $('#envois').prepend(ligne);
     let fichier = await optimiser(original);
-    if ($('#opt-gps').checked && fichier === original) fichier = await sansGPS(original);   // l'optimisation retire déjà le GPS
+    if ($('#opt-gps').checked && fichier === original) fichier = await Envoi.sansGPS(original);   // l'optimisation retire déjà le GPS
     const gain = fichier !== original ? ` → ${taille(fichier.size)}` : '';
     ligne.querySelector('small').textContent = `(${taille(original.size)}${gain})`;
     if (fichier.size > 100e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : trop lourd (100 Mo max).</div>`; return ok(); }
@@ -1410,47 +1444,6 @@
   /* =====================================================================
      Outils : transferts, bloc-notes, liens courts, QR codes, corbeille
      ===================================================================== */
-  // CRC32 (pour que le serveur puisse fabriquer le .zip sans recalculer)
-  const TABLE_CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
-  const crc32 = async (blob) => {
-    let c = 0xFFFFFFFF; const morceau = 8 << 20;
-    for (let o = 0; o < blob.size; o += morceau) {
-      const b = new Uint8Array(await blob.slice(o, o + morceau).arrayBuffer());
-      for (let i = 0; i < b.length; i++) c = TABLE_CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8);
-    }
-    return (c ^ 0xFFFFFFFF) >>> 0;
-  };
-  // Retire la position GPS (et toutes les métadonnées EXIF) d'une photo JPEG, sans perte de qualité.
-  // Si la photo dépend de l'EXIF pour son sens (orientation), on la redessine droite.
-  const sansGPS = async (fichier) => {
-    if (!/^image\/jpe?g$/i.test(fichier.type)) return fichier;
-    try {
-      const b = new Uint8Array(await fichier.arrayBuffer());
-      if (b[0] !== 0xFF || b[1] !== 0xD8) return fichier;
-      const garder = [b.subarray(0, 2)]; let i = 2, retire = false, orientation = 1;
-      while (i + 4 <= b.length && b[i] === 0xFF) {
-        const m = b[i + 1], l = (b[i + 2] << 8) | b[i + 3];
-        if (m === 0xDA) { garder.push(b.subarray(i)); i = b.length; break; }
-        const seg = b.subarray(i, i + 2 + l);
-        const exif = m === 0xE1 && String.fromCharCode(...seg.subarray(4, 8)) === 'Exif';
-        if (exif) {   // lire l'orientation avant de jeter le bloc
-          const d = new DataView(seg.buffer, seg.byteOffset + 10), le = d.getUint16(0) === 0x4949;
-          const ifd = d.getUint32(4, le), n = d.getUint16(ifd, le);
-          for (let k = 0; k < n; k++) { const e = ifd + 2 + k * 12; if (d.getUint16(e, le) === 0x0112) orientation = d.getUint16(e + 8, le); }
-        }
-        if (m === 0xE1 || m === 0xED) retire = true; else garder.push(seg);
-        i += 2 + l;
-      }
-      if (!retire) return fichier;
-      if (orientation > 1) {
-        const img = await createImageBitmap(fichier, { imageOrientation: 'from-image' });
-        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0);
-        const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.95));
-        return new File([blob], fichier.name, { type: 'image/jpeg' });
-      }
-      return new File(garder, fichier.name, { type: fichier.type });
-    } catch { return fichier; }
-  };
   const expirationDe = (v) => !v ? null : v === '1h' ? Date.now() + 3600e3 : Date.now() + (+v) * 864e5;
   const etatTransfert = (t) => t.supprime ? 'corbeille' : t.vide ? 'terminé' : (t.expire && t.expire <= Date.now()) ? 'expiré' : (t.max_dl && t.dl >= t.max_dl) ? 'limite atteinte' : 'actif';
   const lienCree = (url, nom) => `<div class="lien-cree"><code>${echappe(url.replace(/^https?:\/\//, ''))}</code>
@@ -1460,7 +1453,7 @@
     const q = e.target.closest('[data-qr]'); if (q) montrerQr(q.dataset.qr, q.dataset.qrNom || 'qr');
   });
 
-  // ----- Transferts -----
+  // ----- Transferts (envoi en morceaux : jusqu'à 5 Go par fichier, reprise si la connexion coupe) -----
   let aTransferer = [];
   const fTr = $('#form-transfert'), choixT = $('#choix-transfert'), depotT = $('#depot-transfert');
   const listerATransferer = () => {
@@ -1475,47 +1468,75 @@
   depotT.addEventListener('drop', (e) => ajouterT([...e.dataTransfer.files]));
   $('#liste-transfert').addEventListener('click', (e) => { const b = e.target.closest('[data-retirer]'); if (b) { aTransferer.splice(+b.dataset.retirer, 1); listerATransferer(); } });
   fTr.addEventListener('reset', () => { aTransferer = []; setTimeout(listerATransferer); });
-  const envoyerDansTransfert = (id, fichier, barre) => new Promise(async (ok, ko) => {
-    const crc = await crc32(fichier);
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', `/api/admin/transfert/${id}?` + new URLSearchParams({ nom: fichier.name, crc }));
-    xhr.setRequestHeader('x-cle', cle); xhr.setRequestHeader('content-type', fichier.type || 'application/octet-stream');
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable && barre) barre.value = (e.loaded / e.total) * 100; };
-    xhr.onload = () => { let d = {}; try { d = JSON.parse(xhr.responseText); } catch {} xhr.status === 200 ? ok() : ko(new Error(`${fichier.name} : ${d.erreur || 'échec (' + xhr.status + ')'}`)); };
-    xhr.onerror = () => ko(new Error(`${fichier.name} : connexion perdue`));
-    xhr.send(fichier);
-  });
+  // Envoie une liste de fichiers dans un transfert, avec une barre par fichier
+  const envoyerFichiersT = async (tid, fichiers, barres, gps = true) => {
+    for (let i = 0; i < fichiers.length; i++) {
+      const f = gps ? await Envoi.sansGPS(fichiers[i]) : fichiers[i];
+      await Envoi.fichier(f, { base: '/api/admin/transfert/' + tid, entetes: { 'x-cle': cle }, progression: (p) => { if (barres[i]) barres[i].value = p * 100; } })
+        .catch(e => { throw new Error(`${fichiers[i].name} : ${e.message}`); });
+    }
+  };
+  const PLAFOND = 5e9;
   fTr.addEventListener('submit', async (e) => {
     e.preventDefault(); const err = $('#err-transfert'); err.textContent = '';
     if (!aTransferer.length) { err.textContent = 'Ajoute au moins un fichier.'; return; }
-    const trop = aTransferer.find(f => f.size > 100e6); if (trop) { err.textContent = `${trop.name} : trop lourd (100 Mo maximum par fichier).`; return; }
+    const trop = aTransferer.find(f => f.size > PLAFOND); if (trop) { err.textContent = `${trop.name} : trop lourd (5 Go maximum par fichier).`; return; }
     const btn = $('#btn-transfert'); btn.disabled = true; btn.textContent = 'Envoi en cours…';
+    let tid = null;
     try {
       const d = await appel('POST', { action: 'transfert_creer', titre: fTr.titre.value.trim(), message: fTr.message.value.trim(), mdp: fTr.mdp.value,
         max_dl: fTr.max_dl.value ? +fTr.max_dl.value : null, expire: expirationDe(fTr.expire.value), notifier: fTr.notifier.checked });
-      const barres = $$('#liste-transfert progress');
-      for (let i = 0; i < aTransferer.length; i++) {
-        const f = fTr.gps.checked ? await sansGPS(aTransferer[i]) : aTransferer[i];
-        await envoyerDansTransfert(d.id, f, barres[i]);
-      }
-      const url = `${SITE}/t/${d.id}`, titre = fTr.titre.value.trim() || 'transfert';
+      tid = d.id;
+      await envoyerFichiersT(tid, aTransferer, $$('#liste-transfert progress'), fTr.gps.checked);
+      const titre = fTr.titre.value.trim(), message = fTr.message.value.trim();
       fermerForm('form-transfert');
-      $('#resultat-transfert').innerHTML = `<b>✅ Transfert prêt !</b> Envoie ce lien :${lienCree(url, titre)}`; $('#resultat-transfert').hidden = false;
-      copier(url); await charger();
-    } catch (x) { err.textContent = x.message; await charger(); }
+      montrerLienTransfert(tid, titre, message);
+      await charger();
+    } catch (x) { err.textContent = x.message + (tid ? ' — le transfert est créé : tu pourras reprendre l\'envoi depuis sa fiche.' : ''); await charger(); }
     btn.disabled = false; btn.textContent = 'Créer le lien';
   });
+  // Lien prêt : copier, QR code, e-mail, partager
+  const mailTransfert = (url, titre, message) => `mailto:?subject=${encodeURIComponent(titre || 'Des fichiers pour toi')}&body=${encodeURIComponent((message ? message + '\n\n' : '') + 'Télécharge les fichiers ici : ' + url + '\n\nLandry 🌺')}`;
+  const partagerLien = async (url, titre, message) => {
+    if (navigator.share) { try { await navigator.share({ title: titre || 'Des fichiers pour toi', text: message || '', url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+    copier(url);
+  };
+  const montrerLienTransfert = (tid, titre, message) => {
+    const url = `${SITE}/t/${tid}`;
+    $('#resultat-transfert').innerHTML = `<b>✅ Transfert prêt !</b> Envoie ce lien :${lienCree(url, titre || 'transfert')}
+      <div class="ligne" style="margin:8px 0 0"><a class="bouton-lien" href="${mailTransfert(url, titre, message)}">✉️ Envoyer par e-mail</a>
+      <button type="button" class="petit gris" data-partager="${echappe(url)}" data-titre="${echappe(titre)}" data-message="${echappe(message)}">Partager…</button></div>`;
+    $('#resultat-transfert').hidden = false; copier(url);
+  };
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-partager]'); if (b) partagerLien(b.dataset.partager, b.dataset.titre, b.dataset.message); });
+  // Ajouter des fichiers à un transfert existant, ou reprendre un envoi interrompu
+  const choixAjout = document.createElement('input'); choixAjout.type = 'file'; choixAjout.multiple = true; choixAjout.hidden = true; document.body.append(choixAjout);
+  let cibleAjout = null;
+  const ajouterAuTransfert = (tid) => { cibleAjout = tid; choixAjout.click(); };
+  choixAjout.addEventListener('change', async () => {
+    const fichiers = [...choixAjout.files], tid = cibleAjout; choixAjout.value = ''; if (!fichiers.length || !tid) return;
+    const zone = $('#item-transfert-' + tid);
+    const suivi = document.createElement('div'); suivi.className = 'envois'; suivi.style.cssText = 'grid-column:1/-1;width:100%';
+    suivi.innerHTML = fichiers.map(f => `<div class="envoi"><div>${echappe(f.name)} <small>(${taille(f.size)})</small></div><progress max="100" value="0"></progress></div>`).join('');
+    zone && zone.after(suivi);
+    try { await envoyerFichiersT(tid, fichiers, $$('progress', suivi)); toast(`${pluriel(fichiers.length, 'fichier')} ajouté${fichiers.length > 1 ? 's' : ''}`); }
+    catch (x) { toast(x.message); }
+    suivi.remove(); await charger();
+  });
   const afficherTransferts = () => {
-    const now = Date.now(), liste = (D.outils.transferts || []).filter(t => !t.supprime);
+    const now = Date.now(), liste = (D.outils.transferts || []).filter(t => !t.supprime && !t.demande);
     $('#liste-transferts').innerHTML = liste.length ? liste.map(t => {
-      const etat = etatTransfert(t), poids = t.fichiers.reduce((a, f) => a + f.taille, 0);
-      const infos = [`${t.fichiers.length} fichier${t.fichiers.length > 1 ? 's' : ''} · ${taille(poids)}`,
+      const etat = etatTransfert(t), prets = t.fichiers.filter(f => !f.en_cours), poids = prets.reduce((a, f) => a + f.taille, 0);
+      const attente = Envoi.enAttente('/api/admin/transfert/' + t.id);
+      const infos = [`${prets.length} fichier${prets.length > 1 ? 's' : ''} · ${taille(poids)}`,
         `⬇ ${t.dl}${t.max_dl ? '/' + t.max_dl : ''}`, t.expire ? (t.expire > now ? 'expire le ' + dateFr(t.expire) : 'expiré') : 'sans expiration'];
       return `<div class="carte${etat === 'actif' ? '' : ' eteint'}" data-id="${t.id}" id="item-transfert-${t.id}"><div class="ico">📦</div>
         <div class="corps"><div class="titre">${echappe(t.titre || 'Transfert du ' + dateFr(t.cree))}</div><small>${infos.join(' · ')}</small>
-          <span class="badge">${etat}</span>${t.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}</div>${trous('transfert', t.id)}</div>`;
+          <span class="badge">${etat}</span>${t.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}
+          ${attente.length ? `<button type="button" class="lien" data-reprendre="${t.id}">⚠️ ${pluriel(attente.length, 'envoi')} interrompu${attente.length > 1 ? 's' : ''} : reprendre (${attente.map(a => echappe(a.nom)).join(', ')})</button>` : ''}</div>${trous('transfert', t.id)}</div>`;
     }).join('') : '<p class="vide">Aucun transfert pour l\'instant.</p>';
   };
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-reprendre]'); if (b) { toast('Choisis à nouveau le ou les mêmes fichiers : l\'envoi reprendra où il s\'était arrêté.'); ajouterAuTransfert(b.dataset.reprendre); } });
   const montrerHisto = (t) => {
     $('#histo-titre').textContent = 'Historique : ' + (t.titre || 'transfert');
     $('#histo-liste').innerHTML = t.historique.length ? t.historique.map(h => `<div>${dateFr(h.quand)} · ${h.quoi === 'zip' ? 'tout le .zip' : echappe(h.quoi)}</div>`).join('')
@@ -1523,6 +1544,41 @@
     $('#fen-histo').showModal();
   };
   $('#histo-fermer').addEventListener('click', () => $('#fen-histo').close());
+  // Modifier un transfert : titre, message, expiration, nombre de téléchargements, mot de passe
+  const fenT = $('#fen-transfert'), fmT = $('#form-modif-transfert'); let tEdite = null;
+  const modifierTransfert = (t) => {
+    tEdite = t; fmT.reset(); $('#err-modif-transfert').textContent = '';
+    fmT.titre.value = t.titre || ''; fmT.message.value = t.message || ''; fmT.expire.value = versLocal(t.expire); fmT.max_dl.value = t.max_dl || ''; fmT.notifier.checked = !!t.notifier;
+    fmT.mdp.hidden = true; $('#mt-compte').textContent = `déjà ${pluriel(t.dl, 'téléchargement')}`; fenT.showModal();
+  };
+  fmT.mdp_mode.addEventListener('change', () => { fmT.mdp.hidden = fmT.mdp_mode.value !== 'changer'; });
+  $('#mt-fermer').addEventListener('click', () => fenT.close());
+  fmT.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (await action({ action: 'transfert_modifier', id: tEdite.id, titre: fmT.titre.value.trim(), message: fmT.message.value.trim(), expire: depuisLocal(fmT.expire.value),
+      max_dl: fmT.max_dl.value ? +fmT.max_dl.value : null, notifier: fmT.notifier.checked, mdp_mode: fmT.mdp_mode.value, mdp: fmT.mdp.value }, $('#err-modif-transfert'))) { fenT.close(); toast('Transfert modifié'); }
+  });
+
+  // ----- Demandes de fichiers -----
+  const fDm = $('#form-demande');
+  fDm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const d = await action({ action: 'demande_creer', titre: fDm.titre.value.trim(), message: fDm.message.value.trim(), expire: expirationDe(fDm.expire.value), max_total: +fDm.max_total.value }, $('#err-demande'));
+    if (d && d.id) { fermerForm('form-demande'); copier(`${SITE}/d/${d.id}`); }
+  });
+  const afficherDemandes = () => {
+    const now = Date.now(), liste = (D.outils.demandes || []).filter(d => !d.supprime);
+    $('#liste-demandes').innerHTML = liste.length ? liste.map(d => {
+      const t = (D.outils.transferts || []).find(x => x.id === d.transfert) || { fichiers: [] }, recus = t.fichiers.filter(f => !f.en_cours);
+      const ouverte = !d.ferme && !(d.expire && d.expire <= now), poids = recus.reduce((a, f) => a + f.taille, 0);
+      const de = [...new Set(recus.map(f => f.de).filter(Boolean))];
+      return `<div class="carte${ouverte ? '' : ' eteint'}" data-id="${d.id}" id="item-demande-${d.id}"><div class="ico">📥</div>
+        <div class="corps"><div class="titre">${echappe(d.titre || 'Demande du ' + dateFr(d.cree))}</div>
+          <small>${pluriel(recus.length, 'fichier')} reçu${recus.length > 1 ? 's' : ''} · ${taille(poids)} / ${taille(d.max_total)}${de.length ? ' · de ' + de.map(echappe).join(', ') : ''}</small>
+          <span class="badge">${ouverte ? 'ouverte' : d.ferme ? 'fermée' : 'expirée'}</span>${d.expire && d.expire > now ? `<span class="badge">jusqu'au ${dateFr(d.expire)}</span>` : ''}</div>
+        ${recus.length ? `<a class="petit bouton-lien" href="/t/${d.transfert}" target="_blank" rel="noopener">Voir les fichiers</a>` : ''}${trous('demande', d.id)}</div>`;
+    }).join('') : '<p class="vide">Aucune demande pour l\'instant.</p>';
+  };
 
   // ----- Bloc-notes -----
   const fn = $('#form-note');
@@ -1545,8 +1601,9 @@
   // ----- Corbeille -----
   const afficherCorbeille = () => {
     const now = Date.now(), restants = (t) => Math.max(0, Math.ceil((t + 30 * 864e5 - now) / 864e5));
-    const el = [...(D.outils.transferts || []).filter(t => t.supprime).map(t => ({ type: 'transfert', id: t.id, nom: t.titre || 'Transfert du ' + dateFr(t.cree), i: '📦', quand: t.supprime })),
-      ...(D.outils.notes || []).filter(n => n.supprime).map(n => ({ type: 'note', id: n.id, nom: n.titre || n.apercu.slice(0, 40) || 'Note', i: '📝', quand: n.supprime }))].sort((a, b) => b.quand - a.quand);
+    const el = [...(D.outils.transferts || []).filter(t => t.supprime && !t.demande).map(t => ({ type: 'transfert', id: t.id, nom: t.titre || 'Transfert du ' + dateFr(t.cree), i: '📦', quand: t.supprime })),
+      ...(D.outils.notes || []).filter(n => n.supprime).map(n => ({ type: 'note', id: n.id, nom: n.titre || n.apercu.slice(0, 40) || 'Note', i: '📝', quand: n.supprime })),
+      ...(D.outils.demandes || []).filter(d => d.supprime).map(d => ({ type: 'demande', id: d.id, nom: d.titre || 'Demande du ' + dateFr(d.cree), i: '📥', quand: d.supprime }))].sort((a, b) => b.quand - a.quand);
     $('#liste-corbeille').innerHTML = el.length ? el.map(x => `<div class="carte" id="item-corbeille-${x.id}"><div class="ico">${x.i}</div>
       <div class="corps"><div class="titre">${echappe(x.nom)}</div><small>Supprimé définitivement dans ${pluriel(restants(x.quand), 'jour')}</small></div>
       <button type="button" class="petit gris" data-restaurer="${x.type}:${x.id}">Restaurer</button>
@@ -1712,8 +1769,20 @@
       { l: 'Copier le lien', f: () => copier(`${SITE}/t/${id}`) },
       { l: 'QR code', f: () => montrerQr(`${SITE}/t/${id}`, t.titre || id) },
       { l: 'Ouvrir la page', f: () => window.open(`/t/${id}`, '_blank', 'noopener') },
+      { l: 'Envoyer par e-mail', f: () => { location.href = mailTransfert(`${SITE}/t/${id}`, t.titre, t.message); } },
+      { l: 'Partager…', f: () => partagerLien(`${SITE}/t/${id}`, t.titre, t.message) },
+      !t.vide && { l: 'Ajouter des fichiers', f: () => ajouterAuTransfert(id) },
+      !t.vide && { l: 'Modifier', f: () => modifierTransfert(t) },
       { l: 'Historique des téléchargements', f: () => montrerHisto(t) },
       { l: 'Mettre à la corbeille', danger: true, f: async () => { if (await action({ action: 'transfert_supprimer', id })) toast('Transfert mis à la corbeille (30 jours)'); } }]; },
+    demande: (id) => { const d = D.outils.demandes.find(x => x.id === id); return [
+      { l: 'Copier le lien', f: () => copier(`${SITE}/d/${id}`) },
+      { l: 'QR code', f: () => montrerQr(`${SITE}/d/${id}`, d.titre || 'depot') },
+      { l: 'Envoyer par e-mail', f: () => { location.href = `mailto:?subject=${encodeURIComponent(d.titre || 'Envoie-moi tes fichiers')}&body=${encodeURIComponent((d.message ? d.message + '\n\n' : '') + 'Dépose tes fichiers ici : ' + SITE + '/d/' + id + '\n\nLandry 🌺')}`; } },
+      { l: 'Partager…', f: () => partagerLien(`${SITE}/d/${id}`, d.titre, d.message) },
+      { l: 'Partager les fichiers reçus', f: () => copier(`${SITE}/t/${d.transfert}`) },
+      { l: d.ferme ? 'Rouvrir' : 'Fermer (plus de dépôts)', f: async () => { if (await action({ action: 'demande_fermer', id, ferme: !d.ferme })) toast(d.ferme ? 'Demande rouverte' : 'Demande fermée'); } },
+      { l: 'Mettre à la corbeille', danger: true, f: async () => { if (await action({ action: 'demande_supprimer', id })) toast('Demande mise à la corbeille (30 jours)'); } }]; },
     note: (id) => [
       { l: 'Copier le lien', f: () => copier(`${SITE}/n/${id}`) },
       { l: 'QR code', f: () => montrerQr(`${SITE}/n/${id}`, 'note-' + id) },
@@ -1820,7 +1889,7 @@
     if (!fleg.contains(document.activeElement)) { fleg.nom.value = D.legal.nom; fleg.email.value = D.legal.email; }
     if (!$('#s-musique').contains(document.activeElement)) playlist = D.playlist.map(p => ({ ...p }));
     afficherTableau(); afficherVersion(); afficherStats(); afficherLiens(); afficherStatuts(); afficherPlaylist(); afficherBlocs();
-    afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme(); afficherTransferts(); afficherNotes(); afficherCorbeille();
+    afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme(); afficherTransferts(); afficherNotes(); afficherDemandes(); afficherCorbeille();
     fdispo.querySelector(`[value="${D.disposition || 'infos'}"]`).checked = true;
     $(`#form-palette [value="${D.palette || 'auto'}"]`).checked = true;
     majPastilles();
@@ -1831,12 +1900,27 @@
     try { await demarrer(); sessionStorage.setItem('cle', cle); try { localStorage.setItem('cle-admin', cle); } catch {} }
     catch (err) { $('#erreur').textContent = err.message; }
   });
+  // Fichiers partagés depuis le téléphone (Partager → Admin) : ils arrivent dans un nouveau transfert
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/admin-sw.js', { scope: '/admin' }).catch(() => {});
+  const recupererPartage = async () => {
+    const q = new URLSearchParams(location.search); if (!q.has('partage')) return;
+    history.replaceState(null, '', location.pathname + location.hash);
+    try {
+      const cache = await caches.open('partage'), fichiers = [];
+      for (const req of await cache.keys()) { const r = await cache.match(req); fichiers.push(new File([await r.blob()], decodeURIComponent(r.headers.get('x-nom') || 'fichier'), { type: r.headers.get('content-type') || '' })); await cache.delete(req); }
+      aller('outils', 's-transferts');
+      if ($('#form-transfert').hidden) $('[data-ouvre="form-transfert"]').click();
+      if (fichiers.length) { ajouterT(fichiers); toast(`${pluriel(fichiers.length, 'fichier')} prêt${fichiers.length > 1 ? 's' : ''} à envoyer`); }
+      if (q.get('texte')) $('#form-transfert').message.value = q.get('texte');
+    } catch { toast('Impossible de récupérer les fichiers partagés.'); }
+  };
   const demarrer = async () => {
     await charger();
     await ouvrirAlbumAdmin(); afficherFichiers();   // pour voir les vignettes de l'album privé
     let h = location.hash; if (!h) { try { h = localStorage.getItem('admin-onglet') || ''; } catch {} }
     const [o, s] = (h || '#tableau').slice(1).split('/');
     aller(o || 'tableau', s ? 's-' + s : null, false);
+    recupererPartage();
   };
   // Les sous-onglets restent collés juste sous l'en-tête, quelle que soit sa hauteur
   const majEntete = () => document.documentElement.style.setProperty('--haut-entete', $('header.barre').offsetHeight + 'px');

@@ -10,12 +10,12 @@ const erreur = (msg, status = 400) => json({ erreur: msg }, { status });
 const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Codes de liens courts interdits (déjà utilisés par le site)
-const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 't', 'n', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
+const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 'envoi', 'admin-sw', 't', 'n', 'd', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun', 'album', 'mentions']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
 // Numéro de version affiché dans l'admin (augmenté à chaque mise à jour)
-const VERSION = 'v20';
+const VERSION = 'v21';
 const DEPOT = 'shizuwo/website-landry';
 const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
@@ -514,28 +514,59 @@ async function nettoyerExpires(env) {
   const { results: vieux } = await env.DB.prepare('SELECT id FROM transferts WHERE (supprime IS NOT NULL AND supprime <= ?) OR (vide = 1 AND supprime IS NULL AND COALESCE(fini, expire, cree) <= ?)').bind(now - 30 * 864e5, now - 30 * 864e5).all();
   for (const t of vieux) await effacerTransfert(env, t.id);
   await env.DB.prepare('DELETE FROM notes WHERE (supprime IS NOT NULL AND supprime <= ?) OR (expire IS NOT NULL AND expire <= ?) OR (lu IS NOT NULL AND lu <= ?)').bind(now - 30 * 864e5, now - 30 * 864e5, now - 30 * 864e5).run();
+  // Envois en morceaux abandonnés depuis plus de 2 jours
+  const { results: abandons } = await env.DB.prepare('SELECT id, cle, upload_id FROM transfert_fichiers WHERE en_cours = 1 AND cree <= ?').bind(now - 2 * 864e5).all();
+  for (const f of abandons) { try { await env.FICHIERS.resumeMultipartUpload(f.cle, f.upload_id).abort(); } catch {} await env.DB.prepare('DELETE FROM transfert_fichiers WHERE id = ?').bind(f.id).run(); }
+  const { results: vieillesDemandes } = await env.DB.prepare('SELECT id, transfert FROM demandes WHERE supprime IS NOT NULL AND supprime <= ?').bind(now - 30 * 864e5).all();
+  for (const d of vieillesDemandes) { await effacerTransfert(env, d.transfert); await env.DB.prepare('DELETE FROM demandes WHERE id = ?').bind(d.id).run(); }
   await env.DB.prepare('DELETE FROM clics_jour WHERE jour < ?').bind(jourTahiti(now - 400 * 864e5)).run();
   return { supprimes: results.length, transferts: finis.length };
 }
 
 /* ================= Outils : transferts, bloc-notes ================= */
 
-const PAGE_OUTIL_CSS = `body{margin:0;min-height:100dvh;background:#2EC4C6;color:#14261F;font:17px/1.5 system-ui,-apple-system,sans-serif;padding:24px 16px 48px;box-sizing:border-box}
+const PAGE_OUTIL_CSS = `body{margin:0;min-height:100dvh;background:var(--fond);color:#14261F;font:17px/1.5 system-ui,-apple-system,sans-serif;padding:24px 16px 48px;box-sizing:border-box}
 main{max-width:560px;margin:6vh auto 0;background:#FFFDF8;border-radius:6px;padding:28px 22px 24px;box-shadow:0 18px 40px rgba(0,60,70,.3);position:relative}
 main::before{content:"";position:absolute;top:-13px;left:50%;width:100px;height:26px;translate:-50% 0;rotate:-3deg;background:rgba(238,224,188,.92)}
-h1{font:400 1.9rem/1.1 Georgia,serif;margin:0 0 .4rem;color:#B3212E;overflow-wrap:anywhere}p{margin:0 0 1rem}.doux{color:#5A6B66;font-size:.95rem}
+h1{font:400 1.9rem/1.1 Georgia,serif;margin:0 0 .4rem;color:var(--fond);overflow-wrap:anywhere}p{margin:0 0 1rem}.doux{color:#5A6B66;font-size:.95rem}
 .message{background:#F3EFE4;border-radius:10px;padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere}
 ul{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:8px}li{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E8E2D6;border-radius:12px;padding:10px 12px}
 li .nom{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}li small{display:block;font-weight:400;color:#5A6B66}
-a.btn,button{box-sizing:border-box;font:inherit;font-weight:600;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:#B3212E;color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
-a.btn.petit{min-height:38px;padding:0 14px;background:#0D4D3A}.tout{width:100%;margin-bottom:.5rem}
+a.btn,button{box-sizing:border-box;font:inherit;font-weight:600;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--fond);color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+a.btn.petit{min-height:38px;padding:0 14px;background:var(--fonce)}.tout{width:100%;margin-bottom:.5rem}
 input{font:inherit;font-size:16px;width:100%;box-sizing:border-box;padding:.75rem 1rem;border-radius:12px;border:2px solid #E8E2D6;margin-bottom:.75rem}
 pre{background:#14261F;color:#F3EFE4;border-radius:10px;padding:14px;white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.5 ui-monospace,Menlo,monospace;max-height:60vh;overflow:auto}
-.err{color:#B3212E;font-weight:600}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #0D4D3A;outline-offset:3px}
-footer{text-align:center;margin-top:18px;font-size:.85rem}footer a{color:#0D4D3A}`;
-function pageOutil(titre, contenu, status = 200, enTetes = {}) {
-  return new Response(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<title>${echappe(titre)} · Landry</title><link rel="icon" href="/favicon.ico"><style>${PAGE_OUTIL_CSS}</style></head>
+.err{color:#B3212E;font-weight:600}.signe{display:flex;align-items:center;gap:10px;margin-bottom:14px;color:#5A6B66;font-size:.95rem}.signe b{color:#14261F}.signe span.fleur{width:38px;height:38px;border-radius:50%;background:var(--fond);display:grid;place-items:center;color:#fff;font-size:1.2rem;flex:none}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #0D4D3A;outline-offset:3px}
+footer{text-align:center;margin-top:18px;font-size:.85rem}footer a{color:#fff}
+.vignette{width:52px;height:52px;border-radius:8px;object-fit:cover;flex:none;background:#EEE}
+.lecteur-media{width:100%;margin-top:8px;border-radius:8px;max-height:60vh;background:#000}
+li.media{flex-wrap:wrap}.zone{border:2px dashed #CFC6B4;border-radius:14px;padding:18px;text-align:center;cursor:pointer;display:block;margin-bottom:12px}
+.envoi-l{display:grid;gap:4px;padding:8px 0;border-bottom:1px solid #EEE;font-size:.92rem}progress{width:100%;height:8px}`;
+// Couleurs des pages publiques (transfert, note, dépôt) : celles de la bio au même moment
+const COULEURS_THEMES = {
+  jour: ['#B3212E', '#8E1823'], lever: ['#B8475F', '#8A3044'], coucher: ['#A84B22', '#7A3415'], nuit: ['#10264A', '#0A1931'],
+  lagon: ['#0E7C86', '#095860'], tifaifai: ['#B3212E', '#8E1823'], tapa: ['#6B4423', '#4A2E16'], monoi: ['#8C6A2F', '#664C1E'], ocean: ['#0A2E4D', '#061C30']
+};
+function momentTahiti(t = Date.now()) {
+  const d = new Date(t), rad = Math.PI / 180, lat = -17.535, lon = -149.57;
+  const j = Math.floor((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(d.getUTCFullYear(), 0, 0)) / 864e5);
+  const g = 2 * Math.PI / 365 * (j - 1);
+  const eqt = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+  const decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+  const ha = Math.acos(Math.cos(90.833 * rad) / (Math.cos(lat * rad) * Math.cos(decl)) - Math.tan(lat * rad) * Math.tan(decl)) / rad;
+  const midi = 720 - 4 * lon - eqt, local = (mn) => ((mn - 600) % 1440 + 1440) % 1440;
+  const lever = local(midi - 4 * ha), coucher = local(midi + 4 * ha), mn = local(d.getUTCHours() * 60 + d.getUTCMinutes());
+  if (mn >= lever - 30 && mn < lever + 45) return 'lever';
+  if (mn >= coucher - 60 && mn < coucher + 20) return 'coucher';
+  return mn >= lever + 45 && mn < coucher - 60 ? 'jour' : 'nuit';
+}
+async function couleursSite(env) {
+  let p = 'auto'; try { p = (await reglage(env, 'bio_palette')) || 'auto'; } catch {}
+  return COULEURS_THEMES[p !== 'auto' && COULEURS_THEMES[p] ? p : momentTahiti()];
+}
+function pageOutil(titre, contenu, status = 200, enTetes = {}, couleurs = COULEURS_THEMES.jour, script = '') {
+  return new Response(`<!DOCTYPE html><html lang="fr" style="--fond:${couleurs[0]};--fonce:${couleurs[1]}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<meta name="theme-color" content="${couleurs[0]}"><title>${echappe(titre)} · Landry</title><link rel="icon" href="/favicon.ico"><style>${PAGE_OUTIL_CSS}</style>${script}</head>
 <body><main>${contenu}</main><footer><a href="/">landrypf.com</a></footer></body></html>`,
     { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer', ...enTetes } });
 }
@@ -553,34 +584,46 @@ function etatTransfert(t, now = Date.now()) {
 }
 async function jetonTransfert(env, t) { return signer(env, 't:' + t.id + ':' + String(t.mdp).slice(0, 24)); }
 
-async function pageTransfert(request, env, id, url) {
+async function pageTransfert(request, env, id) {
+  const couleurs = await couleursSite(env);
+  const page = (titre, contenu, status = 200, h = {}) => pageOutil(titre, contenu, status, h, couleurs);
   const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
   const etat = etatTransfert(t);
-  if (etat === 'absent') return pageOutil('Introuvable', '<h1>Ce transfert n\'existe plus</h1><p>Le lien a peut-être expiré ou a été supprimé. Demande un nouveau lien à Landry !</p>', 404);
-  if (etat === 'expire') return pageOutil('Expiré', `<h1>Lien expiré</h1><p>Ce transfert n'est plus disponible depuis le ${dateFrLong(t.expire)}.</p>`, 410);
-  if (etat === 'limite') return pageOutil('Limite atteinte', '<h1>Déjà téléchargé</h1><p>Ce transfert a atteint son nombre maximum de téléchargements.</p>', 410);
+  if (etat === 'absent') return page('Introuvable', '<h1>Ce transfert n\'existe plus</h1><p>Le lien a peut-être expiré ou a été supprimé. Demande un nouveau lien à Landry !</p>', 404);
+  if (etat === 'expire') return page('Expiré', `<h1>Lien expiré</h1><p>Ce transfert n'est plus disponible depuis le ${dateFrLong(t.expire)}.</p>`, 410);
+  if (etat === 'limite') return page('Limite atteinte', '<h1>Déjà téléchargé</h1><p>Ce transfert a atteint son nombre maximum de téléchargements.</p>', 410);
   // Mot de passe : formulaire, puis un cookie valable 1 jour pour ce transfert
   let cookie = '';
   if (t.mdp && lireCookie(request, 'tp_' + id) !== await jetonTransfert(env, t)) {
-    if (request.method !== 'POST') return pageOutil('Transfert protégé', formMdp('Entre le mot de passe pour voir les fichiers.'));
-    if (await tropTot(env, 'tm:' + await empreinte(request, env), 1500)) return pageOutil('Doucement', formMdp('Entre le mot de passe pour voir les fichiers.', 'Doucement… réessaie dans une seconde.'), 429);
+    if (request.method !== 'POST') return page('Transfert protégé', formMdp('Entre le mot de passe pour voir les fichiers.'));
+    if (await tropTot(env, 'tm:' + await empreinte(request, env), 1500)) return page('Doucement', formMdp('Entre le mot de passe pour voir les fichiers.', 'Doucement… réessaie dans une seconde.'), 429);
     const mdp = String((await request.formData()).get('mdp') || '');
-    if (!(await mdpCorrect(mdp, t.mdp))) return pageOutil('Transfert protégé', formMdp('Entre le mot de passe pour voir les fichiers.', 'Mot de passe incorrect.'), 401);
+    if (!(await mdpCorrect(mdp, t.mdp))) return page('Transfert protégé', formMdp('Entre le mot de passe pour voir les fichiers.', 'Mot de passe incorrect.'), 401);
     cookie = `tp_${id}=${await jetonTransfert(env, t)}; Path=/t/${id}; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`;
   }
-  const { results: fs } = await env.DB.prepare('SELECT id, nom, taille FROM transfert_fichiers WHERE transfert = ? ORDER BY cree, nom').bind(id).all();
-  const total = fs.reduce((a, f) => a + f.taille, 0);
+  const { results: fs } = await env.DB.prepare('SELECT id, nom, taille, type, apercu, de FROM transfert_fichiers WHERE transfert = ? AND en_cours = 0 ORDER BY cree, nom').bind(id).all();
+  const total = fs.reduce((a, f) => a + f.taille, 0), libre = !t.max_dl;
   const reste = [];
   if (t.expire) reste.push(`disponible jusqu'au ${dateFrLong(t.expire)}`);
   if (t.max_dl) reste.push(`${Math.max(0, t.max_dl - t.dl)} téléchargement${t.max_dl - t.dl > 1 ? 's' : ''} restant${t.max_dl - t.dl > 1 ? 's' : ''}`);
-  const contenu = `<h1>${echappe(t.titre || 'Des fichiers pour toi 🌺')}</h1>
+  // Sans limite de téléchargements, on peut regarder et écouter en ligne ; sinon, seulement des petites vignettes
+  const media = (f) => {
+    if (!libre) return '';
+    if (f.type.startsWith('video/')) return `<video class="lecteur-media" controls preload="none" ${f.apercu ? `poster="/t/${id}/a/${f.id}"` : ''} src="/t/${id}/v/${f.id}"></video>`;
+    if (f.type.startsWith('audio/')) return `<audio class="lecteur-media" style="background:none" controls preload="none" src="/t/${id}/v/${f.id}"></audio>`;
+    return '';
+  };
+  const vignette = (f) => f.apercu ? (libre && f.type.startsWith('image/') ? `<a href="/t/${id}/v/${f.id}" target="_blank" rel="noopener"><img class="vignette" src="/t/${id}/a/${f.id}" alt="" loading="lazy"></a>` : `<img class="vignette" src="/t/${id}/a/${f.id}" alt="" loading="lazy">`)
+    : `<span class="vignette" style="display:grid;place-items:center;font-size:1.4rem" aria-hidden="true">${f.type.startsWith('audio/') ? '🎵' : f.type.startsWith('video/') ? '🎬' : f.type.startsWith('image/') ? '🖼️' : '📄'}</span>`;
+  const contenu = `<div class="signe"><span class="fleur" aria-hidden="true">🌺</span><span><b>Landry</b> t'a envoyé ${fs.length > 1 ? 'des fichiers' : 'un fichier'}</span></div>
+    <h1>${echappe(t.titre || (t.demande ? 'Fichiers reçus' : 'Des fichiers pour toi'))}</h1>
     <p class="doux">${fs.length} fichier${fs.length > 1 ? 's' : ''} · ${tailleLisible(total)}${reste.length ? ' · ' + reste.join(' · ') : ''}</p>
     ${t.message ? `<p class="message">${echappe(t.message)}</p>` : ''}
     ${t.max_dl && fs.length > 1 ? `<p class="doux">💡 Chaque fichier téléchargé compte : utilise « Tout télécharger » pour tout récupérer en une seule fois.</p>` : ''}
-    ${fs.length > 1 && total < 4e9 ? `<a class="btn tout" href="/t/${id}/zip" download>⬇ Tout télécharger (.zip)</a>` : ''}
-    <ul>${fs.map(f => `<li><span class="nom">${echappe(f.nom)}<small>${tailleLisible(f.taille)}</small></span><a class="btn petit" href="/t/${id}/f/${f.id}" download aria-label="Télécharger ${echappe(f.nom)}">⬇</a></li>`).join('')}</ul>
-    <p class="doux">Envoyé par Landry depuis Tahiti 🌴</p>`;
-  return pageOutil(t.titre || 'Transfert', contenu, 200, cookie ? { 'set-cookie': cookie } : {});
+    ${fs.length > 1 ? `<a class="btn tout" href="/t/${id}/zip" download>⬇ Tout télécharger (.zip)</a>` : ''}
+    <ul>${fs.map(f => `<li class="media">${vignette(f)}<span class="nom">${echappe(f.nom)}<small>${tailleLisible(f.taille)}${f.de ? ' · de ' + echappe(f.de) : ''}</small></span><a class="btn petit" href="/t/${id}/f/${f.id}" download aria-label="Télécharger ${echappe(f.nom)}">⬇</a>${media(f)}</li>`).join('')}</ul>
+    <p class="doux">Envoyé depuis Tahiti 🌴</p>`;
+  return page(t.titre || 'Transfert', contenu, 200, cookie ? { 'set-cookie': cookie } : {});
 }
 
 // Chaque téléchargement compte (un fichier ou le .zip). Le compteur est mis à jour d'un seul coup
@@ -610,7 +653,7 @@ function envoyerPuisVider(env, ctx, t, a, ecrire) {
 async function telechargerTransfert(request, env, ctx, id, fid) {
   if (!env.FICHIERS) return pageOutil('Bientôt', '<h1>Bientôt</h1><p>Le stockage n\'est pas activé.</p>', 503);
   const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
-  const f = t && await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE id = ? AND transfert = ?').bind(fid, id).first();
+  const f = t && await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE id = ? AND transfert = ? AND en_cours = 0').bind(fid, id).first();
   if (!f) return pageOutil('Introuvable', '<h1>Fichier introuvable</h1>', 404);
   const a = await autoriserTelechargement(request, env, ctx, t, f.nom); if (a.refus) return a.refus;
   const obj = await env.FICHIERS.get(f.cle);
@@ -620,53 +663,208 @@ async function telechargerTransfert(request, env, ctx, id, fid) {
   return new Response(envoyerPuisVider(env, ctx, t, a, (w) => obj.body.pipeTo(w)), { headers: h });
 }
 
-// .zip sans compression, écrit au fil de l'eau : les CRC ont été calculés à l'envoi, le serveur ne fait que recopier
+// Vignette (toujours visible) et lecture en ligne (seulement sans limite de téléchargements) : ne comptent pas
+async function voirTransfert(request, env, id, fid, vignette) {
+  const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
+  const f = t && await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE id = ? AND transfert = ? AND en_cours = 0').bind(fid, id).first();
+  if (!f || etatTransfert(t) !== 'ok' || (vignette && !f.apercu) || (!vignette && t.max_dl)) return new Response('Introuvable', { status: 404 });
+  if (t.mdp && lireCookie(request, 'tp_' + id) !== await jetonTransfert(env, t)) return new Response('Protégé', { status: 401 });
+  const cle = vignette ? f.cle.replace(/[^/]+$/, '') + '.apercu.jpg' : f.cle;
+  const plage = !vignette && request.headers.has('range');
+  const obj = await env.FICHIERS.get(cle, plage ? { range: request.headers } : undefined);
+  if (!obj) return new Response('Introuvable', { status: 404 });
+  const h = new Headers({ 'content-type': vignette ? 'image/jpeg' : f.type, 'cache-control': 'private, max-age=600', 'accept-ranges': 'bytes', 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex',
+    'content-security-policy': "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox" });
+  if (obj.range && plage) {
+    const debut = obj.range.offset || 0, longueur = obj.range.length ?? (obj.size - debut);
+    h.set('content-range', `bytes ${debut}-${debut + longueur - 1}/${obj.size}`); h.set('content-length', String(longueur));
+    return new Response(obj.body, { status: 206, headers: h });
+  }
+  h.set('content-length', String(obj.size));
+  return new Response(obj.body, { headers: h });
+}
+
+// .zip sans compression, écrit au fil de l'eau ; les CRC ont été calculés à l'envoi. Format ZIP64 au-delà de 4 Go.
 async function zipTransfert(request, env, ctx, id) {
   const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
   if (!t) return pageOutil('Introuvable', '<h1>Ce transfert n\'existe plus</h1>', 404);
-  const { results: fs } = await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE transfert = ? ORDER BY cree, nom').bind(id).all();
+  const { results: fs } = await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE transfert = ? AND en_cours = 0 ORDER BY cree, nom').bind(id).all();
   if (!fs.length) return pageOutil('Vide', '<h1>Ce transfert est vide</h1>', 404);
-  if (fs.reduce((x, f) => x + f.taille, 0) >= 4e9) return pageOutil('Trop gros', '<h1>Trop gros pour un .zip</h1><p>Télécharge les fichiers un par un.</p>', 413);
   const a = await autoriserTelechargement(request, env, ctx, t, 'zip'); if (a.refus) return a.refus;
-  const enc = new TextEncoder(), vus = new Set();
+  const enc = new TextEncoder(), vus = new Set(), MAX32 = 0xFFFFFFFF;
   const entrees = fs.map(f => {
-    let nom = f.nom, k = 1;
-    while (vus.has(nom)) nom = f.nom.replace(/(\.[^.]*)?$/, ` (${++k})$1`);
+    let nom = f.de ? `${f.de}/${f.nom}` : f.nom, k = 1; const base = nom;
+    while (vus.has(nom)) nom = base.replace(/(\.[^./]*)?$/, ` (${++k})$1`);
     vus.add(nom);
     return { ...f, octets: enc.encode(nom) };
   });
-  const u16 = (v, n, o) => v.setUint16(o, n, true), u32 = (v, n, o) => v.setUint32(o, n >>> 0, true);
   const DATE = 0x0021; // 1er janvier 1980
-  const local = (e) => { const b = new Uint8Array(30 + e.octets.length), v = new DataView(b.buffer);
-    u32(v, 0x04034b50, 0); u16(v, 20, 4); u16(v, 0x0800, 6); u16(v, 0, 8); u16(v, 0, 10); u16(v, DATE, 12); u32(v, e.crc, 14); u32(v, e.taille, 18); u32(v, e.taille, 22); u16(v, e.octets.length, 26); u16(v, 0, 28);
-    b.set(e.octets, 30); return b; };
-  let offset = 0; const central = [];
+  const bloc = (n) => { const b = new Uint8Array(n); return [b, new DataView(b.buffer)]; };
+  const u16 = (v, o, n) => v.setUint16(o, n, true), u32 = (v, o, n) => v.setUint32(o, n >>> 0, true), u64 = (v, o, n) => v.setBigUint64(o, BigInt(n), true);
+  let offset = 0; const locaux = [], central = [];
   for (const e of entrees) {
-    const b = new Uint8Array(46 + e.octets.length), v = new DataView(b.buffer);
-    u32(v, 0x02014b50, 0); u16(v, 20, 4); u16(v, 20, 6); u16(v, 0x0800, 8); u16(v, 0, 10); u16(v, 0, 12); u16(v, DATE, 14); u32(v, e.crc, 16); u32(v, e.taille, 20); u32(v, e.taille, 24);
-    u16(v, e.octets.length, 28); u16(v, 0, 30); u16(v, 0, 32); u16(v, 0, 34); u16(v, 0, 36); u32(v, 0, 38); u32(v, offset, 42); b.set(e.octets, 46);
-    central.push(b); offset += 30 + e.octets.length + e.taille;
+    const grand = e.taille >= MAX32, loin = offset >= MAX32;
+    // En-tête local (avec extra ZIP64 si le fichier dépasse 4 Go)
+    const [l, vl] = bloc(30 + e.octets.length + (grand ? 20 : 0));
+    u32(vl, 0, 0x04034b50); u16(vl, 4, grand ? 45 : 20); u16(vl, 6, 0x0800); u16(vl, 8, 0); u16(vl, 10, 0); u16(vl, 12, DATE); u32(vl, 14, e.crc);
+    u32(vl, 18, grand ? MAX32 : e.taille); u32(vl, 22, grand ? MAX32 : e.taille); u16(vl, 26, e.octets.length); u16(vl, 28, grand ? 20 : 0);
+    l.set(e.octets, 30);
+    if (grand) { const o = 30 + e.octets.length; u16(vl, o, 1); u16(vl, o + 2, 16); u64(vl, o + 4, e.taille); u64(vl, o + 12, e.taille); }
+    locaux.push(l);
+    // Entrée du répertoire central
+    const extra = (grand ? 16 : 0) + (loin ? 8 : 0);
+    const [c, vc] = bloc(46 + e.octets.length + (extra ? 4 + extra : 0));
+    u32(vc, 0, 0x02014b50); u16(vc, 4, 45); u16(vc, 6, extra ? 45 : 20); u16(vc, 8, 0x0800); u16(vc, 10, 0); u16(vc, 12, 0); u16(vc, 14, DATE); u32(vc, 16, e.crc);
+    u32(vc, 20, grand ? MAX32 : e.taille); u32(vc, 24, grand ? MAX32 : e.taille); u16(vc, 28, e.octets.length); u16(vc, 30, extra ? 4 + extra : 0);
+    u32(vc, 42, loin ? MAX32 : offset); c.set(e.octets, 46);
+    if (extra) { let o = 46 + e.octets.length; u16(vc, o, 1); u16(vc, o + 2, extra); o += 4; if (grand) { u64(vc, o, e.taille); u64(vc, o + 8, e.taille); o += 16; } if (loin) u64(vc, o, offset); }
+    central.push(c); offset += l.length + e.taille;
   }
-  const tailleCentral = central.reduce((x, b) => x + b.length, 0);
-  const fin = new Uint8Array(22), vf = new DataView(fin.buffer);
-  u32(vf, 0x06054b50, 0); u16(vf, entrees.length, 8); u16(vf, entrees.length, 10); u32(vf, tailleCentral, 12); u32(vf, offset, 16);
+  const tailleCentral = central.reduce((x, b) => x + b.length, 0), z64 = offset >= MAX32 || entrees.length >= 0xFFFF;
+  const fins = [];
+  if (z64) {
+    const [r, vr] = bloc(56); u32(vr, 0, 0x06064b50); u64(vr, 4, 44); u16(vr, 12, 45); u16(vr, 14, 45); u64(vr, 24, entrees.length); u64(vr, 32, entrees.length); u64(vr, 40, tailleCentral); u64(vr, 48, offset);
+    const [k, vk] = bloc(20); u32(vk, 0, 0x07064b50); u64(vk, 8, offset + tailleCentral); u32(vk, 16, 1);
+    fins.push(r, k);
+  }
+  const [f, vf] = bloc(22); u32(vf, 0, 0x06054b50);
+  u16(vf, 8, Math.min(entrees.length, 0xFFFF)); u16(vf, 10, Math.min(entrees.length, 0xFFFF)); u32(vf, 12, z64 ? MAX32 : tailleCentral); u32(vf, 16, z64 ? MAX32 : offset);
+  fins.push(f);
   const flux = envoyerPuisVider(env, ctx, t, a, async (writable) => {
     let w = writable.getWriter();
     try {
-      for (const e of entrees) {
-        await w.write(local(e));
-        const obj = await env.FICHIERS.get(e.cle);
+      for (let i = 0; i < entrees.length; i++) {
+        await w.write(locaux[i]);
+        const obj = await env.FICHIERS.get(entrees[i].cle);
         if (!obj) throw new Error('fichier manquant');
         w.releaseLock(); await obj.body.pipeTo(writable, { preventClose: true }); w = writable.getWriter();
       }
       for (const b of central) await w.write(b);
-      await w.write(fin); await w.close();
+      for (const b of fins) await w.write(b);
+      await w.close();
     } catch (err) { try { await w.abort(err); } catch {} throw err; }
   });
   const nomZip = (t.titre || 'landry-transfert').replace(/[^\p{L}\p{N} _-]+/gu, '').trim().slice(0, 60) || 'transfert';
-  const h = new Headers({ 'content-type': 'application/zip', 'content-length': String(offset + tailleCentral + 22), 'cache-control': 'private, no-store',
-    'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(nomZip + '.zip')}`, 'x-robots-tag': 'noindex' });
-  return new Response(flux, { headers: h });
+  return new Response(flux, { headers: { 'content-type': 'application/zip', 'content-length': String(offset + tailleCentral + fins.reduce((x, b) => x + b.length, 0)), 'cache-control': 'private, no-store',
+    'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(nomZip + '.zip')}`, 'x-robots-tag': 'noindex' } });
+}
+
+/* ----- Envoi en morceaux (jusqu'à 5 Go par fichier, reprise possible) ----- */
+const FICHIER_MAX = 5 * 1000 ** 3, MORCEAU_MAX = 60 * 1024 * 1024;
+async function morceauxCommencer(env, tid, c, de = '') {
+  if (!env.FICHIERS) return erreur("Le stockage R2 n'est pas encore activé.", 503);
+  const taille = Math.floor(+c.taille || 0);
+  if (!taille) return erreur('Fichier vide.');
+  if (taille > FICHIER_MAX) return erreur('Fichier trop lourd (5 Go maximum par fichier).', 413);
+  if ((await stockageUtilise(env)) + taille > STOCKAGE_LIMITE) return erreur('Stockage presque plein (10 Go) : supprime des fichiers avant.', 507);
+  const nom = nettoyer(c.nom || 'fichier', 120).replace(/[\\/]/g, '-') || 'fichier';
+  const type = nettoyer(c.type || 'application/octet-stream', 100) || 'application/octet-stream';
+  const fid = aleatoire(8), cle = `t/${tid}/${fid}/${nom}`;
+  const up = await env.FICHIERS.createMultipartUpload(cle, { httpMetadata: { contentType: type } });
+  await env.DB.prepare('INSERT INTO transfert_fichiers (id, transfert, nom, cle, type, taille, crc, cree, en_cours, upload_id, de) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 1, ?, ?)')
+    .bind(fid, tid, nom, cle, type, taille, Date.now(), up.uploadId, nettoyer(de, 40)).run();
+  return json({ ok: true, fid, uploadId: up.uploadId });
+}
+async function morceauEnvoyer(request, env, tid, fid, n) {
+  const f = await env.DB.prepare('SELECT cle, upload_id FROM transfert_fichiers WHERE id = ? AND transfert = ? AND en_cours = 1').bind(fid, tid).first();
+  if (!f) return erreur('Envoi introuvable (déjà terminé ou annulé).', 404);
+  const taille = +request.headers.get('content-length') || 0;
+  if (!taille || taille > MORCEAU_MAX || !(n >= 1 && n <= 10000)) return erreur('Morceau invalide.');
+  const r = await env.FICHIERS.resumeMultipartUpload(f.cle, f.upload_id).uploadPart(n, request.body);
+  return json({ ok: true, partNumber: r.partNumber, etag: r.etag });
+}
+async function morceauxTerminer(env, tid, fid, c) {
+  const f = await env.DB.prepare('SELECT cle, upload_id, taille FROM transfert_fichiers WHERE id = ? AND transfert = ? AND en_cours = 1').bind(fid, tid).first();
+  if (!f) return erreur('Envoi introuvable.', 404);
+  const parts = (Array.isArray(c.parts) ? c.parts : []).map(p => ({ partNumber: +p.partNumber, etag: String(p.etag) })).filter(p => p.partNumber >= 1).sort((a, b) => a.partNumber - b.partNumber);
+  if (!parts.length) return erreur('Aucun morceau reçu.');
+  const fin = await env.FICHIERS.resumeMultipartUpload(f.cle, f.upload_id).complete(parts);
+  if (fin && fin.size && fin.size !== f.taille) { await env.FICHIERS.delete(f.cle); await env.DB.prepare('DELETE FROM transfert_fichiers WHERE id = ?').bind(fid).run(); return erreur('Le fichier reçu est incomplet, renvoie-le.'); }
+  await env.DB.prepare('UPDATE transfert_fichiers SET en_cours = 0, upload_id = NULL, crc = ? WHERE id = ?').bind((+c.crc || 0) >>> 0, fid).run();
+  return json({ ok: true });
+}
+async function morceauxAnnuler(env, tid, fid) {
+  const f = await env.DB.prepare('SELECT cle, upload_id FROM transfert_fichiers WHERE id = ? AND transfert = ? AND en_cours = 1').bind(fid, tid).first();
+  if (f) { try { await env.FICHIERS.resumeMultipartUpload(f.cle, f.upload_id).abort(); } catch {} await env.DB.prepare('DELETE FROM transfert_fichiers WHERE id = ?').bind(fid).run(); }
+  return json({ ok: true });
+}
+async function apercuEnvoyer(request, env, tid, fid) {
+  const f = await env.DB.prepare('SELECT cle FROM transfert_fichiers WHERE id = ? AND transfert = ?').bind(fid, tid).first();
+  if (!f) return erreur('Fichier introuvable.', 404);
+  if ((+request.headers.get('content-length') || 0) > 600e3) return erreur('Aperçu trop lourd.', 413);
+  await env.FICHIERS.put(f.cle.replace(/[^/]+$/, '') + '.apercu.jpg', request.body, { httpMetadata: { contentType: 'image/jpeg' } });
+  await env.DB.prepare('UPDATE transfert_fichiers SET apercu = 1 WHERE id = ?').bind(fid).run();
+  return json({ ok: true });
+}
+// Aiguillage des envois en morceaux : /…/fichier, /…/fichier/:fid/:n, /…/fichier/:fid/fin, /…/apercu/:fid
+async function routeEnvoi(request, env, tid, reste, de = '') {
+  const m = request.method;
+  let x;
+  if (reste === 'fichier' && m === 'POST') { let c; try { c = await request.json(); } catch { return erreur('format'); } return morceauxCommencer(env, tid, c, de || c.de); }
+  if ((x = reste.match(/^fichier\/([a-z0-9]{8})\/(\d+)$/)) && m === 'PUT') return morceauEnvoyer(request, env, tid, x[1], +x[2]);
+  if ((x = reste.match(/^fichier\/([a-z0-9]{8})\/fin$/)) && m === 'POST') { let c; try { c = await request.json(); } catch { return erreur('format'); } return morceauxTerminer(env, tid, x[1], c); }
+  if ((x = reste.match(/^fichier\/([a-z0-9]{8})$/)) && m === 'DELETE') return morceauxAnnuler(env, tid, x[1]);
+  if ((x = reste.match(/^apercu\/([a-z0-9]{8})$/)) && m === 'PUT') return apercuEnvoyer(request, env, tid, x[1]);
+  return erreur('introuvable', 404);
+}
+
+/* ----- Demandes de fichiers : les gens t'envoient des fichiers via un lien secret ----- */
+function etatDemande(d, now = Date.now()) {
+  if (!d || d.supprime) return 'absente';
+  if (d.ferme) return 'fermee';
+  if (d.expire && d.expire <= now) return 'expiree';
+  return 'ouverte';
+}
+async function pageDemande(request, env, id) {
+  const couleurs = await couleursSite(env);
+  const d = await env.DB.prepare('SELECT * FROM demandes WHERE id = ?').bind(id).first(), etat = etatDemande(d);
+  if (etat === 'absente') return pageOutil('Introuvable', '<h1>Ce lien n\'existe pas</h1>', 404, {}, couleurs);
+  if (etat !== 'ouverte') return pageOutil('Fermé', '<h1>Dépôt fermé</h1><p>Ce lien n\'accepte plus de fichiers. Merci quand même 🌺</p>', 410, {}, couleurs);
+  const utilise = (await env.DB.prepare('SELECT COALESCE(SUM(taille), 0) AS t FROM transfert_fichiers WHERE transfert = ?').bind(d.transfert).first('t')) || 0;
+  const contenu = `<div class="signe"><span class="fleur" aria-hidden="true">🌺</span><span><b>Landry</b> te demande des fichiers</span></div>
+    <h1>${echappe(d.titre || 'Envoie-moi tes fichiers')}</h1>
+    ${d.message ? `<p class="message">${echappe(d.message)}</p>` : ''}
+    <p class="doux">Jusqu'à ${tailleLisible(Math.max(0, d.max_total - utilise))} au total${d.expire ? ` · ouvert jusqu'au ${dateFrLong(d.expire)}` : ''}. Seul Landry verra tes fichiers.</p>
+    <label for="prenom" style="font-weight:600">Ton prénom</label><input id="prenom" maxlength="40" autocomplete="given-name" placeholder="Pour savoir de qui ça vient">
+    <label class="zone" id="zone"><input type="file" id="choix" multiple hidden>📎 <b>Choisis tes fichiers</b><br><small class="doux">photos, vidéos, documents…</small></label>
+    <div id="envois" aria-live="polite"></div>
+    <p class="doux" id="fini" hidden>✅ Merci ! Landry a bien reçu tes fichiers.</p>`;
+  const script = `<script src="/envoi.js" defer></script><script>
+    addEventListener('DOMContentLoaded', () => {
+      const $ = (s) => document.querySelector(s), base = location.pathname.replace(/\\/$/, '');
+      const choix = $('#choix'), liste = $('#envois');
+      choix.addEventListener('change', async () => {
+        const fichiers = [...choix.files]; choix.value = '';
+        for (const f of fichiers) {
+          const l = document.createElement('div'); l.className = 'envoi-l'; l.innerHTML = '<span></span><progress max="100" value="0"></progress>';
+          l.firstChild.textContent = f.name; liste.append(l);
+          try {
+            const propre = await Envoi.sansGPS(f);
+            await Envoi.fichier(propre, { base, de: $('#prenom').value.trim(), progression: (p) => { l.lastChild.value = p * 100; } });
+            l.firstChild.textContent = '✅ ' + f.name; $('#fini').hidden = false;
+          } catch (e) { l.firstChild.textContent = '⚠️ ' + f.name + ' : ' + e.message; }
+        }
+      });
+    });
+  </script>`;
+  return pageOutil(d.titre || 'Dépôt de fichiers', contenu, 200, {}, couleurs, script);
+}
+async function routeDemande(request, env, ctx, id, reste) {
+  const d = await env.DB.prepare('SELECT * FROM demandes WHERE id = ?').bind(id).first();
+  if (etatDemande(d) !== 'ouverte') return erreur('Ce dépôt est fermé.', 410);
+  if (reste === 'fichier' && request.method === 'POST') {
+    if (await tropTot(env, 'dp:' + await empreinte(request, env), 400)) return erreur('Doucement… réessaie dans une seconde.', 429);
+    let c; try { c = await request.json(); } catch { return erreur('format'); }
+    const utilise = (await env.DB.prepare('SELECT COALESCE(SUM(taille), 0) AS t FROM transfert_fichiers WHERE transfert = ?').bind(d.transfert).first('t')) || 0;
+    if (utilise + (+c.taille || 0) > d.max_total) return erreur('Ce dépôt est plein : il ne reste que ' + tailleLisible(Math.max(0, d.max_total - utilise)) + '.', 413);
+    return morceauxCommencer(env, d.transfert, c, c.de || 'Anonyme');
+  }
+  const r = await routeEnvoi(request, env, d.transfert, reste);
+  if (/\/fin$/.test(reste) && r.status === 200) {
+    const f = await env.DB.prepare('SELECT nom, de FROM transfert_fichiers WHERE id = ?').bind(reste.split('/')[1]).first();
+    if (f) notifier(env, ctx, '📥 Nouveau fichier reçu', `${f.de || 'Quelqu\'un'} t'a envoyé « ${f.nom} » (${d.titre || 'dépôt'}).`);
+  }
+  return r;
 }
 
 // Envoi d'un fichier dans un transfert (depuis l'admin)
@@ -689,8 +887,10 @@ async function envoyerTransfert(request, env, id) {
 }
 
 async function viderTransfert(env, id) {
-  const { results } = await env.DB.prepare('SELECT cle FROM transfert_fichiers WHERE transfert = ?').bind(id).all();
-  if (env.FICHIERS && results.length) await env.FICHIERS.delete(results.map(f => f.cle));
+  const { results } = await env.DB.prepare('SELECT cle, apercu, en_cours, upload_id FROM transfert_fichiers WHERE transfert = ?').bind(id).all();
+  for (const f of results) if (f.en_cours && f.upload_id) { try { await env.FICHIERS.resumeMultipartUpload(f.cle, f.upload_id).abort(); } catch {} }
+  const cles = results.flatMap(f => f.apercu ? [f.cle, f.cle.replace(/[^/]+$/, '') + '.apercu.jpg'] : [f.cle]);
+  for (let i = 0; env.FICHIERS && i < cles.length; i += 900) await env.FICHIERS.delete(cles.slice(i, i + 900));
   await env.DB.prepare('UPDATE transferts SET vide = 1 WHERE id = ?').bind(id).run();
 }
 async function effacerTransfert(env, id) {
@@ -783,8 +983,8 @@ async function adminLire(env) {
   const depuis = jourTahiti(Date.now() - 29 * 86400e3);
   const DB = env.DB;
   const [transferts, tFichiers, tHisto, notes, clics] = await Promise.all([
-    DB.prepare('SELECT id, titre, message, (mdp IS NOT NULL) AS protege, expire, max_dl, dl, notifier, cree, fini, supprime, vide FROM transferts ORDER BY cree DESC').all(),
-    DB.prepare('SELECT id, transfert, nom, taille FROM transfert_fichiers ORDER BY cree, nom').all(),
+    DB.prepare('SELECT id, titre, message, (mdp IS NOT NULL) AS protege, expire, max_dl, dl, notifier, cree, fini, supprime, vide, demande FROM transferts ORDER BY cree DESC').all(),
+    DB.prepare('SELECT id, transfert, nom, taille, type, en_cours, apercu, de, cree FROM transfert_fichiers ORDER BY cree, nom').all(),
     DB.prepare('SELECT transfert, quand, quoi FROM transfert_dl ORDER BY quand DESC LIMIT 500').all(),
     DB.prepare('SELECT id, titre, substr(texte, 1, 140) AS apercu, length(texte) AS longueur, (mdp IS NOT NULL) AS protege, expire, unique_lecture, lu, vues, cree, supprime FROM notes ORDER BY cree DESC').all(),
     DB.prepare('SELECT code, jour, appareil, pays, n FROM clics_jour WHERE jour >= ?').bind(depuis).all()
@@ -793,6 +993,7 @@ async function adminLire(env) {
     transferts: transferts.results.map(t => ({ ...t, protege: !!t.protege,
       fichiers: tFichiers.results.filter(f => f.transfert === t.id), historique: tHisto.results.filter(h => h.transfert === t.id).slice(0, 50) })),
     notes: notes.results.map(n => ({ ...n, protege: !!n.protege })),
+    demandes: (await DB.prepare('SELECT * FROM demandes ORDER BY cree DESC').all()).results,
     clics: clics.results
   };
   const [compteurs, reglages, attente, valides, liens, courts, fichiers, contacts, stats] = await Promise.all([
@@ -919,6 +1120,45 @@ async function adminEcrire(request, env) {
         .bind(id, nettoyer(c.titre, 80), nettoyer(c.message, 600), mdp ? await hacher(mdp) : null, entierOuNull(c.expire), maxDl && maxDl > 0 ? maxDl : null, c.notifier ? 1 : 0, Date.now()).run();
       return json({ ok: true, id });
     }
+    case 'transfert_modifier': {
+      const t = await DB.prepare('SELECT vide FROM transferts WHERE id = ?').bind(String(c.id)).first();
+      if (!t) return erreur('Transfert introuvable.', 404);
+      if (t.vide) return erreur('Les fichiers de ce transfert ont déjà été supprimés : crée un nouveau transfert.');
+      const maxDl = entierOuNull(c.max_dl);
+      let mdp = undefined;
+      if (c.mdp_mode === 'changer') { if (!c.mdp) return erreur('Écris le nouveau mot de passe.'); mdp = await hacher(String(c.mdp)); }
+      if (c.mdp_mode === 'retirer') mdp = null;
+      await DB.prepare(`UPDATE transferts SET titre = ?, message = ?, expire = ?, max_dl = ?, notifier = ?, fini = CASE WHEN ? IS NULL OR dl < ? THEN NULL ELSE fini END${mdp !== undefined ? ', mdp = ?' : ''} WHERE id = ?`)
+        .bind(...[nettoyer(c.titre, 80), nettoyer(c.message, 600), entierOuNull(c.expire), maxDl && maxDl > 0 ? maxDl : null, c.notifier ? 1 : 0, maxDl && maxDl > 0 ? maxDl : null, maxDl && maxDl > 0 ? maxDl : null, ...(mdp !== undefined ? [mdp] : []), String(c.id)]).run();
+      break;
+    }
+
+    // --- Demandes de fichiers ---
+    case 'demande_creer': {
+      const id = aleatoire(8), tid = aleatoire(8), titre = nettoyer(c.titre, 80);
+      const max = Math.min(Math.max(+c.max_total || 1e9, 50e6), 5e9);
+      await DB.batch([
+        DB.prepare('INSERT INTO transferts (id, titre, message, cree, demande) VALUES (?, ?, ?, ?, ?)').bind(tid, titre ? 'Reçu : ' + titre : 'Fichiers reçus', '', Date.now(), id),
+        DB.prepare('INSERT INTO demandes (id, titre, message, expire, max_total, transfert, cree) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, titre, nettoyer(c.message, 600), entierOuNull(c.expire), max, tid, Date.now())
+      ]);
+      return json({ ok: true, id });
+    }
+    case 'demande_fermer':
+      await DB.prepare('UPDATE demandes SET ferme = ? WHERE id = ?').bind(c.ferme ? 1 : 0, String(c.id)).run();
+      break;
+    case 'demande_supprimer':
+      await DB.prepare('UPDATE demandes SET supprime = ? WHERE id = ?').bind(Date.now(), String(c.id)).run();
+      break;
+    case 'demande_restaurer':
+      await DB.prepare('UPDATE demandes SET supprime = NULL WHERE id = ?').bind(String(c.id)).run();
+      break;
+    case 'demande_effacer': {
+      const d = await DB.prepare('SELECT transfert FROM demandes WHERE id = ?').bind(String(c.id)).first();
+      if (d) await effacerTransfert(env, d.transfert);
+      await DB.prepare('DELETE FROM demandes WHERE id = ?').bind(String(c.id)).run();
+      break;
+    }
+
     case 'transfert_supprimer':
       await DB.prepare('UPDATE transferts SET supprime = ? WHERE id = ?').bind(Date.now(), String(c.id)).run();
       break;
@@ -1263,8 +1503,9 @@ export default {
           // L'admin peut voir les photos de l'album dans son interface
           if (pathname === '/api/admin/album' && m === 'POST') return json({ ok: true }, { headers: { 'set-cookie': cookieAlbum(await jetonAlbum(env, (await reglage(env, 'album_mdp')) || 'admin', 864e5), 86400) } });
           if (pathname === '/api/fichiers' && m === 'PUT') return await envoyerFichier(request, env);
-          const envoiT = pathname.match(/^\/api\/admin\/transfert\/([a-z0-9]{8})$/);
-          if (envoiT && m === 'PUT') return await envoyerTransfert(request, env, envoiT[1]);
+          const envoiT = pathname.match(/^\/api\/admin\/transfert\/([a-z0-9]{8})(?:\/(.+))?$/);
+          if (envoiT && !envoiT[2] && m === 'PUT') return await envoyerTransfert(request, env, envoiT[1]);
+          if (envoiT && envoiT[2]) return await routeEnvoi(request, env, envoiT[1], envoiT[2]);
           if (pathname === '/api/admin' && m === 'GET') return await adminLire(env);
           if (pathname === '/api/admin/maj' && m === 'GET') return await misesAJour();
           if (pathname === '/api/admin' && m === 'POST') return await adminEcrire(request, env);
@@ -1273,18 +1514,24 @@ export default {
       }
 
       if ((pathname === '/' || pathname === '/index.html') && (m === 'GET' || m === 'HEAD')) return await pageAccueil(request, env);
+      // Partage depuis le téléphone sans l'admin installée : on renvoie simplement vers l'admin
+      if (pathname === '/admin/partage' && m === 'POST') return Response.redirect(new URL('/admin#outils/transferts', request.url).toString(), 303);
 
       // Fichier : /f/abc12345/nom.jpg
       const fichier = pathname.match(/^\/f\/([a-z0-9]{8})(?:\/.*)?$/);
       if (fichier && ['GET', 'HEAD', 'POST'].includes(m)) return await servirFichier(request, env, ctx, fichier[1]);
 
       // Transferts : /t/abc12345, /t/abc12345/f/xyz, /t/abc12345/zip
-      const tr = pathname.match(/^\/t\/([a-z0-9]{8})(?:\/(zip|f\/([a-z0-9]{8})))?\/?$/);
+      const tr = pathname.match(/^\/t\/([a-z0-9]{8})(?:\/(zip|([fav])\/([a-z0-9]{8})))?\/?$/);
       if (tr) {
         if (tr[2] === 'zip' && m === 'GET') return await zipTransfert(request, env, ctx, tr[1]);
-        if (tr[3] && m === 'GET') return await telechargerTransfert(request, env, ctx, tr[1], tr[3]);
+        if (tr[3] === 'f' && m === 'GET') return await telechargerTransfert(request, env, ctx, tr[1], tr[4]);
+        if ((tr[3] === 'a' || tr[3] === 'v') && ['GET', 'HEAD'].includes(m)) return await voirTransfert(request, env, tr[1], tr[4], tr[3] === 'a');
         if (!tr[2] && ['GET', 'HEAD', 'POST'].includes(m)) return await pageTransfert(request, env, tr[1]);
       }
+      // Demandes de fichiers : /d/abc12345 (page) et /d/abc12345/fichier… (envoi en morceaux)
+      const dm = pathname.match(/^\/d\/([a-z0-9]{8})(?:\/(.+))?$/);
+      if (dm) return dm[2] ? await routeDemande(request, env, ctx, dm[1], dm[2]) : await pageDemande(request, env, dm[1]);
       // Bloc-notes : /n/abc12345
       const nt = pathname.match(/^\/n\/([a-z0-9]{8})\/?$/);
       if (nt && ['GET', 'HEAD', 'POST'].includes(m)) return await pageNote(request, env, nt[1]);
