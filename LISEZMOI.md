@@ -31,7 +31,9 @@ L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cher
 - **Fichiers** : envoi (100 Mo max, photos optimisées), filtres, lien court, QR code, mot de passe, expiration,
   renommage ; galerie publique (avec « Photos à valider », et **Recadrer** dans le menu ⋯ : format carré, portrait, paysage ou d'origine) ; **album privé** protégé par mot de passe (landrypf.com/album).
 - **Outils** :
-  - **Transferts** (landrypf.com/t/…) : plusieurs fichiers, un seul lien, nombre de téléchargements et expiration au choix, mot de passe, message, .zip. Les fichiers sont supprimés tout seuls à la fin (au plus tard la nuit suivante).
+  - **Transferts** (landrypf.com/t/…) : plusieurs fichiers (jusqu'à 5 Go chacun), un seul lien, nombre de téléchargements et expiration au choix, mot de passe, message, .zip. L'envoi reprend tout seul si la connexion coupe (ou en renvoyant le même fichier). Menu ⋯ : modifier, ajouter des fichiers, envoyer par e-mail, partager. La page montre des vignettes, et sans limite de téléchargements on peut regarder et écouter en ligne. Les fichiers sont supprimés tout seuls à la fin.
+  - **Demandes** (landrypf.com/d/…) : un lien pour que les gens te déposent leurs fichiers (avec leur prénom), notification à chaque fichier.
+  - **Depuis Android** : installe l'admin sur l'écran d'accueil, puis « Partager → Admin » depuis la galerie photo.
   - **Bloc-notes** (landrypf.com/n/…) : texte ou code, mot de passe, expiration, « détruire après lecture ».
   - **Liens courts** : destination iPhone / Android, expiration, nombre de clics maximum, statistiques (jour, appareil, pays).
   - **QR codes** : n'importe quel lien, tiare au centre, couleur au choix, PNG ou SVG.

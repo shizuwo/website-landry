@@ -7,7 +7,7 @@
     "directory": "./public",
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "run_worker_first": ["/", "/index.html", "/api/*", "/go/*", "/l/*", "/f/*", "/t/*", "/n/*"]
+    "run_worker_first": ["/", "/index.html", "/api/*", "/go/*", "/l/*", "/f/*", "/t/*", "/n/*", "/d/*"]
   },
   "d1_databases": [
     {

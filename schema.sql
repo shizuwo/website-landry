@@ -31,3 +31,11 @@ ALTER TABLE raccourcis ADD COLUMN url_android TEXT;
 ALTER TABLE raccourcis ADD COLUMN expire INTEGER;
 ALTER TABLE raccourcis ADD COLUMN max_clics INTEGER;
 CREATE TABLE IF NOT EXISTS clics_jour (code TEXT NOT NULL, jour TEXT NOT NULL, appareil TEXT NOT NULL, pays TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (code, jour, appareil, pays));
+
+-- v21 : gros fichiers (envoi en morceaux), aperçus, demandes de fichiers
+ALTER TABLE transferts ADD COLUMN demande TEXT;
+ALTER TABLE transfert_fichiers ADD COLUMN en_cours INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE transfert_fichiers ADD COLUMN upload_id TEXT;
+ALTER TABLE transfert_fichiers ADD COLUMN apercu INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE transfert_fichiers ADD COLUMN de TEXT NOT NULL DEFAULT '';
+CREATE TABLE IF NOT EXISTS demandes (id TEXT PRIMARY KEY, titre TEXT NOT NULL DEFAULT '', message TEXT NOT NULL DEFAULT '', expire INTEGER, max_total INTEGER NOT NULL, ferme INTEGER NOT NULL DEFAULT 0, transfert TEXT NOT NULL, cree INTEGER NOT NULL, supprime INTEGER);
