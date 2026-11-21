@@ -30,6 +30,13 @@ L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cher
 - **Page d'accueil** : tes photos à la place des dessins (bouton **Recadrer** : glisse et zoome), et tous les textes.
 - **Fichiers** : envoi (100 Mo max, photos optimisées), filtres, lien court, QR code, mot de passe, expiration,
   renommage ; galerie publique (avec « Photos à valider », et **Recadrer** dans le menu ⋯ : format carré, portrait, paysage ou d'origine) ; **album privé** protégé par mot de passe (landrypf.com/album).
+- **Outils** :
+  - **Transferts** (landrypf.com/t/…) : plusieurs fichiers, un seul lien, nombre de téléchargements et expiration au choix, mot de passe, message, .zip. Les fichiers sont supprimés tout seuls à la fin (au plus tard la nuit suivante).
+  - **Bloc-notes** (landrypf.com/n/…) : texte ou code, mot de passe, expiration, « détruire après lecture ».
+  - **Liens courts** : destination iPhone / Android, expiration, nombre de clics maximum, statistiques (jour, appareil, pays).
+  - **QR codes** : n'importe quel lien, tiare au centre, couleur au choix, PNG ou SVG.
+  - **Corbeille** : transferts et notes supprimés gardés 30 jours.
+  - La position GPS des photos est retirée à l'envoi (case cochée par défaut).
 - **Messages** : formulaire de contact et livre d'or (les visiteurs peuvent mettre un 🌺 aux mots).
 - **Réglages** : livre d'or et contact (activer/couper), bannière programmable, liens courts, fêtes
   (automatique : Matari'i fin novembre, Noël, Nouvel An, Nouvel An chinois, 29 juin, Heiva en juillet, ton anniversaire ; messages personnalisés), mentions légales, sauvegarde en un clic, nettoyage.

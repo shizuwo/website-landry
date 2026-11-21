@@ -10,7 +10,7 @@ const erreur = (msg, status = 400) => json({ erreur: msg }, { status });
 const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Codes de liens courts interdits (déjà utilisés par le site)
-const RESERVES = new Set(['404', 'cadre', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
+const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 't', 'n', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun', 'album', 'mentions']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
@@ -196,7 +196,7 @@ function lireCadre(v) {
 const urlFichier = (f) => `/f/${f.id}/${encodeURIComponent(f.nom)}${f.taille && String(f.type || '').startsWith('image/') ? '?v=' + f.taille : ''}`;
 const urlCourte = (f) => `/f/${f.id}`;
 const actif = (v, defaut = true) => (v === null || v === undefined || v === '' ? defaut : v === '1');
-const stockageUtilise = async (env) => (await env.DB.prepare('SELECT COALESCE(SUM(taille), 0) AS t FROM fichiers').first('t')) || 0;
+const stockageUtilise = async (env) => (await env.DB.prepare('SELECT (SELECT COALESCE(SUM(taille), 0) FROM fichiers) + (SELECT COALESCE(SUM(f.taille), 0) FROM transfert_fichiers f JOIN transferts t ON t.id = f.transfert WHERE t.vide = 0) AS t').first('t')) || 0;
 const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.expire > now);
 
 /* ================= Public ================= */
@@ -351,10 +351,19 @@ async function ouvrirLienBio(id, env, ctx, origine) {
   return Response.redirect(new URL(url, origine).toString(), 302);
 }
 
-async function ouvrirLienCourt(code, env, ctx, origine) {
-  const url = await env.DB.prepare('SELECT url FROM raccourcis WHERE code = ?').bind(code).first('url');
-  if (!url) return null;
-  ctx.waitUntil(Promise.all([env.DB.prepare('UPDATE raccourcis SET clics = clics + 1 WHERE code = ?').bind(code).run().catch(() => {}), statJour(env, 'court')]));
+async function ouvrirLienCourt(code, env, ctx, origine, request) {
+  const r = await env.DB.prepare('SELECT url, url_ios, url_android, expire, max_clics, clics FROM raccourcis WHERE code = ?').bind(code).first();
+  if (!r) return null;
+  if ((r.expire && r.expire <= Date.now()) || (r.max_clics && r.clics >= r.max_clics))
+    return pageOutil('Lien terminé', '<h1>Ce lien n\'est plus actif</h1><p>Il a expiré ou a atteint son nombre de clics maximum.</p>', 410);
+  const ua = request.headers.get('user-agent') || '';
+  const url = (/iPhone|iPad|iPod/.test(ua) && r.url_ios) || (/Android/.test(ua) && r.url_android) || r.url;
+  const pays = String((request.cf && request.cf.country) || '??').slice(0, 2);
+  ctx.waitUntil(Promise.all([
+    env.DB.prepare('UPDATE raccourcis SET clics = clics + 1 WHERE code = ?').bind(code).run().catch(() => {}),
+    env.DB.prepare('INSERT INTO clics_jour (code, jour, appareil, pays, n) VALUES (?, ?, ?, ?, 1) ON CONFLICT(code, jour, appareil, pays) DO UPDATE SET n = n + 1')
+      .bind(code, jourTahiti(), appareilDe(request), pays).run().catch(() => {}),
+    statJour(env, 'court')]));
   return Response.redirect(new URL(url, origine).toString(), 302);
 }
 
@@ -495,7 +504,226 @@ async function nettoyerExpires(env) {
   // Les traces anti-spam de plus de 2 jours ne servent plus (sauf les réactions, gardées un an)
   await env.DB.prepare("DELETE FROM limites WHERE dernier < ? AND cle NOT LIKE 'r:%'").bind(now - 2 * 864e5).run();
   await env.DB.prepare("DELETE FROM limites WHERE dernier < ?").bind(now - 366 * 864e5).run();
-  return { supprimes: results.length };
+  // Transferts : fichiers supprimés dès l'expiration ou la limite atteinte (la fiche reste 30 jours dans l'admin)
+  const { results: finis } = await env.DB.prepare('SELECT id FROM transferts WHERE vide = 0 AND ((expire IS NOT NULL AND expire <= ?) OR (fini IS NOT NULL AND fini <= ?))').bind(now, now - 3600e3).all();
+  for (const t of finis) await viderTransfert(env, t.id);
+  // Corbeille : 30 jours, puis suppression définitive ; les fiches terminées disparaissent aussi après 30 jours
+  const { results: vieux } = await env.DB.prepare('SELECT id FROM transferts WHERE (supprime IS NOT NULL AND supprime <= ?) OR (vide = 1 AND supprime IS NULL AND COALESCE(fini, expire, cree) <= ?)').bind(now - 30 * 864e5, now - 30 * 864e5).all();
+  for (const t of vieux) await effacerTransfert(env, t.id);
+  await env.DB.prepare('DELETE FROM notes WHERE (supprime IS NOT NULL AND supprime <= ?) OR (expire IS NOT NULL AND expire <= ?) OR (lu IS NOT NULL AND lu <= ?)').bind(now - 30 * 864e5, now - 30 * 864e5, now - 30 * 864e5).run();
+  await env.DB.prepare('DELETE FROM clics_jour WHERE jour < ?').bind(jourTahiti(now - 400 * 864e5)).run();
+  return { supprimes: results.length, transferts: finis.length };
+}
+
+/* ================= Outils : transferts, bloc-notes ================= */
+
+const PAGE_OUTIL_CSS = `body{margin:0;min-height:100dvh;background:#2EC4C6;color:#14261F;font:17px/1.5 system-ui,-apple-system,sans-serif;padding:24px 16px 48px;box-sizing:border-box}
+main{max-width:560px;margin:6vh auto 0;background:#FFFDF8;border-radius:6px;padding:28px 22px 24px;box-shadow:0 18px 40px rgba(0,60,70,.3);position:relative}
+main::before{content:"";position:absolute;top:-13px;left:50%;width:100px;height:26px;translate:-50% 0;rotate:-3deg;background:rgba(238,224,188,.92)}
+h1{font:400 1.9rem/1.1 Georgia,serif;margin:0 0 .4rem;color:#B3212E;overflow-wrap:anywhere}p{margin:0 0 1rem}.doux{color:#5A6B66;font-size:.95rem}
+.message{background:#F3EFE4;border-radius:10px;padding:12px 14px;white-space:pre-wrap;overflow-wrap:anywhere}
+ul{list-style:none;margin:0 0 1rem;padding:0;display:grid;gap:8px}li{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E8E2D6;border-radius:12px;padding:10px 12px}
+li .nom{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}li small{display:block;font-weight:400;color:#5A6B66}
+a.btn,button{box-sizing:border-box;font:inherit;font-weight:600;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:#B3212E;color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+a.btn.petit{min-height:38px;padding:0 14px;background:#0D4D3A}.tout{width:100%;margin-bottom:.5rem}
+input{font:inherit;font-size:16px;width:100%;box-sizing:border-box;padding:.75rem 1rem;border-radius:12px;border:2px solid #E8E2D6;margin-bottom:.75rem}
+pre{background:#14261F;color:#F3EFE4;border-radius:10px;padding:14px;white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.5 ui-monospace,Menlo,monospace;max-height:60vh;overflow:auto}
+.err{color:#B3212E;font-weight:600}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #0D4D3A;outline-offset:3px}
+footer{text-align:center;margin-top:18px;font-size:.85rem}footer a{color:#0D4D3A}`;
+function pageOutil(titre, contenu, status = 200, enTetes = {}) {
+  return new Response(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<title>${echappe(titre)} · Landry</title><link rel="icon" href="/favicon.ico"><style>${PAGE_OUTIL_CSS}</style></head>
+<body><main>${contenu}</main><footer><a href="/">landrypf.com</a></footer></body></html>`,
+    { status, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer', ...enTetes } });
+}
+const tailleLisible = (o) => o < 1e6 ? Math.max(1, Math.round(o / 1e3)) + ' Ko' : o < 1e9 ? (o / 1e6).toFixed(1).replace('.', ',') + ' Mo' : (o / 1e9).toFixed(2).replace('.', ',') + ' Go';
+const dateFrLong = (t) => new Date(t).toLocaleString('fr-FR', { timeZone: 'Pacific/Tahiti', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+const lireCookie = (request, nom) => { const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + nom + '=([^;]+)')); return m ? m[1] : ''; };
+const formMdp = (texte, msg = '') => `<h1>Protégé 🔒</h1><p>${texte}</p><form method="post"><input type="password" name="mdp" aria-label="Mot de passe" autocomplete="off" required autofocus><button>Ouvrir</button></form>${msg ? `<p class="err" role="alert">${msg}</p>` : ''}`;
+
+// Un transfert est-il encore téléchargeable ?
+function etatTransfert(t, now = Date.now()) {
+  if (!t || t.supprime || t.vide) return 'absent';
+  if (t.expire && t.expire <= now) return 'expire';
+  if (t.max_dl && t.dl >= t.max_dl) return 'limite';
+  return 'ok';
+}
+async function jetonTransfert(env, t) { return signer(env, 't:' + t.id + ':' + String(t.mdp).slice(0, 24)); }
+
+async function pageTransfert(request, env, id, url) {
+  const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
+  const etat = etatTransfert(t), dejaVenu = t && lireCookie(request, 'td_' + id) === '1';
+  if (etat === 'absent') return pageOutil('Introuvable', '<h1>Ce transfert n\'existe plus</h1><p>Le lien a peut-être expiré ou a été supprimé. Demande un nouveau lien à Landry !</p>', 404);
+  if (etat === 'expire') return pageOutil('Expiré', `<h1>Lien expiré</h1><p>Ce transfert n'est plus disponible depuis le ${dateFrLong(t.expire)}.</p>`, 410);
+  if (etat === 'limite' && !dejaVenu) return pageOutil('Limite atteinte', '<h1>Déjà téléchargé</h1><p>Ce transfert a atteint son nombre maximum de téléchargements.</p>', 410);
+  // Mot de passe : formulaire, puis un cookie valable 1 jour pour ce transfert
+  let cookie = '';
+  if (t.mdp && lireCookie(request, 'tp_' + id) !== await jetonTransfert(env, t)) {
+    if (request.method !== 'POST') return pageOutil('Transfert protégé', formMdp('Entre le mot de passe pour voir les fichiers.'));
+    if (await tropTot(env, 'tm:' + await empreinte(request, env), 1500)) return pageOutil('Doucement', formMdp('Entre le mot de passe pour voir les fichiers.', 'Doucement… réessaie dans une seconde.'), 429);
+    const mdp = String((await request.formData()).get('mdp') || '');
+    if (!(await mdpCorrect(mdp, t.mdp))) return pageOutil('Transfert protégé', formMdp('Entre le mot de passe pour voir les fichiers.', 'Mot de passe incorrect.'), 401);
+    cookie = `tp_${id}=${await jetonTransfert(env, t)}; Path=/t/${id}; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`;
+  }
+  const { results: fs } = await env.DB.prepare('SELECT id, nom, taille FROM transfert_fichiers WHERE transfert = ? ORDER BY cree, nom').bind(id).all();
+  const total = fs.reduce((a, f) => a + f.taille, 0);
+  const reste = [];
+  if (t.expire) reste.push(`disponible jusqu'au ${dateFrLong(t.expire)}`);
+  if (t.max_dl) reste.push(`${Math.max(0, t.max_dl - t.dl)} téléchargement${t.max_dl - t.dl > 1 ? 's' : ''} restant${t.max_dl - t.dl > 1 ? 's' : ''}`);
+  const contenu = `<h1>${echappe(t.titre || 'Des fichiers pour toi 🌺')}</h1>
+    <p class="doux">${fs.length} fichier${fs.length > 1 ? 's' : ''} · ${tailleLisible(total)}${reste.length ? ' · ' + reste.join(' · ') : ''}</p>
+    ${t.message ? `<p class="message">${echappe(t.message)}</p>` : ''}
+    ${fs.length > 1 && total < 4e9 ? `<a class="btn tout" href="/t/${id}/zip" download>⬇ Tout télécharger (.zip)</a>` : ''}
+    <ul>${fs.map(f => `<li><span class="nom">${echappe(f.nom)}<small>${tailleLisible(f.taille)}</small></span><a class="btn petit" href="/t/${id}/f/${f.id}" download aria-label="Télécharger ${echappe(f.nom)}">⬇</a></li>`).join('')}</ul>
+    <p class="doux">Envoyé par Landry depuis Tahiti 🌴</p>`;
+  return pageOutil(t.titre || 'Transfert', contenu, 200, cookie ? { 'set-cookie': cookie } : {});
+}
+
+// Compte un téléchargement par visiteur (cookie d'un jour), refuse au-delà de la limite
+async function autoriserTelechargement(request, env, ctx, t, quoi) {
+  if (t.mdp && lireCookie(request, 'tp_' + t.id) !== await jetonTransfert(env, t)) return { refus: pageOutil('Protégé', formMdp('Ouvre d\'abord la page du transfert.'), 401) };
+  const etat = etatTransfert(t), dejaVenu = lireCookie(request, 'td_' + t.id) === '1';
+  if (etat === 'absent' || etat === 'expire' || (etat === 'limite' && !dejaVenu)) return { refus: Response.redirect(new URL('/t/' + t.id, request.url).toString(), 302) };
+  const now = Date.now(), lots = [env.DB.prepare('INSERT INTO transfert_dl (transfert, quand, quoi) VALUES (?, ?, ?)').bind(t.id, now, quoi)];
+  if (!dejaVenu) {
+    lots.push(env.DB.prepare('UPDATE transferts SET dl = dl + 1, fini = CASE WHEN max_dl IS NOT NULL AND dl + 1 >= max_dl THEN ? ELSE fini END WHERE id = ?').bind(now, t.id));
+    if (t.notifier) notifier(env, ctx, '⬇ Transfert téléchargé', `« ${t.titre || 'Transfert'} » a été téléchargé${t.max_dl ? ` (${t.dl + 1}/${t.max_dl})` : ''}.`);
+  }
+  ctx.waitUntil(env.DB.batch(lots).catch(() => {}));
+  return { cookie: dejaVenu ? '' : `td_${t.id}=1; Path=/t/${t.id}; Max-Age=86400; Secure; SameSite=Lax` };
+}
+
+async function telechargerTransfert(request, env, ctx, id, fid) {
+  if (!env.FICHIERS) return pageOutil('Bientôt', '<h1>Bientôt</h1><p>Le stockage n\'est pas activé.</p>', 503);
+  const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
+  const f = t && await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE id = ? AND transfert = ?').bind(fid, id).first();
+  if (!f) return pageOutil('Introuvable', '<h1>Fichier introuvable</h1>', 404);
+  const a = await autoriserTelechargement(request, env, ctx, t, f.nom); if (a.refus) return a.refus;
+  const obj = await env.FICHIERS.get(f.cle);
+  if (!obj) return pageOutil('Introuvable', '<h1>Fichier introuvable</h1>', 404);
+  const h = new Headers({ 'content-type': f.type || 'application/octet-stream', 'content-length': String(f.taille), 'cache-control': 'private, no-store',
+    'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(f.nom)}`, 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex' });
+  if (a.cookie) h.set('set-cookie', a.cookie);
+  return new Response(obj.body, { headers: h });
+}
+
+// .zip sans compression, écrit au fil de l'eau : les CRC ont été calculés à l'envoi, le serveur ne fait que recopier
+async function zipTransfert(request, env, ctx, id) {
+  const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
+  if (!t) return pageOutil('Introuvable', '<h1>Ce transfert n\'existe plus</h1>', 404);
+  const { results: fs } = await env.DB.prepare('SELECT * FROM transfert_fichiers WHERE transfert = ? ORDER BY cree, nom').bind(id).all();
+  if (!fs.length) return pageOutil('Vide', '<h1>Ce transfert est vide</h1>', 404);
+  if (fs.reduce((x, f) => x + f.taille, 0) >= 4e9) return pageOutil('Trop gros', '<h1>Trop gros pour un .zip</h1><p>Télécharge les fichiers un par un.</p>', 413);
+  const a = await autoriserTelechargement(request, env, ctx, t, 'zip'); if (a.refus) return a.refus;
+  const enc = new TextEncoder(), vus = new Set();
+  const entrees = fs.map(f => {
+    let nom = f.nom, k = 1;
+    while (vus.has(nom)) nom = f.nom.replace(/(\.[^.]*)?$/, ` (${++k})$1`);
+    vus.add(nom);
+    return { ...f, octets: enc.encode(nom) };
+  });
+  const u16 = (v, n, o) => v.setUint16(o, n, true), u32 = (v, n, o) => v.setUint32(o, n >>> 0, true);
+  const DATE = 0x0021; // 1er janvier 1980
+  const local = (e) => { const b = new Uint8Array(30 + e.octets.length), v = new DataView(b.buffer);
+    u32(v, 0x04034b50, 0); u16(v, 20, 4); u16(v, 0x0800, 6); u16(v, 0, 8); u16(v, 0, 10); u16(v, DATE, 12); u32(v, e.crc, 14); u32(v, e.taille, 18); u32(v, e.taille, 22); u16(v, e.octets.length, 26); u16(v, 0, 28);
+    b.set(e.octets, 30); return b; };
+  let offset = 0; const central = [];
+  for (const e of entrees) {
+    const b = new Uint8Array(46 + e.octets.length), v = new DataView(b.buffer);
+    u32(v, 0x02014b50, 0); u16(v, 20, 4); u16(v, 20, 6); u16(v, 0x0800, 8); u16(v, 0, 10); u16(v, 0, 12); u16(v, DATE, 14); u32(v, e.crc, 16); u32(v, e.taille, 20); u32(v, e.taille, 24);
+    u16(v, e.octets.length, 28); u16(v, 0, 30); u16(v, 0, 32); u16(v, 0, 34); u16(v, 0, 36); u32(v, 0, 38); u32(v, offset, 42); b.set(e.octets, 46);
+    central.push(b); offset += 30 + e.octets.length + e.taille;
+  }
+  const tailleCentral = central.reduce((x, b) => x + b.length, 0);
+  const fin = new Uint8Array(22), vf = new DataView(fin.buffer);
+  u32(vf, 0x06054b50, 0); u16(vf, entrees.length, 8); u16(vf, entrees.length, 10); u32(vf, tailleCentral, 12); u32(vf, offset, 16);
+  const { readable, writable } = new TransformStream();
+  ctx.waitUntil((async () => {
+    let w = writable.getWriter();
+    try {
+      for (const e of entrees) {
+        await w.write(local(e));
+        const obj = await env.FICHIERS.get(e.cle);
+        if (!obj) throw new Error('fichier manquant');
+        w.releaseLock(); await obj.body.pipeTo(writable, { preventClose: true }); w = writable.getWriter();
+      }
+      for (const b of central) await w.write(b);
+      await w.write(fin); await w.close();
+    } catch (err) { try { await w.abort(err); } catch {} }
+  })());
+  const nomZip = (t.titre || 'landry-transfert').replace(/[^\p{L}\p{N} _-]+/gu, '').trim().slice(0, 60) || 'transfert';
+  const h = new Headers({ 'content-type': 'application/zip', 'content-length': String(offset + tailleCentral + 22), 'cache-control': 'private, no-store',
+    'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(nomZip + '.zip')}`, 'x-robots-tag': 'noindex' });
+  if (a.cookie) h.set('set-cookie', a.cookie);
+  return new Response(readable, { headers: h });
+}
+
+// Envoi d'un fichier dans un transfert (depuis l'admin)
+async function envoyerTransfert(request, env, id) {
+  if (!env.FICHIERS) return erreur("Le stockage R2 n'est pas encore activé.", 503);
+  const t = await env.DB.prepare('SELECT id, supprime, vide FROM transferts WHERE id = ?').bind(id).first();
+  if (!t || t.supprime || t.vide) return erreur('Transfert introuvable.', 404);
+  const taille = +request.headers.get('content-length') || 0;
+  if (!taille) return erreur('Fichier vide.');
+  if (taille > TAILLE_MAX) return erreur('Fichier trop lourd (100 Mo maximum par fichier).', 413);
+  if ((await stockageUtilise(env)) + taille > STOCKAGE_LIMITE) return erreur('Stockage presque plein (10 Go).', 507);
+  const p = new URL(request.url).searchParams;
+  const nom = nettoyer(p.get('nom') || 'fichier', 120).replace(/[\\/]/g, '-') || 'fichier';
+  const type = nettoyer(request.headers.get('content-type') || 'application/octet-stream', 100);
+  const fid = aleatoire(8), cle = `t/${id}/${fid}/${nom}`;
+  await env.FICHIERS.put(cle, request.body, { httpMetadata: { contentType: type } });
+  await env.DB.prepare('INSERT INTO transfert_fichiers (id, transfert, nom, cle, type, taille, crc, cree) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(fid, id, nom, cle, type, taille, (+p.get('crc') || 0) >>> 0, Date.now()).run();
+  return json({ ok: true, id: fid });
+}
+
+async function viderTransfert(env, id) {
+  const { results } = await env.DB.prepare('SELECT cle FROM transfert_fichiers WHERE transfert = ?').bind(id).all();
+  if (env.FICHIERS && results.length) await env.FICHIERS.delete(results.map(f => f.cle));
+  await env.DB.prepare('UPDATE transferts SET vide = 1 WHERE id = ?').bind(id).run();
+}
+async function effacerTransfert(env, id) {
+  await viderTransfert(env, id);
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM transfert_fichiers WHERE transfert = ?').bind(id),
+    env.DB.prepare('DELETE FROM transfert_dl WHERE transfert = ?').bind(id),
+    env.DB.prepare('DELETE FROM transferts WHERE id = ?').bind(id)
+  ]);
+}
+
+// ---------- Bloc-notes ----------
+async function pageNote(request, env, id) {
+  const n = await env.DB.prepare('SELECT * FROM notes WHERE id = ?').bind(id).first();
+  if (!n || n.supprime) return pageOutil('Introuvable', '<h1>Cette note n\'existe plus</h1>', 404);
+  if (n.expire && n.expire <= Date.now()) return pageOutil('Expirée', '<h1>Note expirée</h1><p>Cette note n\'est plus disponible.</p>', 410);
+  if (n.unique_lecture && n.lu) return pageOutil('Déjà lue', '<h1>Note déjà lue 🔥</h1><p>Cette note s\'est détruite après sa première lecture.</p>', 410);
+  const titre = n.titre || 'Une note pour toi';
+  const aOuvrir = n.mdp || n.unique_lecture;
+  if (aOuvrir && request.method !== 'POST') {
+    // Lecture unique : il faut appuyer sur un bouton (les aperçus de WhatsApp ou Messenger ne la « consomment » pas)
+    if (n.mdp) return pageOutil(titre, formMdp(n.unique_lecture ? 'Entre le mot de passe. Attention : la note se détruira après lecture 🔥' : 'Entre le mot de passe pour lire la note.'));
+    return pageOutil(titre, `<h1>${echappe(titre)}</h1><p>Cette note se détruira dès que tu l'auras ouverte 🔥</p><form method="post"><button>Afficher la note</button></form>`);
+  }
+  if (n.mdp) {
+    if (await tropTot(env, 'nm:' + await empreinte(request, env), 1500)) return pageOutil(titre, formMdp('Entre le mot de passe.', 'Doucement… réessaie dans une seconde.'), 429);
+    const mdp = String((await request.formData()).get('mdp') || '');
+    if (!(await mdpCorrect(mdp, n.mdp))) return pageOutil(titre, formMdp('Entre le mot de passe.', 'Mot de passe incorrect.'), 401);
+  }
+  if (n.unique_lecture) {
+    const r = await env.DB.prepare("UPDATE notes SET lu = ?, texte = '', vues = vues + 1 WHERE id = ? AND lu IS NULL").bind(Date.now(), id).run();
+    if (!((r.meta && r.meta.changes) || r.changes)) return pageOutil('Déjà lue', '<h1>Note déjà lue 🔥</h1>', 410);
+  } else await env.DB.prepare('UPDATE notes SET vues = vues + 1 WHERE id = ?').bind(id).run();
+  return pageOutil(titre, `<h1>${echappe(titre)}</h1><pre id="texte">${echappe(n.texte)}</pre>
+    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('texte').textContent).then(()=>{this.textContent='Copié ✓'})">Copier</button>
+    ${n.unique_lecture ? '<p class="doux" style="margin-top:1rem">🔥 Cette note vient de se détruire : copie-la si tu en as besoin.</p>' : ''}`);
+}
+
+// ---------- Liens courts : appareil et pays des clics ----------
+function appareilDe(request) {
+  const ua = request.headers.get('user-agent') || '';
+  if (/iPad|Tablet/i.test(ua)) return 'tablette';
+  if (/Mobi|iPhone|Android/i.test(ua)) return 'mobile';
+  return 'ordi';
 }
 
 /* ================= Google : robots.txt et plan du site ================= */
@@ -524,13 +752,26 @@ ${pages.map(([u, p, f]) => `  <url><loc>https://landrypf.com${u}</loc><changefre
 async function adminLire(env) {
   const depuis = jourTahiti(Date.now() - 29 * 86400e3);
   const DB = env.DB;
+  const [transferts, tFichiers, tHisto, notes, clics] = await Promise.all([
+    DB.prepare('SELECT id, titre, message, (mdp IS NOT NULL) AS protege, expire, max_dl, dl, notifier, cree, fini, supprime, vide FROM transferts ORDER BY cree DESC').all(),
+    DB.prepare('SELECT id, transfert, nom, taille FROM transfert_fichiers ORDER BY cree, nom').all(),
+    DB.prepare('SELECT transfert, quand, quoi FROM transfert_dl ORDER BY quand DESC LIMIT 500').all(),
+    DB.prepare('SELECT id, titre, substr(texte, 1, 140) AS apercu, length(texte) AS longueur, (mdp IS NOT NULL) AS protege, expire, unique_lecture, lu, vues, cree, supprime FROM notes ORDER BY cree DESC').all(),
+    DB.prepare('SELECT code, jour, appareil, pays, n FROM clics_jour WHERE jour >= ?').bind(depuis).all()
+  ]);
+  const outils = {
+    transferts: transferts.results.map(t => ({ ...t, protege: !!t.protege,
+      fichiers: tFichiers.results.filter(f => f.transfert === t.id), historique: tHisto.results.filter(h => h.transfert === t.id).slice(0, 50) })),
+    notes: notes.results.map(n => ({ ...n, protege: !!n.protege })),
+    clics: clics.results
+  };
   const [compteurs, reglages, attente, valides, liens, courts, fichiers, contacts, stats] = await Promise.all([
     DB.prepare('SELECT nom, valeur FROM compteurs').all(),
     DB.prepare('SELECT cle, valeur FROM reglages').all(),
     DB.prepare("SELECT id, nom, texte, cree FROM messages WHERE statut = 'attente' ORDER BY cree DESC").all(),
     DB.prepare("SELECT id, nom, texte, cree, reactions FROM messages WHERE statut = 'ok' ORDER BY cree DESC LIMIT 100").all(),
     DB.prepare('SELECT id, titre, sous_titre, url, icone, ordre, actif, clics, debut, fin FROM liens ORDER BY ordre, id').all(),
-    DB.prepare('SELECT code, url, clics, cree FROM raccourcis ORDER BY cree DESC').all(),
+    DB.prepare('SELECT code, url, clics, cree, url_ios, url_android, expire, max_clics FROM raccourcis ORDER BY cree DESC').all(),
     DB.prepare('SELECT id, nom, type, taille, cree, telechargements, (mdp IS NOT NULL) AS protege, expire, galerie, legende, ordre, vu_galerie, album FROM fichiers ORDER BY cree DESC').all(),
     DB.prepare('SELECT id, nom, email, message, cree, lu FROM contacts ORDER BY cree DESC LIMIT 100').all(),
     DB.prepare('SELECT jour, cle, valeur FROM stats_jour WHERE jour >= ? ORDER BY jour').bind(depuis).all()
@@ -550,7 +791,7 @@ async function adminLire(env) {
     attente: attente.results, valides: valides.results,
     liens: liens.results, courts: courts.results,
     fichiers: fichiers.results.map(f => ({ ...f, protege: !!f.protege, url: urlFichier(f), court: urlCourte(f) })),
-    stockage_utilise: fichiers.results.reduce((a, f) => a + f.taille, 0), stockage_max: STOCKAGE_MAX,
+    stockage_utilise: fichiers.results.reduce((a, f) => a + f.taille, 0) + transferts.results.filter(t => !t.vide).reduce((a, t) => a + tFichiers.results.filter(f => f.transfert === t.id).reduce((x, f) => x + f.taille, 0), 0), stockage_max: STOCKAGE_MAX,
     statuts: lireJSON(r.statuts, r.statut ? [r.statut] : []), statut_hasard: actif(r.statut_hasard, false),
     blocs,
     playlist: (() => { const p = lireJSON(r.playlist, null); return Array.isArray(p) ? p : (r.musique_id ? [{ id: r.musique_id, titre: r.musique_titre || '', artiste: r.musique_artiste || '' }] : []); })(),
@@ -566,7 +807,7 @@ async function adminLire(env) {
       banniere_debut: +r.banniere_debut || null, banniere_fin: +r.banniere_fin || null,
       musique_active: actif(r.musique_active, false), musique_id: r.musique_id || '', musique_titre: r.musique_titre || '', musique_artiste: r.musique_artiste || ''
     },
-    contacts: contacts.results, photos, cadres, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
+    outils, contacts: contacts.results, photos, cadres, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
   });
 }
 
@@ -629,12 +870,52 @@ async function adminEcrire(request, env) {
       if (!/^[a-z0-9][a-z0-9-]{0,39}$/.test(code)) return erreur('Le code ne peut contenir que des lettres minuscules, des chiffres et des tirets.');
       if (RESERVES.has(code)) return erreur('Ce code est déjà utilisé par le site, choisis-en un autre.');
       if (!url) return erreur("L'adresse doit commencer par https://");
+      const ios = c.url_ios ? urlValide(c.url_ios) : '', android = c.url_android ? urlValide(c.url_android) : '';
+      if ((c.url_ios && !ios) || (c.url_android && !android)) return erreur('Les adresses iPhone et Android doivent commencer par https://');
       const existe = await DB.prepare('SELECT 1 AS x FROM raccourcis WHERE code = ?').bind(code).first('x');
       if (existe && !c.remplacer) return erreur('Ce code existe déjà.');
-      await DB.prepare('INSERT INTO raccourcis (code, url, clics, cree) VALUES (?, ?, 0, ?) ON CONFLICT(code) DO UPDATE SET url = excluded.url')
-        .bind(code, url, Date.now()).run();
+      const maxC = entierOuNull(c.max_clics);
+      await DB.prepare(`INSERT INTO raccourcis (code, url, clics, cree, url_ios, url_android, expire, max_clics) VALUES (?, ?, 0, ?, ?, ?, ?, ?)
+        ON CONFLICT(code) DO UPDATE SET url = excluded.url, url_ios = excluded.url_ios, url_android = excluded.url_android, expire = excluded.expire, max_clics = excluded.max_clics`)
+        .bind(code, url, Date.now(), ios || null, android || null, entierOuNull(c.expire), maxC && maxC > 0 ? maxC : null).run();
       break;
     }
+
+    // --- Transferts ---
+    case 'transfert_creer': {
+      const id = aleatoire(8), maxDl = entierOuNull(c.max_dl), mdp = String(c.mdp || '');
+      await DB.prepare('INSERT INTO transferts (id, titre, message, mdp, expire, max_dl, notifier, cree) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(id, nettoyer(c.titre, 80), nettoyer(c.message, 600), mdp ? await hacher(mdp) : null, entierOuNull(c.expire), maxDl && maxDl > 0 ? maxDl : null, c.notifier ? 1 : 0, Date.now()).run();
+      return json({ ok: true, id });
+    }
+    case 'transfert_supprimer':
+      await DB.prepare('UPDATE transferts SET supprime = ? WHERE id = ?').bind(Date.now(), String(c.id)).run();
+      break;
+    case 'transfert_restaurer':
+      await DB.prepare('UPDATE transferts SET supprime = NULL WHERE id = ?').bind(String(c.id)).run();
+      break;
+    case 'transfert_effacer':
+      await effacerTransfert(env, String(c.id));
+      break;
+
+    // --- Bloc-notes ---
+    case 'note_creer': {
+      const texte = String(c.texte || '').replace(/\r\n/g, '\n').slice(0, 100000);
+      if (!texte.trim()) return erreur('La note est vide.');
+      const id = aleatoire(8), mdp = String(c.mdp || '');
+      await DB.prepare('INSERT INTO notes (id, titre, texte, mdp, expire, unique_lecture, cree) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .bind(id, nettoyer(c.titre, 80), texte, mdp ? await hacher(mdp) : null, entierOuNull(c.expire), c.unique ? 1 : 0, Date.now()).run();
+      return json({ ok: true, id });
+    }
+    case 'note_supprimer':
+      await DB.prepare('UPDATE notes SET supprime = ? WHERE id = ?').bind(Date.now(), String(c.id)).run();
+      break;
+    case 'note_restaurer':
+      await DB.prepare('UPDATE notes SET supprime = NULL WHERE id = ?').bind(String(c.id)).run();
+      break;
+    case 'note_effacer':
+      await DB.prepare('DELETE FROM notes WHERE id = ?').bind(String(c.id)).run();
+      break;
     case 'court_supprimer':
       await DB.prepare('DELETE FROM raccourcis WHERE code = ?').bind(String(c.code)).run();
       break;
@@ -888,12 +1169,14 @@ async function adminEcrire(request, env) {
 }
 
 async function exporter(env) {
-  const tables = ['compteurs', 'reglages', 'messages', 'liens', 'raccourcis', 'stats_jour', 'fichiers', 'contacts', 'blocs'];
+  const tables = ['compteurs', 'reglages', 'messages', 'liens', 'raccourcis', 'stats_jour', 'fichiers', 'contacts', 'blocs', 'transferts', 'transfert_fichiers', 'notes', 'clics_jour'];
   const donnees = {};
   for (const t of tables) donnees[t] = (await env.DB.prepare(`SELECT * FROM ${t}`).all()).results;
   // On ne met pas les mots de passe (même chiffrés) dans la sauvegarde
   donnees.reglages = donnees.reglages.filter(r => r.cle !== 'album_mdp');
   donnees.fichiers = donnees.fichiers.map(({ mdp, ...f }) => ({ ...f, protege: !!mdp }));
+  donnees.transferts = donnees.transferts.map(({ mdp, ...t }) => ({ ...t, protege: !!mdp }));
+  donnees.notes = donnees.notes.map(({ mdp, ...n }) => ({ ...n, protege: !!mdp }));
   const jour = jourTahiti();
   return new Response(JSON.stringify({ site: 'landrypf.com', date: new Date().toISOString(), note: 'Les fichiers eux-mêmes (photos, sons…) restent dans le stockage R2 et ne sont pas inclus.', donnees }, null, 2), {
     headers: { 'content-type': 'application/json; charset=utf-8', 'content-disposition': `attachment; filename="landry-sauvegarde-${jour}.json"`, 'cache-control': 'no-store' }
@@ -949,6 +1232,8 @@ export default {
           // L'admin peut voir les photos de l'album dans son interface
           if (pathname === '/api/admin/album' && m === 'POST') return json({ ok: true }, { headers: { 'set-cookie': cookieAlbum(await jetonAlbum(env, (await reglage(env, 'album_mdp')) || 'admin', 864e5), 86400) } });
           if (pathname === '/api/fichiers' && m === 'PUT') return await envoyerFichier(request, env);
+          const envoiT = pathname.match(/^\/api\/admin\/transfert\/([a-z0-9]{8})$/);
+          if (envoiT && m === 'PUT') return await envoyerTransfert(request, env, envoiT[1]);
           if (pathname === '/api/admin' && m === 'GET') return await adminLire(env);
           if (pathname === '/api/admin' && m === 'POST') return await adminEcrire(request, env);
         }
@@ -961,6 +1246,17 @@ export default {
       const fichier = pathname.match(/^\/f\/([a-z0-9]{8})(?:\/.*)?$/);
       if (fichier && ['GET', 'HEAD', 'POST'].includes(m)) return await servirFichier(request, env, ctx, fichier[1]);
 
+      // Transferts : /t/abc12345, /t/abc12345/f/xyz, /t/abc12345/zip
+      const tr = pathname.match(/^\/t\/([a-z0-9]{8})(?:\/(zip|f\/([a-z0-9]{8})))?\/?$/);
+      if (tr) {
+        if (tr[2] === 'zip' && m === 'GET') return await zipTransfert(request, env, ctx, tr[1]);
+        if (tr[3] && m === 'GET') return await telechargerTransfert(request, env, ctx, tr[1], tr[3]);
+        if (!tr[2] && ['GET', 'HEAD', 'POST'].includes(m)) return await pageTransfert(request, env, tr[1]);
+      }
+      // Bloc-notes : /n/abc12345
+      const nt = pathname.match(/^\/n\/([a-z0-9]{8})\/?$/);
+      if (nt && ['GET', 'HEAD', 'POST'].includes(m)) return await pageNote(request, env, nt[1]);
+
       // Lien de la bio : /l/3
       const bio = pathname.match(/^\/l\/(\d+)\/?$/);
       if (bio) { const r = await ouvrirLienBio(+bio[1], env, ctx, origin); if (r) return r; }
@@ -968,7 +1264,7 @@ export default {
       // Lien court : /insta, /promo, /go/insta…
       const court = pathname.match(/^\/(?:go\/)?([a-z0-9][a-z0-9-]{0,39})\/?$/i);
       if (court && (m === 'GET' || m === 'HEAD')) {
-        const r = await ouvrirLienCourt(court[1].toLowerCase(), env, ctx, origin);
+        const r = await ouvrirLienCourt(court[1].toLowerCase(), env, ctx, origin, request);
         if (r) return r;
       }
     } catch (err) {
