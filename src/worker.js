@@ -15,7 +15,7 @@ const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 'envoi', 'admin-sw', '
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
 // Numéro de version affiché dans l'admin (augmenté à chaque mise à jour)
-const VERSION = 'v22';
+const VERSION = 'v23';
 const DEPOT = 'shizuwo/website-landry';
 const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
@@ -950,6 +950,28 @@ function appareilDe(request) {
   return 'ordi';
 }
 
+/* ================= Actualisation de l'admin : une « empreinte » de tout ce qui peut changer ================= */
+// Une seule petite requête ; l'admin recharge les données seulement si l'empreinte a changé.
+async function signatureEtat(env) {
+  const q = (sql) => `COALESCE((${sql}), '')`;
+  const parties = [
+    "SELECT COUNT(*) || ':' || COALESCE(MAX(cree), 0) || ':' || COALESCE(SUM(lu), 0) FROM contacts",
+    "SELECT COUNT(*) || ':' || COALESCE(MAX(cree), 0) || ':' || COALESCE(SUM(statut = 'ok'), 0) || ':' || COALESCE(SUM(reactions), 0) FROM messages",
+    "SELECT COUNT(*) || ':' || COALESCE(MAX(cree), 0) || ':' || COALESCE(SUM(telechargements), 0) || ':' || COALESCE(SUM(galerie), 0) || ':' || COALESCE(SUM(album), 0) || ':' || COALESCE(SUM(vu_galerie), 0) FROM fichiers",
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(dl), 0) || ':' || COALESCE(SUM(vide), 0) || ':' || COALESCE(SUM(supprime IS NOT NULL), 0) FROM transferts",
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(en_cours), 0) || ':' || COALESCE(SUM(apercu), 0) FROM transfert_fichiers",
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(ferme), 0) || ':' || COALESCE(SUM(supprime IS NOT NULL), 0) FROM demandes",
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(vues), 0) || ':' || COALESCE(SUM(lu IS NOT NULL), 0) || ':' || COALESCE(SUM(supprime IS NOT NULL), 0) FROM notes",
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(clics), 0) FROM raccourcis",
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(clics), 0) FROM liens",
+    "SELECT COALESCE(SUM(valeur), 0) FROM compteurs",
+    `SELECT COALESCE(SUM(valeur), 0) FROM stats_jour WHERE jour = '${jourTahiti()}'`,
+    "SELECT COUNT(*) || ':' || COALESCE(SUM(LENGTH(valeur)), 0) FROM reglages"
+  ];
+  const texte = await env.DB.prepare('SELECT ' + parties.map(q).join(" || '|' || ") + ' AS s').first('s');
+  return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(texte)))).slice(0, 16);
+}
+
 /* ================= Mises à jour disponibles (PR ouvertes sur GitHub) ================= */
 
 async function misesAJour() {
@@ -1051,6 +1073,7 @@ async function adminLire(env) {
       banniere_debut: +r.banniere_debut || null, banniere_fin: +r.banniere_fin || null,
       musique_active: actif(r.musique_active, false), musique_id: r.musique_id || '', musique_titre: r.musique_titre || '', musique_artiste: r.musique_artiste || ''
     },
+    etat: await signatureEtat(env),
     version: { nom: VERSION, date: env.CF_VERSION_METADATA && env.CF_VERSION_METADATA.timestamp ? Date.parse(env.CF_VERSION_METADATA.timestamp) : null },
     outils, contacts: contacts.results, photos, cadres, stats: stats.results, stockage: !!env.FICHIERS, notifications: !!env.NTFY_TOPIC
   });
@@ -1526,6 +1549,7 @@ export default {
           if (envoiT && envoiT[2]) return await routeEnvoi(request, env, envoiT[1], envoiT[2]);
           if (pathname === '/api/admin' && m === 'GET') return await adminLire(env);
           if (pathname === '/api/admin/maj' && m === 'GET') return await misesAJour();
+          if (pathname === '/api/admin/etat' && m === 'GET') return json({ etat: await signatureEtat(env) }, { headers: { 'cache-control': 'no-store' } });
           if (pathname === '/api/admin' && m === 'POST') return await adminEcrire(request, env);
         }
         return erreur('introuvable', 404);

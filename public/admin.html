@@ -25,6 +25,13 @@
   .haut { display: flex; align-items: center; gap: 10px; max-width: 1180px; margin: 0 auto; padding-bottom: 8px; }
   .haut h1 { font: 600 1.15rem/1.2 system-ui, sans-serif; margin: 0; flex: none; }
   .haut .voir { color: #fff; font-size: .9rem; margin-left: auto; flex: none; }
+  .btn-rafraichir { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 10px; background: rgba(255,255,255,.18); color: #fff; border-radius: 10px; flex: none; }
+  .btn-rafraichir span { font-size: 1.25rem; line-height: 1; display: inline-block; }
+  .btn-rafraichir small { font-weight: 400; font-size: .75rem; opacity: .85; white-space: nowrap; }
+  .btn-rafraichir.tourne span { animation: rafraichit .8s linear infinite; }
+  @keyframes rafraichit { to { transform: rotate(360deg); } }
+  @media (max-width: 720px) { .btn-rafraichir small { display: none; } .btn-rafraichir { margin-left: auto; } .btn-rafraichir + .voir { margin-left: 0; } }
+  @media (prefers-reduced-motion: reduce) { .btn-rafraichir.tourne span { animation: none; opacity: .5; } }
   .recherche { position: relative; flex: 1; max-width: 420px; margin-left: 12px; }
   .recherche input { background: rgba(255,255,255,.18); border: 0; color: #fff; padding: .5rem .8rem .5rem 2.1rem; min-height: 40px; }
   .recherche input::placeholder { color: rgba(255,255,255,.8); }
@@ -278,6 +285,7 @@
       <div class="resultats" id="resultats" hidden></div>
     </div>
     <button class="btn-loupe" id="btn-loupe" type="button" aria-label="Rechercher" hidden>⌕</button>
+    <button class="btn-rafraichir" id="btn-rafraichir" type="button" aria-label="Rafraîchir" title="Rafraîchir" hidden><span aria-hidden="true">↻</span><small id="a-jour"></small></button>
     <a class="voir" href="/bio" target="_blank" rel="noopener">Voir le site</a>
   </div>
   <nav class="onglets" id="onglets" hidden aria-label="Onglets"></nav>
@@ -1880,7 +1888,8 @@
      ===================================================================== */
   const charger = async () => {
     D = await appel('GET');
-    $('#connexion').hidden = true; $('#panneau').hidden = false; $('#onglets').hidden = false; $('#barre-bas').hidden = false; $('#recherche').hidden = false; $('#btn-loupe').hidden = false;
+    $('#connexion').hidden = true; $('#panneau').hidden = false; $('#onglets').hidden = false; $('#barre-bas').hidden = false; $('#recherche').hidden = false; $('#btn-loupe').hidden = false; $('#btn-rafraichir').hidden = false;
+    etatConnu = D.etat; derniereMaj = Date.now(); majAJour();
     if (!$('#form-evt').contains(document.activeElement)) { fe.titre.value = D.evenement.titre; fe.date.value = versLocal(D.evenement.date); fe.lien.value = D.evenement.lien; }
     if (!fd.contains(document.activeElement)) { fd.actif.checked = D.live.actif; fd.texte.value = D.live.texte; fd.lien.value = D.live.lien; }
     if (!fb.contains(document.activeElement)) { fb.banniere_active.checked = D.site.banniere_active; fb.banniere_texte.value = D.site.banniere_texte; fb.banniere_lien.value = D.site.banniere_lien; fb.banniere_debut.value = versLocal(D.site.banniere_debut); fb.banniere_fin.value = versLocal(D.site.banniere_fin); }
@@ -1894,6 +1903,64 @@
     $(`#form-palette [value="${D.palette || 'auto'}"]`).checked = true;
     majPastilles();
   };
+
+  /* =====================================================================
+     Actualisation automatique (toutes les 20 s) + bouton ↻
+     ===================================================================== */
+  let etatConnu = null, derniereMaj = 0, enCours = false, nouveautesCachees = 0;
+  const TITRE = document.title;
+  const majAJour = () => {
+    const s = Math.round((Date.now() - derniereMaj) / 1000);
+    $('#a-jour').textContent = !derniereMaj ? '' : s < 5 ? 'à jour' : s < 60 ? `il y a ${s} s` : `il y a ${Math.round(s / 60)} min`;
+  };
+  setInterval(majAJour, 5000);
+  // On n'actualise pas pendant que tu écris, ni quand un menu ⋯ ou une fenêtre est ouverte
+  const occupe = () => {
+    const a = document.activeElement;
+    if (a && a.closest('main, dialog') && a.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]), textarea, select')) return true;
+    if ($('.menu:not([hidden])') || $('dialog[open]')) return true;
+    if (enAttente.size) return true;                              // une suppression attend son « Annuler »
+    return $$('[data-ouvre]').some(b => b.hidden);                // un formulaire « + Ajouter… » est ouvert
+  };
+  // Ce qui est arrivé depuis la dernière fois (pour les petites annonces)
+  const nouveautes = (avant, apres) => {
+    const l = [], ids = (t) => new Set(t.map(x => x.id));
+    const c = ids(avant.contacts); apres.contacts.filter(x => !c.has(x.id)).forEach(x => l.push(`💬 Nouveau message de ${x.nom}`));
+    const m = ids(avant.attente); apres.attente.filter(x => !m.has(x.id)).forEach(x => l.push(`📖 Nouveau mot de ${x.nom} dans le livre d'or`));
+    const tAvant = Object.fromEntries((avant.outils.transferts || []).map(t => [t.id, t]));
+    (apres.outils.transferts || []).forEach(t => {
+      const a = tAvant[t.id]; if (!a) return;
+      if (t.dl > a.dl && !t.demande) l.push(`⬇ « ${t.titre || 'Transfert'} » téléchargé${t.max_dl ? ` (${t.dl}/${t.max_dl})` : ''}`);
+      const recus = t.fichiers.filter(f => !f.en_cours).length - a.fichiers.filter(f => !f.en_cours).length;
+      if (t.demande && recus > 0) l.push(`📥 ${pluriel(recus, 'fichier')} reçu${recus > 1 ? 's' : ''}${t.fichiers.at(-1)?.de ? ' de ' + t.fichiers.at(-1).de : ''}`);
+    });
+    const ph = apres.fichiers.filter(f => f.type.startsWith('image/') && !f.galerie && !f.album && !f.vu_galerie).length - avant.fichiers.filter(f => f.type.startsWith('image/') && !f.galerie && !f.album && !f.vu_galerie).length;
+    if (ph > 0) l.push(`🖼️ ${pluriel(ph, 'photo')} à valider`);
+    return l;
+  };
+  const rafraichir = async (force = false) => {
+    if (!D || enCours || (!force && (document.hidden || occupe()))) return;
+    enCours = true; if (force) $('#btn-rafraichir').classList.add('tourne');
+    try {
+      const r = await fetch('/api/admin/etat', { headers: { 'x-cle': cle } });
+      if (r.ok) {
+        const { etat } = await r.json();
+        if (force || etat !== etatConnu) {
+          const avant = D; await charger(); rafraichirApercu();
+          const l = nouveautes(avant, D);
+          if (l.length) { toast(l.slice(0, 2).join(' · ') + (l.length > 2 ? ` (+${l.length - 2})` : '')); if (document.hidden) { nouveautesCachees += l.length; document.title = `(${nouveautesCachees}) ${TITRE}`; } }
+          else if (force) toast('Tout est à jour');
+        } else { derniereMaj = Date.now(); majAJour(); }
+      }
+    } catch {}
+    enCours = false; $('#btn-rafraichir').classList.remove('tourne');
+  };
+  $('#btn-rafraichir').addEventListener('click', () => rafraichir(true));
+  // Toutes les 20 s quand l'admin est visible ; on continue doucement (1 min) en arrière-plan pour le chiffre de l'onglet
+  setInterval(() => { if (!document.hidden) rafraichir(); }, 20000);
+  setInterval(() => { if (document.hidden && D && !enCours) { enCours = true; fetch('/api/admin/etat', { headers: { 'x-cle': cle } }).then(r => r.ok ? r.json() : null)
+    .then(async d => { enCours = false; if (d && d.etat !== etatConnu) { const avant = D; await charger(); const l = nouveautes(avant, D); if (l.length) { nouveautesCachees += l.length; document.title = `(${nouveautesCachees}) ${TITRE}`; } } }).catch(() => { enCours = false; }); } }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { nouveautesCachees = 0; document.title = TITRE; rafraichir(); } });
 
   $('#connexion').addEventListener('submit', async (e) => {
     e.preventDefault(); cle = $('#cle').value; $('#erreur').textContent = '';
