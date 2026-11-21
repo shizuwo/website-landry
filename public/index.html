@@ -82,6 +82,7 @@
   .l { display: inline-block; will-change: transform; }
   .l > span { display: inline-block; animation: chute .95s cubic-bezier(.2,1.35,.4,1) both; }
   @keyframes chute { from { transform: translateY(-110vh) rotate(-25deg); } }
+  .mot { display: inline-block; white-space: nowrap; }
   .saut { display: inline-block; transition: translate .45s cubic-bezier(.3,1.9,.5,1), rotate .45s cubic-bezier(.3,1.9,.5,1), scale .45s cubic-bezier(.3,1.9,.5,1); }
   .descends { position: absolute; left: 7%; bottom: 13%; z-index: 2; color: var(--mape); font-size: clamp(1.4rem, 3.4vw, 2rem); display: flex; align-items: flex-end; gap: .3rem; rotate: -6deg; }
   .descends svg { width: 44px; height: 64px; animation: bob 1.6s ease-in-out infinite; }
@@ -496,10 +497,14 @@
     const enLettres = (el) => {
       const marche = (n) => [...n.childNodes].forEach(c => {
         if (c.nodeType === 3) {
+          // Chaque mot reste d'un seul tenant (sinon le retour à la ligne coupe les mots en plein milieu)
           const f = document.createDocumentFragment();
-          [...c.textContent].forEach(ch => {
-            if (/\s/.test(ch)) { f.append(ch); return; }
-            const sp = document.createElement('span'); sp.className = 'saut'; sp.textContent = ch; f.append(sp);
+          c.textContent.split(/(\s+)/).forEach(morceau => {
+            if (!morceau) return;
+            if (/^\s+$/.test(morceau)) { f.append(morceau); return; }
+            const mot = document.createElement('span'); mot.className = 'mot';
+            [...morceau].forEach(ch => { const sp = document.createElement('span'); sp.className = 'saut'; sp.textContent = ch; mot.append(sp); });
+            f.append(mot);
           });
           c.replaceWith(f);
         } else if (c.nodeType === 1 && !c.classList.contains('note') && c.tagName !== 'BR') marche(c);
