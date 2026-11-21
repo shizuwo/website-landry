@@ -543,19 +543,19 @@ const formMdp = (texte, msg = '') => `<h1>Protégé 🔒</h1><p>${texte}</p><for
 
 // Un transfert est-il encore téléchargeable ?
 function etatTransfert(t, now = Date.now()) {
-  if (!t || t.supprime || t.vide) return 'absent';
-  if (t.expire && t.expire <= now) return 'expire';
+  if (!t || t.supprime) return 'absent';
   if (t.max_dl && t.dl >= t.max_dl) return 'limite';
-  return 'ok';
+  if (t.expire && t.expire <= now) return 'expire';
+  return t.vide ? 'absent' : 'ok';
 }
 async function jetonTransfert(env, t) { return signer(env, 't:' + t.id + ':' + String(t.mdp).slice(0, 24)); }
 
 async function pageTransfert(request, env, id, url) {
   const t = await env.DB.prepare('SELECT * FROM transferts WHERE id = ?').bind(id).first();
-  const etat = etatTransfert(t), dejaVenu = t && lireCookie(request, 'td_' + id) === '1';
+  const etat = etatTransfert(t);
   if (etat === 'absent') return pageOutil('Introuvable', '<h1>Ce transfert n\'existe plus</h1><p>Le lien a peut-être expiré ou a été supprimé. Demande un nouveau lien à Landry !</p>', 404);
   if (etat === 'expire') return pageOutil('Expiré', `<h1>Lien expiré</h1><p>Ce transfert n'est plus disponible depuis le ${dateFrLong(t.expire)}.</p>`, 410);
-  if (etat === 'limite' && !dejaVenu) return pageOutil('Limite atteinte', '<h1>Déjà téléchargé</h1><p>Ce transfert a atteint son nombre maximum de téléchargements.</p>', 410);
+  if (etat === 'limite') return pageOutil('Limite atteinte', '<h1>Déjà téléchargé</h1><p>Ce transfert a atteint son nombre maximum de téléchargements.</p>', 410);
   // Mot de passe : formulaire, puis un cookie valable 1 jour pour ce transfert
   let cookie = '';
   if (t.mdp && lireCookie(request, 'tp_' + id) !== await jetonTransfert(env, t)) {
@@ -573,24 +573,35 @@ async function pageTransfert(request, env, id, url) {
   const contenu = `<h1>${echappe(t.titre || 'Des fichiers pour toi 🌺')}</h1>
     <p class="doux">${fs.length} fichier${fs.length > 1 ? 's' : ''} · ${tailleLisible(total)}${reste.length ? ' · ' + reste.join(' · ') : ''}</p>
     ${t.message ? `<p class="message">${echappe(t.message)}</p>` : ''}
+    ${t.max_dl && fs.length > 1 ? `<p class="doux">💡 Chaque fichier téléchargé compte : utilise « Tout télécharger » pour tout récupérer en une seule fois.</p>` : ''}
     ${fs.length > 1 && total < 4e9 ? `<a class="btn tout" href="/t/${id}/zip" download>⬇ Tout télécharger (.zip)</a>` : ''}
     <ul>${fs.map(f => `<li><span class="nom">${echappe(f.nom)}<small>${tailleLisible(f.taille)}</small></span><a class="btn petit" href="/t/${id}/f/${f.id}" download aria-label="Télécharger ${echappe(f.nom)}">⬇</a></li>`).join('')}</ul>
     <p class="doux">Envoyé par Landry depuis Tahiti 🌴</p>`;
   return pageOutil(t.titre || 'Transfert', contenu, 200, cookie ? { 'set-cookie': cookie } : {});
 }
 
-// Compte un téléchargement par visiteur (cookie d'un jour), refuse au-delà de la limite
+// Chaque téléchargement compte (un fichier ou le .zip). Le compteur est mis à jour d'un seul coup
+// côté base, donc deux personnes ne peuvent pas « passer » en même temps au-delà de la limite.
 async function autoriserTelechargement(request, env, ctx, t, quoi) {
   if (t.mdp && lireCookie(request, 'tp_' + t.id) !== await jetonTransfert(env, t)) return { refus: pageOutil('Protégé', formMdp('Ouvre d\'abord la page du transfert.'), 401) };
-  const etat = etatTransfert(t), dejaVenu = lireCookie(request, 'td_' + t.id) === '1';
-  if (etat === 'absent' || etat === 'expire' || (etat === 'limite' && !dejaVenu)) return { refus: Response.redirect(new URL('/t/' + t.id, request.url).toString(), 302) };
-  const now = Date.now(), lots = [env.DB.prepare('INSERT INTO transfert_dl (transfert, quand, quoi) VALUES (?, ?, ?)').bind(t.id, now, quoi)];
-  if (!dejaVenu) {
-    lots.push(env.DB.prepare('UPDATE transferts SET dl = dl + 1, fini = CASE WHEN max_dl IS NOT NULL AND dl + 1 >= max_dl THEN ? ELSE fini END WHERE id = ?').bind(now, t.id));
-    if (t.notifier) notifier(env, ctx, '⬇ Transfert téléchargé', `« ${t.titre || 'Transfert'} » a été téléchargé${t.max_dl ? ` (${t.dl + 1}/${t.max_dl})` : ''}.`);
-  }
-  ctx.waitUntil(env.DB.batch(lots).catch(() => {}));
-  return { cookie: dejaVenu ? '' : `td_${t.id}=1; Path=/t/${t.id}; Max-Age=86400; Secure; SameSite=Lax` };
+  if (etatTransfert(t) !== 'ok') return { refus: Response.redirect(new URL('/t/' + t.id, request.url).toString(), 302) };
+  const now = Date.now();
+  const r = await env.DB.prepare('UPDATE transferts SET dl = dl + 1, fini = CASE WHEN max_dl IS NOT NULL AND dl + 1 >= max_dl THEN ? ELSE fini END WHERE id = ? AND vide = 0 AND supprime IS NULL AND (max_dl IS NULL OR dl < max_dl) AND (expire IS NULL OR expire > ?)')
+    .bind(now, t.id, now).run();
+  if (!((r.meta && r.meta.changes) || r.changes)) return { refus: Response.redirect(new URL('/t/' + t.id, request.url).toString(), 302) };
+  ctx.waitUntil(env.DB.prepare('INSERT INTO transfert_dl (transfert, quand, quoi) VALUES (?, ?, ?)').bind(t.id, now, quoi).run().catch(() => {}));
+  if (t.notifier) notifier(env, ctx, '⬇ Transfert téléchargé', `« ${t.titre || 'Transfert'} » a été téléchargé${t.max_dl ? ` (${t.dl + 1}/${t.max_dl})` : ''}.`);
+  return { dernier: !!(t.max_dl && t.dl + 1 >= t.max_dl) };
+}
+// Envoie un flux au visiteur ; si c'était le dernier téléchargement autorisé, les fichiers sont effacés juste après
+function envoyerPuisVider(env, ctx, t, a, ecrire) {
+  const { readable, writable } = new TransformStream();
+  ctx.waitUntil((async () => {
+    let ok = false;
+    try { await ecrire(writable); ok = true; } catch {}
+    if (ok && a.dernier) await viderTransfert(env, t.id).catch(() => {});
+  })());
+  return readable;
 }
 
 async function telechargerTransfert(request, env, ctx, id, fid) {
@@ -603,8 +614,7 @@ async function telechargerTransfert(request, env, ctx, id, fid) {
   if (!obj) return pageOutil('Introuvable', '<h1>Fichier introuvable</h1>', 404);
   const h = new Headers({ 'content-type': f.type || 'application/octet-stream', 'content-length': String(f.taille), 'cache-control': 'private, no-store',
     'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(f.nom)}`, 'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex' });
-  if (a.cookie) h.set('set-cookie', a.cookie);
-  return new Response(obj.body, { headers: h });
+  return new Response(envoyerPuisVider(env, ctx, t, a, (w) => obj.body.pipeTo(w)), { headers: h });
 }
 
 // .zip sans compression, écrit au fil de l'eau : les CRC ont été calculés à l'envoi, le serveur ne fait que recopier
@@ -637,8 +647,7 @@ async function zipTransfert(request, env, ctx, id) {
   const tailleCentral = central.reduce((x, b) => x + b.length, 0);
   const fin = new Uint8Array(22), vf = new DataView(fin.buffer);
   u32(vf, 0x06054b50, 0); u16(vf, entrees.length, 8); u16(vf, entrees.length, 10); u32(vf, tailleCentral, 12); u32(vf, offset, 16);
-  const { readable, writable } = new TransformStream();
-  ctx.waitUntil((async () => {
+  const flux = envoyerPuisVider(env, ctx, t, a, async (writable) => {
     let w = writable.getWriter();
     try {
       for (const e of entrees) {
@@ -649,13 +658,12 @@ async function zipTransfert(request, env, ctx, id) {
       }
       for (const b of central) await w.write(b);
       await w.write(fin); await w.close();
-    } catch (err) { try { await w.abort(err); } catch {} }
-  })());
+    } catch (err) { try { await w.abort(err); } catch {} throw err; }
+  });
   const nomZip = (t.titre || 'landry-transfert').replace(/[^\p{L}\p{N} _-]+/gu, '').trim().slice(0, 60) || 'transfert';
   const h = new Headers({ 'content-type': 'application/zip', 'content-length': String(offset + tailleCentral + 22), 'cache-control': 'private, no-store',
     'content-disposition': `attachment; filename*=UTF-8''${encodeURIComponent(nomZip + '.zip')}`, 'x-robots-tag': 'noindex' });
-  if (a.cookie) h.set('set-cookie', a.cookie);
-  return new Response(readable, { headers: h });
+  return new Response(flux, { headers: h });
 }
 
 // Envoi d'un fichier dans un transfert (depuis l'admin)
