@@ -341,10 +341,10 @@
 
   // Auto-test : /convertir.html?test=convertir (ou gif, compresser…) fabrique une petite vidéo et la convertit
   const test = new URLSearchParams(location.search).get('test');
-  if (test && MODES[test]) (async () => {
-    choisirMode(test);
+  // (le son a besoin d'un appui sur un bouton pour démarrer, d'où le bouton « Lancer l'auto-test »)
+  if (test && MODES[test]) { choisirMode(test); const b = document.createElement('button'); b.className = 'principal'; b.textContent = "Lancer l'auto-test"; $('#modes').after(b); b.onclick = async () => { b.remove();
     const c = document.createElement('canvas'); c.width = 320; c.height = 240; const g = c.getContext('2d');
-    const flux = c.captureStream(15), son = new AudioContext(), osc = son.createOscillator(), dest = son.createMediaStreamDestination();
+    const flux = c.captureStream(15), son = new AudioContext(), osc = son.createOscillator(), dest = son.createMediaStreamDestination(); await son.resume();
     osc.connect(dest); osc.start(); dest.stream.getAudioTracks().forEach(t => flux.addTrack(t));   // un petit « bip » pour tester le son
     const rec = new MediaRecorder(flux, { mimeType: 'video/webm' }), morceaux = [];
     rec.ondataavailable = (e) => morceaux.push(e.data);
@@ -354,7 +354,7 @@
     recevoir([new File(morceaux, 'test.webm', { type: 'video/webm' })]);
     await new Promise(r => setTimeout(r, 800));
     $('#lancer').click();
-  })();
+  }; }
 }
 </script>
 </body>
