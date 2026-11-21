@@ -313,7 +313,6 @@
         <label><input type="radio" name="palette" value="monoi"><span>Monoï<small>Doré et crème, très doux</small></span></label>
         <label><input type="radio" name="palette" value="ocean"><span>Océan profond<small>Bleu nuit, bulles qui remontent</small></span></label>
       </form>
-      <label class="interrupteur boite" style="margin-top:10px"><span>Suivre la météo<small>Fines gouttes quand il pleut à Papeete, lumière dorée par grand soleil</small></span><span class="bascule"><input type="checkbox" id="meteo-theme"><span></span></span></label>
     </section>
 
     <section data-onglet="bio" data-nom="Liens" id="s-liens">
@@ -1293,7 +1292,7 @@
 
   const THEMES_LISTE = [['auto', 'Automatique', "Matari'i fin novembre, Noël, Nouvel An, Nouvel An chinois, Heiva en juillet, le 29 juin et ton anniversaire"], ['aucun', 'Aucun', 'Le site reste toujours le même'],
     ['heiva', 'Heiva', 'Fleurs, frise tapa et « Heiva i Tahiti ! »'], ['noel', 'Noël', 'Étoiles, guirlande de tiare et « Joyeux Noël »'], ['nouvel_an', 'Nouvel An', 'Confettis et « Bonne année »'],
-    ['matarii', "Matari'i", "Étoiles dorées, bio bleu nuit et « Matari'i i ni'a ! »"], ['nouvel_an_chinois', 'Nouvel An chinois', 'Lanternes, bio rouge et or'],
+    ['matarii', "Matari'i", "Étoiles dorées et « Matari'i i ni'a ! »"], ['nouvel_an_chinois', 'Nouvel An chinois', 'Lanternes, bio rouge et or'],
     ['autonomie', "Fête de l'autonomie", 'Confettis rouge et blanc (29 juin)'], ['anniversaire', 'Mon anniversaire', "Confettis et « C'est l'anniversaire de Landry ! »"]];
   const NOMS_FETES = Object.fromEntries(THEMES_LISTE.slice(2).map(([v, l]) => [v, l]));
   const ftheme = $('#form-theme');
@@ -1308,9 +1307,6 @@
 
   $('#form-palette').addEventListener('change', async (e) => {
     if (e.target.name === 'palette' && await action({ action: 'palette', valeur: e.target.value })) toast('Couleurs enregistrées');
-  });
-  $('#meteo-theme').addEventListener('change', async (e) => {
-    if (await action({ action: 'meteo_theme', actif: e.target.checked })) toast(e.target.checked ? 'La bio suit la météo' : 'Météo coupée');
   });
   const fdispo = $('#form-disposition');
   fdispo.addEventListener('change', async (e) => {
@@ -1483,7 +1479,6 @@
     afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme();
     fdispo.querySelector(`[value="${D.disposition || 'infos'}"]`).checked = true;
     $(`#form-palette [value="${D.palette || 'auto'}"]`).checked = true;
-    $('#meteo-theme').checked = D.meteo_theme !== false;
     majPastilles();
   };
 
