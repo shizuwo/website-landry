@@ -338,6 +338,19 @@
   new ResizeObserver(hauteur).observe(document.body);
   if (dansAdmin) $('#titre-page').hidden = true;
   choisirMode('son');
+
+  // Auto-test : /convertir.html?test=convertir (ou gif, compresser…) fabrique une petite vidéo et la convertit
+  const test = new URLSearchParams(location.search).get('test');
+  if (test && MODES[test]) (async () => {
+    choisirMode(test);
+    const c = document.createElement('canvas'); c.width = 320; c.height = 240; const g = c.getContext('2d');
+    const flux = c.captureStream(15), rec = new MediaRecorder(flux, { mimeType: 'video/webm' }), morceaux = [];
+    rec.ondataavailable = (e) => morceaux.push(e.data);
+    let t = 0; const anim = setInterval(() => { g.fillStyle = `hsl(${t * 12},70%,50%)`; g.fillRect(0, 0, 320, 240); g.fillStyle = '#fff'; g.font = '48px sans-serif'; g.fillText('Test ' + t++, 60, 140); }, 66);
+    rec.start(); await new Promise(r => setTimeout(r, 2500)); rec.stop(); await new Promise(r => rec.onstop = r); clearInterval(anim);
+    recevoir([new File(morceaux, 'test.webm', { type: 'video/webm' })]);
+    $('#lancer').click();
+  })();
 }
 </script>
 </body>
