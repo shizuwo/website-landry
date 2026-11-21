@@ -82,8 +82,6 @@
   .l { display: inline-block; will-change: transform; }
   .l > span { display: inline-block; animation: chute .95s cubic-bezier(.2,1.35,.4,1) both; }
   @keyframes chute { from { transform: translateY(-110vh) rotate(-25deg); } }
-  .mot { display: inline-block; white-space: nowrap; }
-  .saut { display: inline-block; transition: translate .45s cubic-bezier(.3,1.9,.5,1), rotate .45s cubic-bezier(.3,1.9,.5,1), scale .45s cubic-bezier(.3,1.9,.5,1); }
   .descends { position: absolute; left: 7%; bottom: 13%; z-index: 2; color: var(--mape); font-size: clamp(1.4rem, 3.4vw, 2rem); display: flex; align-items: flex-end; gap: .3rem; rotate: -6deg; }
   .descends svg { width: 44px; height: 64px; animation: bob 1.6s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(8px); } }
@@ -91,9 +89,37 @@
   /* ================= 2. BANDEAU ================= */
   .s-bande { position: relative; z-index: 4; height: clamp(170px, 22vw, 280px); margin: -9vw 0 -7vw; pointer-events: none; }
   .s-bande > svg { width: 100%; height: 100%; overflow: visible; }
+  @media (max-width: 699px) { .s-bande { height: 160px; margin: -46px 0 -40px; } }
 
   /* ================= Scènes épinglées ================= */
   .pin { position: relative; }
+
+  /* Papier déchiré entre deux sections : un bord blanc fibreux, puis la couleur de la section */
+  .s-tour::before, .s-tour::after, .s-soir::before, .s-soir::after {
+    content: ""; position: absolute; left: 0; right: 0; z-index: 6; pointer-events: none;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 24' preserveAspectRatio='none'%3E%3Cpath d='M0 24V14L7 9 13 15 21 6 28 12 35 4 44 13 51 8 58 16 66 5 74 11 82 3 89 12 97 7 104 15 112 6 120 13 127 4 135 10 143 5 151 14 160 8V24Z'/%3E%3C/svg%3E") 0 0 / 260px 100% repeat-x; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 24' preserveAspectRatio='none'%3E%3Cpath d='M0 24V14L7 9 13 15 21 6 28 12 35 4 44 13 51 8 58 16 66 5 74 11 82 3 89 12 97 7 104 15 112 6 120 13 127 4 135 10 143 5 151 14 160 8V24Z'/%3E%3C/svg%3E") 0 0 / 260px 100% repeat-x; }
+  .s-tour::before, .s-soir::before { top: -40px; height: 42px; background: var(--papier); }
+  .s-tour::after, .s-soir::after { top: -31px; height: 33px; -webkit-mask-position: 71px 0; mask-position: 71px 0; }
+  .s-tour::after { background: var(--soleil); }
+  .s-soir::after { background: #7FD6E8; }
+
+  /* Les grands titres « en gelée » : écrasés quand on scrolle vite, puis ils rebondissent */
+  .hero-titre, .ile-mot, .tour-titre, .fin-mot { scale: calc(1 + var(--gelee, 0)) calc(1 - var(--gelee, 0)); transition: scale .6s cubic-bezier(.3,1.9,.45,1); }
+
+  /* Carte qui se décolle d'un coin au survol */
+  .postale, .carte { --sous: var(--mape); }
+  .carte { --sous: var(--soleil); }
+  .postale::after, .carte::after { content: ""; position: absolute; right: 0; bottom: 0; width: 0; height: 0; z-index: 3; pointer-events: none;
+    background: linear-gradient(to top left, var(--sous) 49%, rgba(0,0,0,.18) 50%, #E8E0CC 53%, #FBF7EC 78%);
+    border-top-left-radius: 6px; box-shadow: -3px -3px 6px rgba(0,0,0,.12); transition: width .35s cubic-bezier(.3,1.5,.5,1), height .35s cubic-bezier(.3,1.5,.5,1); }
+  .carte::after { border-bottom-right-radius: 22px; }
+  .postale:hover::after, .carte:hover::after, .postale.pli::after, .carte.pli::after { width: 38px; height: 38px; }
+  .carte:hover::after, .carte.pli::after { width: 46px; height: 46px; }
+
+  /* Le scotch se déroule juste avant que la photo se pose */
+  .postale .scotch, .carte .scotch { transform: scaleX(0); transform-origin: 0 50%; transition: transform .5s cubic-bezier(.3,1.3,.5,1); }
+  .postale.colle .scotch, .carte.colle .scotch { transform: scaleX(1); }
+  @media (prefers-reduced-motion: reduce) { .postale .scotch, .carte .scotch { transform: none; } }
   .scene { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 
   /* ================= 3. MON ÎLE ================= */
@@ -236,6 +262,7 @@
   .calme .scene { position: relative; height: auto; min-height: 100svh; }
   .calme .piste { flex-wrap: wrap; justify-content: center; padding: 12vh 5vw; transform: none !important; }
   .calme .ile-texte, .calme .phrase:last-child, .calme .soir-boutons { opacity: 1; pointer-events: auto; }
+  .calme .postale .scotch, .calme .carte .scotch { transform: none; }
   .calme .l > span, .calme .descends svg, .calme .fin-tiare, .calme .honu, .calme .honu *, .calme .poissons, .calme .poissons *, .calme .matarii i { animation: none; }
   .calme .honu { left: 20%; } .calme .poissons { right: 25%; } .calme .filante { display: none; }
 </style>
@@ -455,6 +482,7 @@
 
 <script src="menu.js"></script>
 <script src="cadre.js"></script>
+<script src="effets.js"></script>
 <script>
 {
   const $ = (s, r = document) => r.querySelector(s);
@@ -491,42 +519,9 @@
   });
   const ileLettres = decouper($('#titre-ile span'));
 
-  /* ---------- Les lettres des titres sautent quand on passe dessus (comme sur sweet-tape) ---------- */
-  {
-    // Découpe en lettres les titres qui ne le sont pas encore (sans toucher aux petites notes manuscrites)
-    const enLettres = (el) => {
-      const marche = (n) => [...n.childNodes].forEach(c => {
-        if (c.nodeType === 3) {
-          // Chaque mot reste d'un seul tenant (sinon le retour à la ligne coupe les mots en plein milieu)
-          const f = document.createDocumentFragment();
-          c.textContent.split(/(\s+)/).forEach(morceau => {
-            if (!morceau) return;
-            if (/^\s+$/.test(morceau)) { f.append(morceau); return; }
-            const mot = document.createElement('span'); mot.className = 'mot';
-            [...morceau].forEach(ch => { const sp = document.createElement('span'); sp.className = 'saut'; sp.textContent = ch; mot.append(sp); });
-            f.append(mot);
-          });
-          c.replaceWith(f);
-        } else if (c.nodeType === 1 && !c.classList.contains('note') && c.tagName !== 'BR') marche(c);
-      });
-      if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
-      marche(el); el.dataset.saut = '';
-    };
-    ['#hero-titre', '#titre-ile'].forEach(sel => { const t = $(sel); t.dataset.saut = ''; $$('.l > span', t).forEach(s => s.classList.add('saut')); });
-    ['#titre-tour', '#fin-mot', '.carte h3', '.phrase'].forEach(sel => $$(sel).forEach(enLettres));
-    if (!calme) document.addEventListener('pointerover', (e) => {
-      const l = e.target.closest && e.target.closest('.saut'); if (!l) return;
-      const lettres = $$('.saut', l.closest('[data-saut]')), i = lettres.indexOf(l);
-      [-2, -1, 0, 1, 2].forEach(d => {
-        const s = lettres[i + d]; if (!s) return;
-        const k = [1, .45, .15][Math.abs(d)], sens = Math.random() < .5 ? -1 : 1;
-        s.style.translate = `0 ${(-0.16 * k).toFixed(3)}em`;
-        s.style.rotate = `${(sens * 10 * k).toFixed(1)}deg`;
-        s.style.scale = (1 + 0.1 * k).toFixed(3);
-        clearTimeout(s._t); s._t = setTimeout(() => { s.style.translate = s.style.rotate = s.style.scale = ''; }, 260);
-      });
-    });
-  }
+  /* ---------- Les lettres des titres sautent quand on passe dessus (effets.js) ---------- */
+  ['#hero-titre', '#titre-ile'].forEach(sel => { const t = $(sel); t.dataset.saut = ''; $$('.l > span', t).forEach(sp => sp.classList.add('saut')); });
+  ['#titre-tour', '#fin-mot', '.carte h3', '.phrase'].forEach(sel => $$(sel).forEach(el => window.enLettres && enLettres(el)));
   ileLettres.forEach(l => {
     l.firstChild.style.animation = 'none';
     l.dataset.x = (alea() * 90 - 45).toFixed(1);
@@ -586,6 +581,8 @@
   const soir = $('#soir'), scSoir = $('#soir-scene'), phrases = $$('.phrase'), boutonsSoir = $('#soir-boutons');
   const fin = $('#fin'), finMot = $('#fin-mot');
   let longueurBande = 0, vitesse = 0, dernierY = scrollY, aFaire = true;
+  const racine = document.documentElement; let finGelee = 0;
+  addEventListener('scroll', () => { clearTimeout(finGelee); finGelee = setTimeout(() => racine.style.setProperty('--gelee', 0), 90); }, { passive: true });
   const filante = $('#filante'); let prochaineFilante = 0;
 
   const progresEpingle = (el) => { const r = el.getBoundingClientRect(); return clamp(-r.top / (r.height - innerHeight)); };
@@ -595,6 +592,7 @@
     aFaire = false;
     const vh = innerHeight, vw = innerWidth, y = scrollY;
     vitesse = vitesse * 0.85 + (y - dernierY) * 0.15; dernierY = y;
+    racine.style.setProperty('--gelee', clamp(Math.abs(vitesse) * 0.0045, 0, 0.13).toFixed(3));
 
     // Progression globale (le va'a)
     document.documentElement.style.setProperty('--prog', clamp(y / (document.documentElement.scrollHeight - vh)).toFixed(4));
@@ -620,6 +618,7 @@
       const [fx, fy, fr] = c.dataset.from.split(',').map(Number);
       const b = ease(clamp((pi - c.dataset.start) / 0.22)), k = 1 - b;
       c.style.transform = `translate3d(${(fx * k).toFixed(2)}vw, ${(fy * k).toFixed(2)}vh, 0) rotate(${(+c.dataset.rot + fr * k).toFixed(1)}deg)`;
+      c.classList.toggle('colle', b > 0.8);
     });
     ileTexte.style.opacity = clamp((pi - 0.74) / 0.12).toFixed(3);
     ileTexte.style.transform = `translateY(${((1 - clamp((pi - 0.74) / 0.12)) * 20).toFixed(1)}px)`;
@@ -687,7 +686,20 @@
     aFaire = true;
   };
 
+  // Sur téléphone, la bande rouge suit une vague plus douce, avec des lettres à leurs vraies proportions
+  const svgBande = $('.s-bande > svg'), vagueBande = $('#vague-bande'), texteSvg = svgBande.querySelector('text');
+  const BANDE = {
+    large: { vb: '0 0 1600 260', par: 'none', d: 'M-200 170 C150 40 450 250 800 140 S1450 40 1800 160', ep: 104, taille: 64, dy: 22 },
+    etroit: { vb: '0 0 800 260', par: 'xMidYMid meet', d: 'M-260 150 C40 96 260 196 470 140 S840 92 1060 150', ep: 84, taille: 50, dy: 17 }
+  };
+  const formeBande = () => {
+    const b = BANDE[innerWidth < 700 ? 'etroit' : 'large'];
+    svgBande.setAttribute('viewBox', b.vb); svgBande.setAttribute('preserveAspectRatio', b.par);
+    vagueBande.setAttribute('d', b.d); vagueBande.setAttribute('stroke-width', b.ep);
+    texteSvg.setAttribute('font-size', b.taille); texteSvg.setAttribute('dy', b.dy);
+  };
   const mesurer = () => {
+    formeBande();
     try { longueurBande = $('#texte-bande').getComputedTextLength() / 8; } catch { longueurBande = 0; }
     ajusterTout();
     aFaire = true;
@@ -743,6 +755,14 @@
       }, { passive: true });
     }
   }
+
+  /* ---------- Coin qui se décolle au toucher, scotch des cartes « mots » ---------- */
+  $$('.postale, .carte').forEach(c => c.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    c.classList.add('pli'); clearTimeout(c._pli); c._pli = setTimeout(() => c.classList.remove('pli'), 900);
+  }, { passive: true }));
+  const voirCarte = new IntersectionObserver((es) => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('colle'); voirCarte.unobserve(en.target); } }), { threshold: 0.35 });
+  cartes.forEach(c => voirCarte.observe(c));
 
   /* ---------- Cartes postales à déplacer ---------- */
   {
