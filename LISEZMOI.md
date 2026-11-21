@@ -43,7 +43,7 @@ L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cher
 - **Réglages** : livre d'or et contact (activer/couper), bannière programmable, liens courts, fêtes
   (automatique : Matari'i fin novembre, Noël, Nouvel An, Nouvel An chinois, 29 juin, Heiva en juillet, ton anniversaire ; messages personnalisés), mentions légales, sauvegarde en un clic, nettoyage.
 
-**Sécurité** : après 5 mauvais mots de passe en 15 minutes, l'admin est bloqué 15 minutes pour cet appareil, et tu reçois une notification.
+**Sécurité** : après 5 mauvais mots de passe en 15 minutes, l'admin est bloqué 15 minutes pour ce réseau, et tu reçois une notification. Tes appareils déjà connectés une fois (« appareils de confiance ») ne sont jamais bloqués.
 
 Chaque suppression peut être annulée pendant 5 secondes. Le menu **⋯** de chaque élément regroupe ses actions.
 
