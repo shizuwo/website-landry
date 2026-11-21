@@ -955,12 +955,13 @@
      ===================================================================== */
   const aValider = () => D.fichiers.filter(f => f.type.startsWith('image/') && !f.galerie && !f.album && !f.vu_galerie && !f.protege && !(f.expire && f.expire < Date.now()));
   // Version du site et mises à jour en attente (les PR ouvertes sur GitHub)
+  let verifierFrais = true;   // à l'ouverture et avec ↻ : on redemande à GitHub sans attendre le cache
   const afficherVersion = async () => {
     const v = D.version || {}, el = $('#version');
     const quand = v.date ? new Date(v.date).toLocaleString('fr-FR', { timeZone: 'Pacific/Tahiti', dateStyle: 'long', timeStyle: 'short' }) : 'date inconnue';
     el.innerHTML = `<div class="ligne-v"><span>🌺 Version</span><b class="num">${echappe(v.nom || '?')}</b><span class="aide" style="margin:0">mise en ligne le ${quand} (heure de Tahiti)</span></div><div id="maj-dispo" class="aide" style="margin:0">Recherche de mises à jour…</div>`;
     try {
-      const r = await fetch('/api/admin/maj', { headers: { 'x-cle': cle } }); const d = await r.json();
+      const r = await fetch('/api/admin/maj' + (verifierFrais ? '?frais=1' : ''), { headers: { 'x-cle': cle } }); verifierFrais = false; const d = await r.json();
       if (!r.ok) throw new Error(d.erreur);
       $('#maj-dispo').outerHTML = d.prs.length ? d.prs.map(p => `<div class="maj">⬆️ <b>Mise à jour disponible</b> : ${echappe(p.titre)}
           <div class="ligne" style="margin:6px 0 0;gap:12px"><a href="${p.apercu}" target="_blank" rel="noopener">Voir l'aperçu</a><a href="${p.url}" target="_blank" rel="noopener">Installer sur GitHub (#${p.numero})</a></div></div>`).join('')
@@ -1955,7 +1956,7 @@
     } catch {}
     enCours = false; $('#btn-rafraichir').classList.remove('tourne');
   };
-  $('#btn-rafraichir').addEventListener('click', () => rafraichir(true));
+  $('#btn-rafraichir').addEventListener('click', () => { verifierFrais = true; rafraichir(true); });
   // Toutes les 20 s quand l'admin est visible ; on continue doucement (1 min) en arrière-plan pour le chiffre de l'onglet
   setInterval(() => { if (!document.hidden) rafraichir(); }, 20000);
   setInterval(() => { if (document.hidden && D && !enCours) { enCours = true; fetch('/api/admin/etat', { headers: { 'x-cle': cle } }).then(r => r.ok ? r.json() : null)

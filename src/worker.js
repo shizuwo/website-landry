@@ -974,16 +974,16 @@ async function signatureEtat(env) {
 
 /* ================= Mises à jour disponibles (PR ouvertes sur GitHub) ================= */
 
-async function misesAJour() {
+async function misesAJour(frais = false) {
   const url = `https://api.github.com/repos/${DEPOT}/pulls?state=open&base=main&sort=created&direction=desc`;
   const cache = typeof caches !== 'undefined' ? caches.default : null, cle = new Request(url);
-  let r = cache && await cache.match(cle);
+  let r = !frais && cache && await cache.match(cle);
   if (!r) {
     try {
       r = await fetch(url, { headers: { 'user-agent': 'landrypf-admin', accept: 'application/vnd.github+json' } });
     } catch { return json({ erreur: 'GitHub injoignable' }, { status: 502 }); }
     if (!r.ok) return json({ erreur: 'GitHub a répondu ' + r.status }, { status: 502 });
-    r = new Response(r.body, { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300' } });   // 5 minutes
+    r = new Response(r.body, { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=60' } });   // 1 minute
     if (cache) await cache.put(cle, r.clone());
   }
   const prs = await r.json();
@@ -1548,7 +1548,7 @@ export default {
           if (envoiT && !envoiT[2] && m === 'PUT') return await envoyerTransfert(request, env, envoiT[1]);
           if (envoiT && envoiT[2]) return await routeEnvoi(request, env, envoiT[1], envoiT[2]);
           if (pathname === '/api/admin' && m === 'GET') return await adminLire(env);
-          if (pathname === '/api/admin/maj' && m === 'GET') return await misesAJour();
+          if (pathname === '/api/admin/maj' && m === 'GET') return await misesAJour(new URL(request.url).searchParams.has('frais'));
           if (pathname === '/api/admin/etat' && m === 'GET') return json({ etat: await signatureEtat(env) }, { headers: { 'cache-control': 'no-store' } });
           if (pathname === '/api/admin' && m === 'POST') return await adminEcrire(request, env);
         }
