@@ -15,7 +15,7 @@ const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 'envoi', 'admin-sw', '
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
 // Numéro de version affiché dans l'admin (augmenté à chaque mise à jour)
-const VERSION = 'v21';
+const VERSION = 'v22';
 const DEPOT = 'shizuwo/website-landry';
 const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
@@ -119,7 +119,20 @@ async function tropTot(env, cle, ms) {
 
 // Protection de l'admin : 5 mauvais mots de passe en 15 min → bloqué 15 min (et une notification)
 const ESSAIS_MAX = 5, BLOCAGE_MS = 15 * 60e3;
+// Appareil de confiance : après une bonne connexion, l'appareil reçoit un cookie signé (1 an).
+// Il n'est alors jamais bloqué, même si quelqu'un d'autre se trompe de mot de passe sur le même réseau
+// (même wifi, ou même opérateur mobile : beaucoup de téléphones partagent la même adresse IP).
+const COOKIE_APPAREIL = 'appareil_admin';
+async function appareilDeConfiance(request, env) {
+  const v = lireCookie(request, COOKIE_APPAREIL), [fin, sig] = v.split('.');
+  return !!(fin && +fin > Date.now() && sig && sig === await signer(env, 'appareil:' + fin));
+}
+async function cookieAppareil(env) {
+  const fin = Date.now() + 365 * 864e5;
+  return `${COOKIE_APPAREIL}=${fin}.${await signer(env, 'appareil:' + fin)}; Path=/; Max-Age=${365 * 86400}; HttpOnly; Secure; SameSite=Strict`;
+}
 async function gardeAdmin(request, env, ctx) {
+  if (await appareilDeConfiance(request, env)) return autorise(request, env) ? null : erreur('Mot de passe incorrect.', 401);
   const fp = await empreinte(request, env), now = Date.now();
   const [kb, kn, kt] = ['xb:', 'xn:', 'xt:'].map(p => p + fp);
   const lignes = Object.fromEntries((await env.DB.prepare('SELECT cle, dernier FROM limites WHERE cle IN (?, ?, ?)').bind(kb, kn, kt).all()).results.map(r => [r.cle, r.dernier]));
@@ -136,7 +149,7 @@ async function gardeAdmin(request, env, ctx) {
   const ecrire = (k, v) => env.DB.prepare('INSERT INTO limites (cle, dernier) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET dernier = excluded.dernier').bind(k, v);
   if (essais >= ESSAIS_MAX) {
     await env.DB.batch([ecrire(kb, now + BLOCAGE_MS), env.DB.prepare('DELETE FROM limites WHERE cle IN (?, ?)').bind(kn, kt)]);
-    notifier(env, ctx, '🔒 Admin bloqué 15 min', `${ESSAIS_MAX} mauvais mots de passe d'affilée sur l'admin. Si ce n'était pas toi, rien à faire : l'accès est bloqué pour cet appareil.`);
+    notifier(env, ctx, '🔒 Admin bloqué 15 min', `${ESSAIS_MAX} mauvais mots de passe d'affilée sur l'admin. Si ce n'était pas toi, rien à faire : tes appareils habituels restent autorisés.`);
     return erreur("Trop d'essais ratés. Réessaie dans 15 min.", 429);
   }
   await env.DB.batch([ecrire(kn, essais), ecrire(kt, debut)]);
@@ -1499,6 +1512,11 @@ export default {
         if (pathname === '/api/photos-accueil' && m === 'GET') return await photosAccueil(env);
         if (pathname === '/api/admin' || pathname === '/api/fichiers' || pathname.startsWith('/api/admin/')) {
           const refus = await gardeAdmin(request, env, ctx); if (refus) return refus;
+          // Première connexion réussie sur cet appareil : il devient « de confiance »
+          if (pathname === '/api/admin' && m === 'GET' && !(await appareilDeConfiance(request, env))) {
+            const r = await adminLire(env), h = new Headers(r.headers); h.append('set-cookie', await cookieAppareil(env));
+            return new Response(r.body, { status: r.status, headers: h });
+          }
           if (pathname === '/api/admin/export' && m === 'GET') return await exporter(env);
           // L'admin peut voir les photos de l'album dans son interface
           if (pathname === '/api/admin/album' && m === 'POST') return json({ ok: true }, { headers: { 'set-cookie': cookieAlbum(await jetonAlbum(env, (await reglage(env, 'album_mdp')) || 'admin', 864e5), 86400) } });
