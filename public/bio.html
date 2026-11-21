@@ -462,6 +462,7 @@
 <div class="toast" id="toast" role="status"></div>
 
 <script src="menu.js"></script>
+<script src="effets.js"></script>
 <script src="icones.js"></script>
 <script>
 {
@@ -572,7 +573,8 @@
   }
   const nom = $('#nom'); const texteNom = nom.textContent;
   nom.setAttribute('aria-label', texteNom);
-  nom.innerHTML = [...texteNom].map((c, i) => `<span aria-hidden="true" style="animation-delay:${(1.9 + i * 0.05).toFixed(2)}s">${c}</span>`).join('');
+  nom.innerHTML = [...texteNom].map((c, i) => `<span class="saut" aria-hidden="true" style="animation-delay:${(1.9 + i * 0.05).toFixed(2)}s">${c}</span>`).join('');
+  nom.dataset.saut = '';   // les lettres sautent au passage de la souris ou du doigt (effets.js)
 
   /* ---------- Heure de Tahiti + jour/nuit ---------- */
   const forcer = new URLSearchParams(location.search).get('moment'); // ?moment=nuit pour tester
