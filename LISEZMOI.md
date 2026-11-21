@@ -24,15 +24,15 @@ Sur téléphone, les onglets sont en bas de l'écran ; sur ordinateur, en haut. 
 L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cherche partout.
 
 - **Tableau de bord** : ce qui est à traiter (messages, mots, photos), jauge de stockage, chiffres sur 30 jours.
-- **Page bio** : disposition (liens en haut ou infos en haut ; « En ce moment » reste toujours sous ton nom), liens (menu ⋯ → « Mettre en avant ✨ » pour faire briller un lien) (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
+- **Page bio** : couleurs (le ciel de Tahiti : lever, jour, coucher, nuit aux vraies heures du soleil ; ou Lagon, Tifaifai, Tapa, Monoï, Océan profond), météo (pluie / grand soleil), disposition (liens en haut ou infos en haut ; « En ce moment » reste toujours sous ton nom), liens (menu ⋯ → « Mettre en avant ✨ » pour faire briller un lien) (glisser ⠿ pour l'ordre, dates de début et de fin), phrases « En ce moment »,
   événement, badge « en direct », lecteur de musique avec playlist, blocs intégrés
   (Instagram, TikTok, YouTube, Spotify, SoundCloud). Sur ordinateur, un aperçu en direct de la bio s'affiche à droite.
 - **Page d'accueil** : tes photos à la place des dessins (bouton **Recadrer** : glisse et zoome), et tous les textes.
 - **Fichiers** : envoi (100 Mo max, photos optimisées), filtres, lien court, QR code, mot de passe, expiration,
   renommage ; galerie publique (avec « Photos à valider », et **Recadrer** dans le menu ⋯ : format carré, portrait, paysage ou d'origine) ; **album privé** protégé par mot de passe (landrypf.com/album).
 - **Messages** : formulaire de contact et livre d'or (les visiteurs peuvent mettre un 🌺 aux mots).
-- **Réglages** : livre d'or et contact (activer/couper), bannière programmable, liens courts, thème saisonnier
-  (automatique : Heiva en juillet, Noël, Nouvel An), mentions légales, sauvegarde en un clic, nettoyage.
+- **Réglages** : livre d'or et contact (activer/couper), bannière programmable, liens courts, fêtes
+  (automatique : Matari'i fin novembre, Noël, Nouvel An, Nouvel An chinois, 29 juin, Heiva en juillet, ton anniversaire ; messages personnalisés), mentions légales, sauvegarde en un clic, nettoyage.
 
 **Sécurité** : après 5 mauvais mots de passe en 15 minutes, l'admin est bloqué 15 minutes pour cet appareil, et tu reçois une notification.
 
