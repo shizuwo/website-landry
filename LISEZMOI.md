@@ -36,6 +36,7 @@ L'onglet **Tout** affiche tout sur une seule page. **Ctrl K** (ou la loupe) cher
   - **Depuis Android** : installe l'admin sur l'écran d'accueil, puis « Partager → Admin » depuis la galerie photo.
   - **Bloc-notes** (landrypf.com/n/…) : texte ou code, mot de passe, expiration, « détruire après lecture ».
   - **Liens courts** : destination iPhone / Android, expiration, nombre de clics maximum, statistiques (jour, appareil, pays).
+  - **Convertir** : vidéo → son (MP3, M4A), compresser une vidéo, convertir (MOV → MP4, WAV → MP3…), couper, GIF, photos en lot (HEIC, PNG, WebP, JPG, redimensionnées, sans GPS). Tout se fait sur ton appareil ; l'outil vidéo (30 Mo) se télécharge la première fois. 500 Mo maximum par fichier.
   - **QR codes** : n'importe quel lien, tiare au centre, couleur au choix, PNG ou SVG.
   - **Corbeille** : transferts et notes supprimés gardés 30 jours.
   - La position GPS des photos est retirée à l'envoi (case cochée par défaut).

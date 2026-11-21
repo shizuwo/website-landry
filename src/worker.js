@@ -10,12 +10,12 @@ const erreur = (msg, status = 400) => json({ erreur: msg }, { status });
 const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Codes de liens courts interdits (déjà utilisés par le site)
-const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 'envoi', 'admin-sw', 't', 'n', 'd', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
+const RESERVES = new Set(['404', 'cadre', 'qr', 'effets', 'envoi', 'admin-sw', 'convertir', 'convertir-worker', 't', 'n', 'd', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun', 'album', 'mentions']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
 const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
 // Numéro de version affiché dans l'admin (augmenté à chaque mise à jour)
-const VERSION = 'v23';
+const VERSION = 'v24';
 const DEPOT = 'shizuwo/website-landry';
 const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
