@@ -398,7 +398,7 @@
     </section>
     <section data-onglet="accueil" data-nom="Textes" id="s-textes">
       <h2>Textes de l'accueil</h2>
-      <p class="aide">Laisse un champ vide pour garder le texte d'origine (en gris). Les très grands mots se resserrent tout seuls s'ils sont trop longs.</p>
+      <p class="aide">Laisse un champ vide pour garder le texte d'origine (en gris). Les très grands mots se resserrent tout seuls s'ils sont trop longs. Pour mettre un mot en couleur, entoure-le de deux étoiles : <b>**Tahiti**</b>.</p>
       <form id="form-textes" class="boite grille" novalidate></form>
     </section>
 
@@ -974,7 +974,7 @@
     $('#emplacements').innerHTML = Object.entries(noms).map(([k, n]) => {
       const choisi = D.fichiers.find(f => f.id === D.photos[k]);
       return `<div class="emplacement"><b>${n}</b><div class="apercu">${choisi ? `<img src="${choisi.url}" alt="" loading="lazy" data-cadre="${k}">` : 'Dessin d\'origine'}</div>
-        ${choisi ? `<button type="button" class="petit gris" data-recadrer="${k}" style="width:100%;margin-bottom:6px">Recadrer</button>` : ''}
+        ${choisi ? `<div class="ligne" style="margin:0 0 6px;gap:6px"><button type="button" class="petit gris" data-recadrer="${k}" style="flex:1">Recadrer</button><button type="button" class="petit gris" data-pivoter="${choisi.id}" aria-label="Pivoter la photo d'un quart de tour" title="Pivoter">↻</button></div>` : ''}
         <select data-emplacement="${k}" aria-label="Photo pour ${n}"><option value="">Dessin d'origine</option>${images.map(f => `<option value="${f.id}" ${f.id === D.photos[k] ? 'selected' : ''}>${echappe(f.legende || f.nom)}</option>`).join('')}</select></div>`;
     }).join('');
     $$('#emplacements img[data-cadre]').forEach(img => CADRE.appliquer(img, (D.cadres || {})[img.dataset.cadre]));
@@ -984,6 +984,7 @@
     const k = b.dataset.recadrer, f = D.fichiers.find(x => x.id === D.photos[k]);
     if (f) recadrer(k, f.url, false);
   });
+  document.addEventListener('click', (e) => { const b = e.target.closest('[data-pivoter]'); if (b) pivoter(b.dataset.pivoter, 90); });
   document.addEventListener('change', async (e) => {
     const s = e.target.closest('select[data-emplacement]'); if (!s) return;
     if (await action({ action: 'photo_accueil', emplacement: s.dataset.emplacement, id: s.value || null })) toast("Photo de l'accueil mise à jour");
@@ -991,7 +992,7 @@
 
   const GROUPES = [
     ['Le titre', [['hero1', 'Ligne 1 du grand titre', 'Ia ora', 12], ['hero2', 'Ligne 2 du grand titre', 'na !', 12], ['descends', 'Petite note manuscrite', 'descends doucement', 40]]],
-    ['Le bandeau', [['bande', 'Phrase qui défile (sépare les morceaux par ✿)', 'Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru', 120], ['badge', 'Texte du badge rond', 'Fait à Tahiti', 18]]],
+    ['Le bandeau', [['bande', 'Phrase qui défile (sépare les morceaux par ✿)', 'Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru', 120]]],
     ['Mon île', [['ile_mot', 'Grand mot', 'Tahiti', 10], ['p1_legende', 'Légende carte postale 1', 'le lagon, 7h du matin', 40], ['p2_legende', 'Légende carte postale 2', 'la tiare du jardin', 40],
       ['p3_legende', 'Légende carte postale 3', 'fin de journée', 40], ['ile_texte', 'Petit texte', "Deux volcans reliés par l'isthme de Taravao : Tahiti Nui, la grande, et Tahiti Iti, la petite. C'est ici que je vis.", 300, true]]],
     ['Les 5 mots', [['tour_titre', 'Grand titre (une ligne par mot)', 'Mon\nTahiti\nen 5\nmots', 60, true], ['tour_note', 'Petite note', 'continue de descendre, ça glisse', 60],
@@ -1112,6 +1113,24 @@
     xhr.onerror = () => { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : connexion perdue.</div>`; ok(); };
     xhr.send(fichier);
   });
+  // Pivoter une photo d'un quart de tour : l'image est tournée ici puis remplace l'ancienne (même lien, mêmes réglages)
+  const pivoter = async (id, angle) => {
+    const f = D.fichiers.find(x => x.id === id); if (!f) return;
+    toast('Rotation en cours…');
+    try {
+      const source = await (await fetch(f.url, { cache: 'no-store', credentials: 'same-origin' })).blob();
+      const img = await createImageBitmap(source, { imageOrientation: 'from-image' });
+      const c = document.createElement('canvas'); c.width = img.height; c.height = img.width;
+      const g = c.getContext('2d');
+      g.translate(c.width / 2, c.height / 2); g.rotate(angle * Math.PI / 180); g.drawImage(img, -img.width / 2, -img.height / 2);
+      const type = /png|webp/.test(f.type) ? 'image/webp' : 'image/jpeg';
+      const blob = await new Promise(r => c.toBlob(r, type, type === 'image/webp' ? 0.95 : 0.92));
+      const r = await fetch('/api/fichiers?remplacer=' + encodeURIComponent(id), { method: 'PUT', headers: { 'x-cle': cle, 'content-type': type }, body: blob });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.erreur || 'échec');
+      await charger(); rafraichirApercu(); toast('Photo pivotée');
+    } catch (e) { toast('Impossible de pivoter : ' + e.message); }
+  };
   const envoyerTout = async (liste) => { for (const f of liste) await envoyer(f); await charger(); };
   choix.addEventListener('change', () => { envoyerTout([...choix.files]); choix.value = ''; });
   ['dragenter', 'dragover'].forEach(t => depot.addEventListener(t, (e) => { e.preventDefault(); depot.classList.add('survol'); }));
@@ -1317,10 +1336,14 @@
       { l: 'QR code', f: () => montrerQr(SITE + f.court, f.nom) },
       { l: 'Ouvrir', f: () => window.open(f.url, '_blank', 'noopener') },
       { l: 'Réglages (nom, galerie, album…)', f: () => reglerFichier(f.id) },
+      f.type.startsWith('image/') && { l: 'Pivoter à droite ↻', f: () => pivoter(f.id, 90) },
+      f.type.startsWith('image/') && { l: 'Pivoter à gauche ↺', f: () => pivoter(f.id, -90) },
       { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'fichier_supprimer', id: f.id }, el, 'Fichier') }]; },
     galerie: (id) => [
       { l: 'Légende', f: () => reglerFichier(id) },
       { l: 'Recadrer', f: () => { const f = D.fichiers.find(x => x.id === id); if (f) recadrer('f:' + id, f.url, true); } },
+      { l: 'Pivoter à droite ↻', f: () => pivoter(id, 90) },
+      { l: 'Pivoter à gauche ↺', f: () => pivoter(id, -90) },
       { l: "Déplacer vers l'album privé", f: () => action({ action: 'fichier_modifier', id, album: true }) },
       { l: 'Retirer de la galerie', f: () => action({ action: 'fichier_modifier', id, galerie: false }) }],
     album: (id) => [

@@ -82,9 +82,6 @@
   .l { display: inline-block; will-change: transform; }
   .l > span { display: inline-block; animation: chute .95s cubic-bezier(.2,1.35,.4,1) both; }
   @keyframes chute { from { transform: translateY(-110vh) rotate(-25deg); } }
-  .sticker-motif { position: absolute; z-index: 2; top: 13%; right: 9%; width: clamp(86px, 16vw, 170px); rotate: 12deg; }
-  .sticker-motif .rond { display: block; width: 100%; aspect-ratio: 1; border-radius: 50%; background: var(--papier); padding: 8%; box-shadow: 0 10px 24px rgba(0,0,0,.25); }
-  .sticker-motif .scotch { top: -10px; left: 50%; translate: -50% 0; rotate: -8deg; width: 70px; height: 22px; }
   .descends { position: absolute; left: 7%; bottom: 13%; z-index: 2; color: var(--mape); font-size: clamp(1.4rem, 3.4vw, 2rem); display: flex; align-items: flex-end; gap: .3rem; rotate: -6deg; }
   .descends svg { width: 44px; height: 64px; animation: bob 1.6s ease-in-out infinite; }
   @keyframes bob { 50% { transform: translateY(8px); } }
@@ -92,8 +89,6 @@
   /* ================= 2. BANDEAU ================= */
   .s-bande { position: relative; z-index: 4; height: clamp(170px, 22vw, 280px); margin: -9vw 0 -7vw; pointer-events: none; }
   .s-bande > svg { width: 100%; height: 100%; overflow: visible; }
-  .badge { position: absolute; right: 13%; top: 4%; width: clamp(90px, 13vw, 150px); aspect-ratio: 1; }
-  .badge svg { width: 100%; height: 100%; }
 
   /* ================= Scènes épinglées ================= */
   .pin { position: relative; }
@@ -212,7 +207,6 @@
     .postale { width: 40vw; }
     .p1 { left: 3%; top: 12%; } .p2 { right: 3%; top: 6%; } .p3 { right: 4%; bottom: 25%; }
     .ile-texte { max-width: none; left: 6%; right: 6%; bottom: 5%; }
-    .badge { right: 6%; }
     .progression { display: none; }
   }
 
@@ -352,10 +346,6 @@
     <span class="ligne" aria-hidden="true" data-txt="hero1">Ia ora</span>
     <span class="ligne" aria-hidden="true" data-txt="hero2">na !</span>
   </h1>
-  <div class="sticker-motif" id="sticker">
-    <span class="scotch"></span>
-    <svg class="rond" viewBox="0 0 400 400" aria-hidden="true"><use href="#motif-tifaifai"/></svg>
-  </div>
   <p class="descends note">
     <span data-txt="descends">descends doucement</span>
     <svg viewBox="0 0 44 64" aria-hidden="true"><path d="M8 4 C30 14 4 30 22 44 L22 58 M14 50 L22 60 L30 50" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -369,16 +359,6 @@
     <text class="d" font-size="64" fill="#FFFDF8" dy="22"><textPath id="texte-bande" href="#vague-bande" startOffset="0"></textPath></text>
   </svg>
   <span id="phrase-bande" hidden data-txt="bande">Entre le lagon et la montagne ✿ Ia ora na ✿ Mauruuru</span>
-  <span id="phrase-badge" hidden data-txt="badge">Fait à Tahiti</span>
-  <div class="badge" id="badge">
-    <svg viewBox="0 0 200 200">
-      <circle cx="100" cy="100" r="96" fill="#FFC93C"/>
-      <circle cx="100" cy="100" r="74" fill="none" stroke="#B3212E" stroke-width="2" stroke-dasharray="4 5"/>
-      <path id="cercle-badge" d="M100 100 m-80 0 a80 80 0 1 1 160 0 a80 80 0 1 1 -160 0" fill="none"/>
-      <text class="d" font-size="21" fill="#0D4D3A" letter-spacing="2"><textPath href="#cercle-badge" id="texte-badge">Fait à Tahiti ✿ Fait à Tahiti ✿ Fait à Tahiti ✿</textPath></text>
-      <g transform="translate(100 100) scale(.42) translate(-200 -200)"><use href="#motif-tifaifai"/></g>
-    </svg>
-  </div>
 </div>
 
 <main>
@@ -389,7 +369,7 @@
       <figure class="postale p1" data-photo="p1" data-from="-70,-40,-28" data-rot="-7" data-start=".32"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-lagon"/></svg><figcaption class="note" data-txt="p1_legende">le lagon, 7h du matin</figcaption></figure>
       <figure class="postale p2" data-photo="p2" data-from="70,-50,30" data-rot="6" data-start=".44"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-tiare"/></svg><figcaption class="note" data-txt="p2_legende">la tiare du jardin</figcaption></figure>
       <figure class="postale p3" data-photo="p3" data-from="60,70,-24" data-rot="-4" data-start=".56"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-coucher"/></svg><figcaption class="note" data-txt="p3_legende">fin de journée</figcaption></figure>
-      <p class="ile-texte" id="ile-texte" data-txt="ile_texte">Deux volcans reliés par l'isthme de Taravao : <b>Tahiti Nui</b>, la grande, et <b>Tahiti Iti</b>, la petite. C'est ici que je vis.</p>
+      <p class="ile-texte" id="ile-texte" data-txt="ile_texte">Ia ora na, moi c'est <b>Landry</b> ! Je vis à <b>Tahiti</b>, entre le lagon et la montagne. Ici, je partage mes balades, mes plongées et les petits moments qui font la vie au <b>fenua</b>. Installe-toi, descends doucement 🌺</p>
     </div>
   </section>
 
@@ -518,8 +498,6 @@
 
   /* ---------- Bandeau ---------- */
   const phraseBande = $('#phrase-bande').textContent.trim().replace(/\s*✿?\s*$/, '') + ' ✿ ';
-  const badgeTxt = $('#phrase-badge').textContent.trim().slice(0, 18);
-  $('#texte-badge').textContent = `${badgeTxt} ✿ `.repeat(3);
   $('#texte-bande').textContent = phraseBande.repeat(8);
 
   /* ---------- Couronne de fleurs (Heiva) ---------- */
@@ -563,7 +541,7 @@
   };
 
   /* ---------- Moteur de scroll ---------- */
-  const hero = $('#hero'), sticker = $('#sticker'), badge = $('#badge'), texteBande = $('#texte-bande');
+  const hero = $('#hero'), texteBande = $('#texte-bande');
   const ile = $('#ile'), postales = $$('.postale'), ileTexte = $('#ile-texte');
   const tour = $('#tour'), piste = $('#piste'), cartes = $$('.carte');
   const soir = $('#soir'), scSoir = $('#soir-scene'), phrases = $$('.phrase'), boutonsSoir = $('#soir-boutons');
@@ -588,11 +566,9 @@
       l.style.transform = `translate3d(0, ${(-ph * vh * l.dataset.v + l.dataset.y0 * vh).toFixed(1)}px, 0) rotate(${(+l.dataset.r0 + ph * l.dataset.rv).toFixed(1)}deg)`;
     });
     hero.style.setProperty('--courbe', (9 + ph * 16).toFixed(2) + 'vw');
-    sticker.style.transform = `translateY(${(-ph * vh * 0.5).toFixed(1)}px) rotate(${(ph * 160).toFixed(1)}deg)`;
 
     // 2. Bandeau qui défile avec le scroll
     if (longueurBande) texteBande.setAttribute('startOffset', (-((y * 0.7) % longueurBande)).toFixed(1));
-    badge.style.transform = `rotate(${(y * 0.25).toFixed(1)}deg)`;
 
     // 3. Mon île : les lettres se rassemblent, les cartes postales se posent
     const pi = progresEpingle(ile), a = ease(clamp(pi / 0.4));
