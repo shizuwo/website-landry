@@ -70,20 +70,27 @@
 
   /* ================= 1. HERO ================= */
   .s-hero {
-    position: relative; z-index: 3; height: 100svh; min-height: 560px; overflow: hidden;
+    position: relative; z-index: 3; height: calc(100svh - clamp(110px, 12vw, 170px)); min-height: 520px; overflow: hidden;
     background: var(--lagon); color: var(--mape);
     display: grid; place-items: center;
     border-radius: 0 0 50% 50% / 0 0 var(--courbe, 9vw) var(--courbe, 9vw);
   }
   .logo { position: absolute; top: 18px; left: max(16px, 3vw); z-index: 3; color: var(--mape); text-decoration: none; font-size: 1.5rem; }
   .mes-liens { position: absolute; top: 20px; left: calc(max(16px, 3vw) + 6.4rem); z-index: 3; padding: .3rem .85rem; border-radius: 999px; background: var(--papier); color: var(--mape); font-weight: 600; font-size: .9375rem; text-decoration: none; box-shadow: 0 3px 0 rgba(0,0,0,.15); }
-  .hero-titre { margin: 0; text-align: center; max-width: 100vw; font-size: clamp(5.5rem, 27vw, 17rem); line-height: .8; }
+  .hero-titre { position: relative; z-index: 2; margin: 0; text-align: center; max-width: 100vw; font-size: clamp(5.5rem, 27vw, 17rem); line-height: .8; }
   .hero-titre .ligne { display: block; white-space: nowrap; }
   .l { display: inline-block; will-change: transform; }
   .l > span { display: inline-block; animation: chute .95s cubic-bezier(.2,1.35,.4,1) both; }
   @keyframes chute { from { transform: translateY(-110vh) rotate(-25deg); } }
   .sticker-motif { position: absolute; z-index: 2; top: 13%; right: 9%; width: clamp(86px, 16vw, 170px); rotate: 12deg; }
   .sticker-motif .rond { display: block; width: 100%; aspect-ratio: 1; border-radius: 50%; background: var(--papier); padding: 8%; box-shadow: 0 10px 24px rgba(0,0,0,.25); }
+  /* Ta grande photo (choisie dans l'admin) : une carte postale scotchée derrière le titre */
+  .hero-photo { position: absolute; z-index: 1; top: 17%; right: 5%; width: clamp(150px, 17vw, 270px); margin: 0; rotate: 7deg;
+    background: var(--papier); padding: 8px 8px 26px; border-radius: 4px; box-shadow: 0 16px 34px rgba(0,0,0,.28); }
+  .hero-photo .photo-perso { aspect-ratio: 4 / 5; }
+  .hero-photo .scotch { top: -12px; left: 50%; translate: -50% 0; rotate: -6deg; width: 80px; height: 24px; }
+  .avec-photo .sticker-motif { display: none; }
+  @media (max-width: 600px) { .hero-photo { width: 40vw; top: 10%; right: 5%; } }
   .sticker-motif .scotch { top: -10px; left: 50%; translate: -50% 0; rotate: -8deg; width: 70px; height: 22px; }
   .descends { position: absolute; left: 7%; bottom: 13%; z-index: 2; color: var(--mape); font-size: clamp(1.4rem, 3.4vw, 2rem); display: flex; align-items: flex-end; gap: .3rem; rotate: -6deg; }
   .descends svg { width: 44px; height: 64px; animation: bob 1.6s ease-in-out infinite; }
@@ -92,7 +99,7 @@
   /* ================= 2. BANDEAU ================= */
   .s-bande { position: relative; z-index: 4; height: clamp(170px, 22vw, 280px); margin: -9vw 0 -7vw; pointer-events: none; }
   .s-bande > svg { width: 100%; height: 100%; overflow: visible; }
-  .badge { position: absolute; right: 13%; top: 4%; width: clamp(90px, 13vw, 150px); aspect-ratio: 1; }
+  .badge { position: absolute; left: 6%; top: 0; width: clamp(124px, 16vw, 196px); aspect-ratio: 1; }
   .badge svg { width: 100%; height: 100%; }
 
   /* ================= Scènes épinglées ================= */
@@ -212,7 +219,7 @@
     .postale { width: 40vw; }
     .p1 { left: 3%; top: 12%; } .p2 { right: 3%; top: 6%; } .p3 { right: 4%; bottom: 25%; }
     .ile-texte { max-width: none; left: 6%; right: 6%; bottom: 5%; }
-    .badge { right: 6%; }
+    .badge { left: 4%; }
     .progression { display: none; }
   }
 
@@ -352,6 +359,7 @@
     <span class="ligne" aria-hidden="true" data-txt="hero1">Ia ora</span>
     <span class="ligne" aria-hidden="true" data-txt="hero2">na !</span>
   </h1>
+  <figure class="hero-photo" data-photo="hero" hidden><span class="scotch"></span><svg viewBox="0 0 400 500" aria-hidden="true"></svg></figure>
   <div class="sticker-motif" id="sticker">
     <span class="scotch"></span>
     <svg class="rond" viewBox="0 0 400 400" aria-hidden="true"><use href="#motif-tifaifai"/></svg>
@@ -375,7 +383,7 @@
       <circle cx="100" cy="100" r="96" fill="#FFC93C"/>
       <circle cx="100" cy="100" r="74" fill="none" stroke="#B3212E" stroke-width="2" stroke-dasharray="4 5"/>
       <path id="cercle-badge" d="M100 100 m-80 0 a80 80 0 1 1 160 0 a80 80 0 1 1 -160 0" fill="none"/>
-      <text class="d" font-size="21" fill="#0D4D3A" letter-spacing="2"><textPath href="#cercle-badge" id="texte-badge">Fait à Tahiti ✿ Fait à Tahiti ✿ Fait à Tahiti ✿</textPath></text>
+      <text class="d" font-size="27" fill="#0D4D3A"><textPath href="#cercle-badge" id="texte-badge" textLength="496" lengthAdjust="spacing">Fait à Tahiti ✿ Fait à Tahiti ✿</textPath></text>
       <g transform="translate(100 100) scale(.42) translate(-200 -200)"><use href="#motif-tifaifai"/></g>
     </svg>
   </div>
@@ -389,7 +397,7 @@
       <figure class="postale p1" data-photo="p1" data-from="-70,-40,-28" data-rot="-7" data-start=".32"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-lagon"/></svg><figcaption class="note" data-txt="p1_legende">le lagon, 7h du matin</figcaption></figure>
       <figure class="postale p2" data-photo="p2" data-from="70,-50,30" data-rot="6" data-start=".44"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-tiare"/></svg><figcaption class="note" data-txt="p2_legende">la tiare du jardin</figcaption></figure>
       <figure class="postale p3" data-photo="p3" data-from="60,70,-24" data-rot="-4" data-start=".56"><span class="scotch"></span><svg viewBox="0 0 400 300" aria-hidden="true"><use href="#illu-coucher"/></svg><figcaption class="note" data-txt="p3_legende">fin de journée</figcaption></figure>
-      <p class="ile-texte" id="ile-texte" data-txt="ile_texte">Deux volcans reliés par l'isthme de Taravao : <b>Tahiti Nui</b>, la grande, et <b>Tahiti Iti</b>, la petite. C'est ici que je vis.</p>
+      <p class="ile-texte" id="ile-texte" data-txt="ile_texte">Ia ora na, moi c'est <b>Landry</b> ! Je vis à <b>Tahiti</b>, entre le lagon et la montagne. Ici, je partage mes balades, mes plongées et les petits moments qui font la vie au <b>fenua</b>. Installe-toi, descends doucement 🌺</p>
     </div>
   </section>
 
@@ -519,7 +527,7 @@
   /* ---------- Bandeau ---------- */
   const phraseBande = $('#phrase-bande').textContent.trim().replace(/\s*✿?\s*$/, '') + ' ✿ ';
   const badgeTxt = $('#phrase-badge').textContent.trim().slice(0, 18);
-  $('#texte-badge').textContent = `${badgeTxt} ✿ `.repeat(3);
+  $('#texte-badge').textContent = `${badgeTxt} ✿ `.repeat(2);
   $('#texte-bande').textContent = phraseBande.repeat(8);
 
   /* ---------- Couronne de fleurs (Heiva) ---------- */
@@ -764,7 +772,10 @@
       const img = new Image(); img.alt = ''; img.decoding = 'async'; img.src = src;
       if (window.CADRE) CADRE.appliquer(img, d.cadres && d.cadres[slot]);
       cadre.append(img);
-      img.onload = () => ancien.replaceWith(cadre);
+      img.onload = () => {
+        ancien.replaceWith(cadre);
+        if (slot === 'hero') { bloc.hidden = false; hero.classList.add('avec-photo'); }
+      };
     });
   }).catch(() => {});
 

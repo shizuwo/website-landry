@@ -13,7 +13,7 @@ const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;',
 const RESERVES = new Set(['404', 'cadre', 'bio', 'admin', 'api', 'go', 'l', 'f', 'galerie', 'index', 'menu', 'icones', 'favicon', 'partage', 'site', 'apple-touch-icon',
   'icone-192', 'icone-512', 'monde', 'robots', 'sitemap', 'commun', 'album', 'mentions']);
 const ICONES = new Set(['instagram', 'tiktok', 'youtube', 'facebook', 'snapchat', 'spotify', 'x', 'whatsapp', 'email', 'boutique', 'monde', 'lien']);
-const EMPLACEMENTS = new Set(['p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
+const EMPLACEMENTS = new Set(['hero', 'p1', 'p2', 'p3', 'c1', 'c2', 'c3', 'c4', 'c5']);
 const TAILLE_MAX = 100 * 1024 * 1024; // 100 Mo par fichier
 const STOCKAGE_MAX = 10 * 1000 ** 3;    // 10 Go (offre gratuite R2)
 const STOCKAGE_LIMITE = STOCKAGE_MAX - 50 * 1000 ** 2; // on bloque un peu avant, par sécurité
@@ -182,7 +182,8 @@ function lireCadre(v) {
   if (FORMATS.has(c.a)) r.a = c.a;
   return r;
 }
-const urlFichier = (f) => `/f/${f.id}/${encodeURIComponent(f.nom)}`;
+// ?v=taille : quand une photo est pivotée, son adresse change, donc les téléphones ne gardent pas l'ancienne en mémoire
+const urlFichier = (f) => `/f/${f.id}/${encodeURIComponent(f.nom)}${f.taille && String(f.type || '').startsWith('image/') ? '?v=' + f.taille : ''}`;
 const urlCourte = (f) => `/f/${f.id}`;
 const actif = (v, defaut = true) => (v === null || v === undefined || v === '' ? defaut : v === '1');
 const stockageUtilise = async (env) => (await env.DB.prepare('SELECT COALESCE(SUM(taille), 0) AS t FROM fichiers').first('t')) || 0;
@@ -305,7 +306,7 @@ async function vue(request, env) {
 async function galerie(env) {
   const now = Date.now();
   const { results } = await env.DB.prepare(
-    'SELECT id, nom, legende, type FROM fichiers WHERE galerie = 1 AND album = 0 AND mdp IS NULL AND (expire IS NULL OR expire > ?) ORDER BY ordre, cree DESC'
+    'SELECT id, nom, legende, type, taille FROM fichiers WHERE galerie = 1 AND album = 0 AND mdp IS NULL AND (expire IS NULL OR expire > ?) ORDER BY ordre, cree DESC'
   ).bind(now).all();
   const { results: cadres } = await env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle LIKE 'cadre:f:%'").all();
   const parId = Object.fromEntries(cadres.map(c => [c.cle.slice(8), lireCadre(c.valeur)]));
@@ -314,7 +315,7 @@ async function galerie(env) {
 
 async function photosAccueil(env) {
   const { results } = await env.DB.prepare(
-    "SELECT r.cle AS cle, f.id AS id, f.nom AS nom, f.mdp AS mdp, f.expire AS expire, f.album AS album FROM reglages r JOIN fichiers f ON f.id = r.valeur WHERE r.cle LIKE 'photo:%'"
+    "SELECT r.cle AS cle, f.id AS id, f.nom AS nom, f.type AS type, f.taille AS taille, f.mdp AS mdp, f.expire AS expire, f.album AS album FROM reglages r JOIN fichiers f ON f.id = r.valeur WHERE r.cle LIKE 'photo:%'"
   ).all();
   const now = Date.now(), photos = {};
   for (const r of results) if (fichierPublic(r, now) && !r.album) photos[r.cle.slice(6)] = urlFichier(r);
@@ -351,7 +352,7 @@ async function albumConnexion(request, env) {
 async function albumListe(request, env) {
   if (!(await reglage(env, 'album_mdp'))) return json({ ferme: true, photos: [] });
   if (!(await albumOuvert(request, env))) return erreur('verrouillé', 401);
-  const { results } = await env.DB.prepare("SELECT id, nom, legende, type FROM fichiers WHERE album = 1 AND (expire IS NULL OR expire > ?) ORDER BY ordre, cree DESC").bind(Date.now()).all();
+  const { results } = await env.DB.prepare("SELECT id, nom, legende, type, taille FROM fichiers WHERE album = 1 AND (expire IS NULL OR expire > ?) ORDER BY ordre, cree DESC").bind(Date.now()).all();
   return json({ photos: results.map(f => ({ ...f, url: urlFichier(f) })) }, { headers: { 'cache-control': 'private, no-store' } });
 }
 
@@ -431,8 +432,22 @@ async function envoyerFichier(request, env) {
   if (taille > TAILLE_MAX) return erreur('Fichier trop lourd (100 Mo maximum).', 413);
   if ((await stockageUtilise(env)) + taille > STOCKAGE_LIMITE) return erreur('Stockage presque plein (10 Go) : supprime des fichiers avant d\'en envoyer de nouveaux.', 507);
   const p = new URL(request.url).searchParams;
-  const nom = nettoyer(p.get('nom') || 'fichier', 120).replace(/[\\/]/g, '-') || 'fichier';
   const type = nettoyer(request.headers.get('content-type') || 'application/octet-stream', 100);
+  // Remplacer le contenu d'un fichier existant (photo pivotée depuis l'admin) : même adresse, mêmes réglages
+  const remplacer = p.get('remplacer');
+  if (remplacer) {
+    const f = await env.DB.prepare('SELECT id, cle, type FROM fichiers WHERE id = ?').bind(remplacer).first();
+    if (!f) return erreur('Fichier introuvable.', 404);
+    if (!String(f.type).startsWith('image/') || !type.startsWith('image/')) return erreur('Seules les images peuvent être pivotées.');
+    await env.FICHIERS.put(f.cle, request.body, { httpMetadata: { contentType: type } });
+    await env.DB.batch([
+      env.DB.prepare('UPDATE fichiers SET taille = ?, type = ? WHERE id = ?').bind(taille, type, f.id),
+      // Le recadrage ne correspond plus à la photo tournée : on le remet à zéro
+      env.DB.prepare("DELETE FROM reglages WHERE cle = ? OR (cle LIKE 'cadre:%' AND substr(cle, 7) IN (SELECT substr(cle, 7) FROM reglages WHERE cle LIKE 'photo:%' AND valeur = ?))").bind('cadre:f:' + f.id, f.id)
+    ]);
+    return json({ ok: true, id: f.id });
+  }
+  const nom = nettoyer(p.get('nom') || 'fichier', 120).replace(/[\\/]/g, '-') || 'fichier';
   const id = aleatoire(8);
   const cle = `f/${id}/${nom}`;
   await env.FICHIERS.put(cle, request.body, { httpMetadata: { contentType: type } });
@@ -862,8 +877,10 @@ async function pageAccueil(request, env) {
     element(el) {
       const cle = el.getAttribute('data-txt'), v = textes[cle];
       if (!v) return;
-      if (cle === 'tour_titre') el.setInnerContent(String(v).split(/\n+/).map(echappe).join('<br>'), { html: true });
-      else el.setInnerContent(String(v));
+      // **mot** → mot en couleur (en gras ailleurs)
+      const riche = (t) => echappe(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      if (cle === 'tour_titre') el.setInnerContent(String(v).split(/\n+/).map(riche).join('<br>'), { html: true });
+      else el.setInnerContent(riche(String(v)), { html: true });
     }
   }).transform(new Response(reponse.body, { status: reponse.status, headers: h }));
 }
