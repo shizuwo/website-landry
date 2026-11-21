@@ -220,6 +220,22 @@
   /* ---------- Fenêtres ---------- */
   dialog { border: 0; border-radius: 18px; padding: 20px; width: min(400px, 92vw); max-height: 90vh; overflow: auto; }
   dialog::backdrop { background: rgba(0,0,0,.5); }
+  /* Outils */
+  .qr-apercu { width: min(260px, 70vw); margin: 14px auto; }
+  .qr-apercu svg, #qr-zone svg { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 0 1px var(--trait); }
+  #qr-zone { width: min(280px, 72vw); margin: 0 auto; }
+  .couleurs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .couleurs button { width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--trait); }
+  .couleurs button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--encre); }
+  .couleurs input[type=color] { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: none; }
+  .etiquette { font-weight: 600; font-size: .9rem; }
+  .lien-cree { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .lien-cree code { flex: 1; min-width: 0; overflow-wrap: anywhere; background: var(--rouge-pale); padding: 8px 10px; border-radius: 8px; font-weight: 600; }
+  .barre-detail { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: .9rem; }
+  .barre-detail span:nth-child(odd) { position: relative; }
+  .barre-detail i { display: block; height: 6px; border-radius: 3px; background: #B3212E; margin-top: 2px; }
+  #histo-liste { max-height: 50vh; overflow: auto; font-size: .92rem; }
+  #histo-liste div { padding: 6px 0; border-bottom: 1px solid var(--trait); }
   /* Recadrage */
   #fen-cadre { width: min(520px, 96vw); }
   .cadre-zone { position: relative; width: 100%; max-height: 60vh; margin: 0 auto 12px; overflow: hidden; border-radius: 8px; background: #222; touch-action: none; cursor: grab; user-select: none; }
@@ -428,6 +444,7 @@
         <details class="options"><summary>Options d'envoi</summary>
           <div class="grille deux" style="margin-top:8px">
             <label class="case"><input type="checkbox" id="opt-optimiser" checked> Optimiser les photos (plus légères, qualité préservée)</label>
+            <label class="case"><input type="checkbox" id="opt-gps" checked> Retirer la position GPS des photos</label>
             <label>Expiration<select id="opt-expire"><option value="">Jamais</option><option value="1">Après 1 jour</option><option value="7">Après 7 jours</option><option value="30">Après 30 jours</option></select></label>
             <label>Mot de passe (facultatif)<input id="opt-mdp" type="text" autocomplete="off" placeholder="laisser vide = public"></label>
           </div>
@@ -477,6 +494,96 @@
       <h3>Publiés</h3><div class="liste" id="valides"></div>
     </section>
 
+    <!-- ================= OUTILS ================= -->
+    <section data-onglet="outils" data-nom="Transferts" id="s-transferts">
+      <h2>Transferts</h2>
+      <p class="aide">Comme SwissTransfer : dépose des fichiers, envoie le lien. Les fichiers sont supprimés tout seuls à l'expiration ou quand la limite de téléchargements est atteinte.</p>
+      <button class="ajouter" type="button" data-ouvre="form-transfert">+ Nouveau transfert</button>
+      <form id="form-transfert" class="boite" novalidate hidden style="margin-bottom:12px">
+        <label class="depot" id="depot-transfert">
+          <input type="file" id="choix-transfert" multiple hidden>
+          📦 <b>Choisis des fichiers</b> ou glisse-les ici <small style="display:block;color:var(--doux);font-weight:400">100 Mo maximum par fichier</small>
+        </label>
+        <div class="envois" id="liste-transfert"></div>
+        <div class="grille deux">
+          <label>Titre (facultatif)<input name="titre" maxlength="80" placeholder="Les photos du week-end"></label>
+          <label>Mot de passe (facultatif)<input name="mdp" type="text" autocomplete="off" placeholder="laisser vide = sans mot de passe"></label>
+          <label>Nombre de téléchargements<select name="max_dl"><option value="1">1</option><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option><option value="">Illimité</option></select></label>
+          <label>Expiration<select name="expire"><option value="1h">1 heure</option><option value="1">1 jour</option><option value="7" selected>7 jours</option><option value="30">30 jours</option><option value="">Jamais</option></select></label>
+        </div>
+        <label>Message (facultatif)<textarea name="message" maxlength="600" rows="2" placeholder="Un petit mot pour la personne"></textarea></label>
+        <label class="case"><input type="checkbox" name="notifier" checked> Me prévenir sur mon téléphone à chaque téléchargement</label>
+        <label class="case"><input type="checkbox" name="gps" checked> Retirer la position GPS des photos</label>
+        <div class="ligne"><button id="btn-transfert">Créer le lien</button><button type="button" class="gris" data-ferme="form-transfert">Annuler</button></div>
+        <p class="erreur" id="err-transfert" role="alert"></p>
+      </form>
+      <div class="boite" id="resultat-transfert" hidden></div>
+      <div class="liste" id="liste-transferts"></div>
+    </section>
+
+    <section data-onglet="outils" data-nom="Bloc-notes" id="s-notes">
+      <h2>Bloc-notes</h2>
+      <p class="aide">Colle un texte ou du code et partage-le avec un lien. Option « détruire après lecture » pour les infos sensibles.</p>
+      <button class="ajouter" type="button" data-ouvre="form-note">+ Nouvelle note</button>
+      <form id="form-note" class="boite" novalidate hidden style="margin-bottom:12px">
+        <label>Titre (facultatif)<input name="titre" maxlength="80" placeholder="Code wifi, adresse, recette…"></label>
+        <label>Texte<textarea name="texte" rows="6" required></textarea></label>
+        <div class="grille deux">
+          <label>Mot de passe (facultatif)<input name="mdp" type="text" autocomplete="off"></label>
+          <label>Expiration<select name="expire"><option value="">Jamais</option><option value="1h">1 heure</option><option value="1">1 jour</option><option value="7">7 jours</option><option value="30">30 jours</option></select></label>
+        </div>
+        <label class="case"><input type="checkbox" name="unique"> 🔥 Détruire après la première lecture</label>
+        <div class="ligne"><button>Créer le lien</button><button type="button" class="gris" data-ferme="form-note">Annuler</button></div>
+        <p class="erreur" id="err-note" role="alert"></p>
+      </form>
+      <div class="liste" id="liste-notes"></div>
+    </section>
+
+    <section data-onglet="outils" data-nom="Liens courts" id="s-courts">
+      <h2>Liens courts</h2>
+      <p class="aide">landrypf.com/ton-code redirige où tu veux. Menu ⋯ → Statistiques pour voir les clics par jour, appareil et pays.</p>
+      <button class="ajouter" type="button" data-ouvre="form-court">+ Créer un lien court</button>
+      <form id="form-court" class="boite" novalidate hidden style="margin-bottom:12px">
+        <div class="grille">
+          <label>Lien court<span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span></label>
+          <label>Redirige vers<input name="url" inputmode="url" placeholder="https://…" required></label>
+        </div>
+        <details class="options"><summary>Options avancées</summary>
+          <div class="grille deux" style="margin-top:8px">
+            <label>Sur iPhone, aller vers (facultatif)<input name="url_ios" inputmode="url" placeholder="https://apps.apple.com/…"></label>
+            <label>Sur Android, aller vers (facultatif)<input name="url_android" inputmode="url" placeholder="https://play.google.com/…"></label>
+            <label>Expire le (facultatif)<input name="expire" type="datetime-local"></label>
+            <label>Nombre de clics maximum<input name="max_clics" type="number" min="1" inputmode="numeric" placeholder="illimité"></label>
+          </div>
+        </details>
+        <div class="ligne"><button id="btn-court">Créer</button><button type="button" class="gris" id="code-hasard">Code au hasard</button><button type="button" class="gris" data-ferme="form-court">Annuler</button></div>
+        <p class="erreur" id="err-court" role="alert"></p>
+      </form>
+      <div class="liste" id="liste-courts"></div>
+    </section>
+
+    <section data-onglet="outils" data-nom="QR codes" id="s-qr">
+      <h2>Générateur de QR codes</h2>
+      <p class="aide">Pour n'importe quel lien ou texte. PNG pour les stories, SVG pour l'impression (net à toutes les tailles).</p>
+      <div class="boite qr-gen">
+        <div class="grille">
+          <label>Lien ou texte<input id="qr-texte-gen" placeholder="https://landrypf.com/bio" value="https://landrypf.com/bio"></label>
+          <div><span class="etiquette">Couleur</span>
+            <div class="couleurs" id="qr-couleurs" role="group" aria-label="Couleur du QR code"></div>
+          </div>
+          <label class="case"><input type="checkbox" id="qr-tiare" checked> Tiare au centre</label>
+        </div>
+        <div class="qr-apercu" id="qr-apercu" role="img" aria-label="Aperçu du QR code"></div>
+        <div class="ligne"><button type="button" id="qr-png">Télécharger en PNG</button><button type="button" class="gris" id="qr-svg">Télécharger en SVG</button></div>
+      </div>
+    </section>
+
+    <section data-onglet="outils" data-nom="Corbeille" id="s-corbeille">
+      <h2>Corbeille</h2>
+      <p class="aide">Les transferts et notes supprimés restent ici 30 jours, puis disparaissent pour de bon.</p>
+      <div class="liste" id="liste-corbeille"></div>
+    </section>
+
     <!-- ================= RÉGLAGES ================= -->
     <section data-onglet="reglages" data-nom="Site" id="s-site">
       <h2>Fonctionnalités de la bio</h2>
@@ -501,21 +608,6 @@
         <div class="ligne"><button>Enregistrer</button></div>
         <p class="erreur" id="err-banniere" role="alert"></p>
       </form>
-    </section>
-
-    <section data-onglet="reglages" data-nom="Liens courts" id="s-courts">
-      <h2>Liens courts</h2>
-      <p class="aide">landrypf.com/ton-code redirige où tu veux.</p>
-      <button class="ajouter" type="button" data-ouvre="form-court">+ Créer un lien court</button>
-      <form id="form-court" class="boite" novalidate hidden style="margin-bottom:12px">
-        <div class="grille">
-          <label>Lien court<span class="prefixe"><span>landrypf.com/</span><input name="code" maxlength="40" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="promo" required></span></label>
-          <label>Redirige vers<input name="url" inputmode="url" placeholder="https://…" required></label>
-        </div>
-        <div class="ligne"><button>Créer</button><button type="button" class="gris" id="code-hasard">Code au hasard</button><button type="button" class="gris" data-ferme="form-court">Annuler</button></div>
-        <p class="erreur" id="err-court" role="alert"></p>
-      </form>
-      <div class="liste" id="liste-courts"></div>
     </section>
 
     <section data-onglet="reglages" data-nom="Thème" id="s-theme">
@@ -578,11 +670,25 @@
   <p class="erreur" id="err-cadre" role="alert"></p>
 </dialog>
 
+<dialog id="fen-stats" aria-labelledby="stats-titre" style="width:min(560px,94vw)">
+  <h3 id="stats-titre">Statistiques</h3>
+  <p class="aide" id="stats-total"></p>
+  <svg id="stats-graph" style="width:100%;height:170px" role="img" aria-label="Clics par jour sur 30 jours"></svg>
+  <div class="grille deux" id="stats-details" style="margin-top:8px"></div>
+  <div class="ligne" style="justify-content:flex-end"><button class="gris" type="button" id="stats-fermer">Fermer</button></div>
+</dialog>
+
+<dialog id="fen-histo" aria-labelledby="histo-titre">
+  <h3 id="histo-titre">Historique</h3>
+  <div id="histo-liste"></div>
+  <div class="ligne" style="justify-content:flex-end"><button class="gris" type="button" id="histo-fermer">Fermer</button></div>
+</dialog>
+
 <dialog id="fen-qr" aria-labelledby="qr-titre">
   <h3 id="qr-titre">QR code</h3>
   <div id="qr-zone"></div>
   <p id="qr-texte" style="text-align:center;font-weight:600;overflow-wrap:anywhere"></p>
-  <div class="ligne" style="justify-content:center"><button id="qr-telecharger">Télécharger</button><button class="gris" id="qr-fermer">Fermer</button></div>
+  <div class="ligne" style="justify-content:center"><button id="qr-telecharger">Télécharger</button><button class="gris" id="qr-perso-lien">Personnaliser</button><button class="gris" id="qr-fermer">Fermer</button></div>
 </dialog>
 
 <dialog id="fen-fichier" aria-labelledby="ff-titre">
@@ -607,6 +713,7 @@
 
 <script src="icones.js"></script>
 <script src="cadre.js"></script>
+<script src="qr.js"></script>
 <script>
 {
   /* =====================================================================
@@ -675,6 +782,7 @@
     { id: 'accueil', nom: "Page d'accueil", court: 'Site', i: '🌊' },
     { id: 'fichiers', nom: 'Fichiers', court: 'Fichiers', i: '📁' },
     { id: 'messages', nom: 'Messages', court: 'Messages', i: '💬' },
+    { id: 'outils', nom: 'Outils', court: 'Outils', i: '🧰' },
     { id: 'reglages', nom: 'Réglages', court: 'Réglages', i: '⚙️' },
     { id: 'tout', nom: 'Tout', court: 'Tout', i: '☰' }
   ];
@@ -1112,7 +1220,8 @@
     const ligne = document.createElement('div'); ligne.className = 'envoi';
     ligne.innerHTML = `<div>${echappe(original.name)} <small>(${taille(original.size)}) · préparation…</small></div><progress max="100" value="0"></progress>`;
     $('#envois').prepend(ligne);
-    const fichier = await optimiser(original);
+    let fichier = await optimiser(original);
+    if ($('#opt-gps').checked && fichier === original) fichier = await sansGPS(original);   // l'optimisation retire déjà le GPS
     const gain = fichier !== original ? ` → ${taille(fichier.size)}` : '';
     ligne.querySelector('small').textContent = `(${taille(original.size)}${gain})`;
     if (fichier.size > 100e6) { ligne.innerHTML = `<div class="erreur">${echappe(original.name)} : trop lourd (100 Mo max).</div>`; return ok(); }
@@ -1279,16 +1388,226 @@
   fb.addEventListener('submit', (e) => { e.preventDefault(); enregistrerSite({ banniere_active: fb.banniere_active.checked, banniere_texte: fb.banniere_texte.value.trim(), banniere_lien: fb.banniere_lien.value.trim(),
     banniere_debut: depuisLocal(fb.banniere_debut.value), banniere_fin: depuisLocal(fb.banniere_fin.value), zone: $('#err-banniere') }, 'Bannière enregistrée'); });
 
-  const afficherCourts = () => {
-    $('#liste-courts').innerHTML = D.courts.length ? D.courts.map(c => `
-      <div class="carte" data-id="${echappe(c.code)}" id="item-court-${echappe(c.code)}"><div class="ico">${ico('lien')}</div>
-        <div class="corps"><div class="titre">landrypf.com/${echappe(c.code)}</div><small>${echappe(c.url)}</small></div>
-        <span class="chiffre">${pluriel(c.clics, 'clic')}</span>${trous('court', c.code)}</div>`).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
+  /* =====================================================================
+     Outils : transferts, bloc-notes, liens courts, QR codes, corbeille
+     ===================================================================== */
+  // CRC32 (pour que le serveur puisse fabriquer le .zip sans recalculer)
+  const TABLE_CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = async (blob) => {
+    let c = 0xFFFFFFFF; const morceau = 8 << 20;
+    for (let o = 0; o < blob.size; o += morceau) {
+      const b = new Uint8Array(await blob.slice(o, o + morceau).arrayBuffer());
+      for (let i = 0; i < b.length; i++) c = TABLE_CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8);
+    }
+    return (c ^ 0xFFFFFFFF) >>> 0;
   };
-  const fc = $('#form-court');
+  // Retire la position GPS (et toutes les métadonnées EXIF) d'une photo JPEG, sans perte de qualité.
+  // Si la photo dépend de l'EXIF pour son sens (orientation), on la redessine droite.
+  const sansGPS = async (fichier) => {
+    if (!/^image\/jpe?g$/i.test(fichier.type)) return fichier;
+    try {
+      const b = new Uint8Array(await fichier.arrayBuffer());
+      if (b[0] !== 0xFF || b[1] !== 0xD8) return fichier;
+      const garder = [b.subarray(0, 2)]; let i = 2, retire = false, orientation = 1;
+      while (i + 4 <= b.length && b[i] === 0xFF) {
+        const m = b[i + 1], l = (b[i + 2] << 8) | b[i + 3];
+        if (m === 0xDA) { garder.push(b.subarray(i)); i = b.length; break; }
+        const seg = b.subarray(i, i + 2 + l);
+        const exif = m === 0xE1 && String.fromCharCode(...seg.subarray(4, 8)) === 'Exif';
+        if (exif) {   // lire l'orientation avant de jeter le bloc
+          const d = new DataView(seg.buffer, seg.byteOffset + 10), le = d.getUint16(0) === 0x4949;
+          const ifd = d.getUint32(4, le), n = d.getUint16(ifd, le);
+          for (let k = 0; k < n; k++) { const e = ifd + 2 + k * 12; if (d.getUint16(e, le) === 0x0112) orientation = d.getUint16(e + 8, le); }
+        }
+        if (m === 0xE1 || m === 0xED) retire = true; else garder.push(seg);
+        i += 2 + l;
+      }
+      if (!retire) return fichier;
+      if (orientation > 1) {
+        const img = await createImageBitmap(fichier, { imageOrientation: 'from-image' });
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; c.getContext('2d').drawImage(img, 0, 0);
+        const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.95));
+        return new File([blob], fichier.name, { type: 'image/jpeg' });
+      }
+      return new File(garder, fichier.name, { type: fichier.type });
+    } catch { return fichier; }
+  };
+  const expirationDe = (v) => !v ? null : v === '1h' ? Date.now() + 3600e3 : Date.now() + (+v) * 864e5;
+  const etatTransfert = (t) => t.supprime ? 'corbeille' : t.vide ? 'terminé' : (t.expire && t.expire <= Date.now()) ? 'expiré' : (t.max_dl && t.dl >= t.max_dl) ? 'limite atteinte' : 'actif';
+  const lienCree = (url, nom) => `<div class="lien-cree"><code>${echappe(url.replace(/^https?:\/\//, ''))}</code>
+    <button type="button" class="petit" data-copier="${echappe(url)}">Copier</button><button type="button" class="petit gris" data-qr="${echappe(url)}" data-qr-nom="${echappe(nom)}">QR code</button></div>`;
+  document.addEventListener('click', (e) => {
+    const c = e.target.closest('[data-copier]'); if (c) copier(c.dataset.copier);
+    const q = e.target.closest('[data-qr]'); if (q) montrerQr(q.dataset.qr, q.dataset.qrNom || 'qr');
+  });
+
+  // ----- Transferts -----
+  let aTransferer = [];
+  const fTr = $('#form-transfert'), choixT = $('#choix-transfert'), depotT = $('#depot-transfert');
+  const listerATransferer = () => {
+    $('#liste-transfert').innerHTML = aTransferer.map((f, i) => `<div class="envoi"><div>${echappe(f.name)} <small>(${taille(f.size)})</small>
+      <button type="button" class="lien" data-retirer="${i}" style="margin-left:6px">retirer</button></div><progress max="100" value="0"></progress></div>`).join('')
+      + (aTransferer.length ? `<p class="aide" style="margin:6px 0 10px">${aTransferer.length} fichier${aTransferer.length > 1 ? 's' : ''} · ${taille(aTransferer.reduce((a, f) => a + f.size, 0))}</p>` : '');
+  };
+  const ajouterT = (liste) => { aTransferer.push(...liste); listerATransferer(); };
+  choixT.addEventListener('change', () => { ajouterT([...choixT.files]); choixT.value = ''; });
+  ['dragenter', 'dragover'].forEach(t => depotT.addEventListener(t, (e) => { e.preventDefault(); depotT.classList.add('survol'); }));
+  ['dragleave', 'drop'].forEach(t => depotT.addEventListener(t, (e) => { e.preventDefault(); depotT.classList.remove('survol'); }));
+  depotT.addEventListener('drop', (e) => ajouterT([...e.dataTransfer.files]));
+  $('#liste-transfert').addEventListener('click', (e) => { const b = e.target.closest('[data-retirer]'); if (b) { aTransferer.splice(+b.dataset.retirer, 1); listerATransferer(); } });
+  fTr.addEventListener('reset', () => { aTransferer = []; setTimeout(listerATransferer); });
+  const envoyerDansTransfert = (id, fichier, barre) => new Promise(async (ok, ko) => {
+    const crc = await crc32(fichier);
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', `/api/admin/transfert/${id}?` + new URLSearchParams({ nom: fichier.name, crc }));
+    xhr.setRequestHeader('x-cle', cle); xhr.setRequestHeader('content-type', fichier.type || 'application/octet-stream');
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable && barre) barre.value = (e.loaded / e.total) * 100; };
+    xhr.onload = () => { let d = {}; try { d = JSON.parse(xhr.responseText); } catch {} xhr.status === 200 ? ok() : ko(new Error(`${fichier.name} : ${d.erreur || 'échec (' + xhr.status + ')'}`)); };
+    xhr.onerror = () => ko(new Error(`${fichier.name} : connexion perdue`));
+    xhr.send(fichier);
+  });
+  fTr.addEventListener('submit', async (e) => {
+    e.preventDefault(); const err = $('#err-transfert'); err.textContent = '';
+    if (!aTransferer.length) { err.textContent = 'Ajoute au moins un fichier.'; return; }
+    const trop = aTransferer.find(f => f.size > 100e6); if (trop) { err.textContent = `${trop.name} : trop lourd (100 Mo maximum par fichier).`; return; }
+    const btn = $('#btn-transfert'); btn.disabled = true; btn.textContent = 'Envoi en cours…';
+    try {
+      const d = await appel('POST', { action: 'transfert_creer', titre: fTr.titre.value.trim(), message: fTr.message.value.trim(), mdp: fTr.mdp.value,
+        max_dl: fTr.max_dl.value ? +fTr.max_dl.value : null, expire: expirationDe(fTr.expire.value), notifier: fTr.notifier.checked });
+      const barres = $$('#liste-transfert progress');
+      for (let i = 0; i < aTransferer.length; i++) {
+        const f = fTr.gps.checked ? await sansGPS(aTransferer[i]) : aTransferer[i];
+        await envoyerDansTransfert(d.id, f, barres[i]);
+      }
+      const url = `${SITE}/t/${d.id}`, titre = fTr.titre.value.trim() || 'transfert';
+      fermerForm('form-transfert');
+      $('#resultat-transfert').innerHTML = `<b>✅ Transfert prêt !</b> Envoie ce lien :${lienCree(url, titre)}`; $('#resultat-transfert').hidden = false;
+      copier(url); await charger();
+    } catch (x) { err.textContent = x.message; await charger(); }
+    btn.disabled = false; btn.textContent = 'Créer le lien';
+  });
+  const afficherTransferts = () => {
+    const now = Date.now(), liste = (D.outils.transferts || []).filter(t => !t.supprime);
+    $('#liste-transferts').innerHTML = liste.length ? liste.map(t => {
+      const etat = etatTransfert(t), poids = t.fichiers.reduce((a, f) => a + f.taille, 0);
+      const infos = [`${t.fichiers.length} fichier${t.fichiers.length > 1 ? 's' : ''} · ${taille(poids)}`,
+        `⬇ ${t.dl}${t.max_dl ? '/' + t.max_dl : ''}`, t.expire ? (t.expire > now ? 'expire le ' + dateFr(t.expire) : 'expiré') : 'sans expiration'];
+      return `<div class="carte${etat === 'actif' ? '' : ' eteint'}" data-id="${t.id}" id="item-transfert-${t.id}"><div class="ico">📦</div>
+        <div class="corps"><div class="titre">${echappe(t.titre || 'Transfert du ' + dateFr(t.cree))}</div><small>${infos.join(' · ')}</small>
+          <span class="badge">${etat}</span>${t.protege ? '<span class="badge">🔒 mot de passe</span>' : ''}</div>${trous('transfert', t.id)}</div>`;
+    }).join('') : '<p class="vide">Aucun transfert pour l\'instant.</p>';
+  };
+  const montrerHisto = (t) => {
+    $('#histo-titre').textContent = 'Historique : ' + (t.titre || 'transfert');
+    $('#histo-liste').innerHTML = t.historique.length ? t.historique.map(h => `<div>${dateFr(h.quand)} · ${h.quoi === 'zip' ? 'tout le .zip' : echappe(h.quoi)}</div>`).join('')
+      : '<p class="vide">Pas encore téléchargé.</p>';
+    $('#fen-histo').showModal();
+  };
+  $('#histo-fermer').addEventListener('click', () => $('#fen-histo').close());
+
+  // ----- Bloc-notes -----
+  const fn = $('#form-note');
+  fn.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const d = await action({ action: 'note_creer', titre: fn.titre.value.trim(), texte: fn.texte.value, mdp: fn.mdp.value, expire: expirationDe(fn.expire.value), unique: fn.unique.checked }, $('#err-note'));
+    if (d && d.id) { const url = `${SITE}/n/${d.id}`; fermerForm('form-note'); copier(url); }
+  });
+  const afficherNotes = () => {
+    const now = Date.now(), liste = (D.outils.notes || []).filter(n => !n.supprime);
+    $('#liste-notes').innerHTML = liste.length ? liste.map(n => {
+      const fini = (n.unique_lecture && n.lu) || (n.expire && n.expire <= now);
+      const etat = n.unique_lecture ? (n.lu ? '🔥 lue et détruite' : '🔥 lecture unique') : pluriel(n.vues, 'vue');
+      return `<div class="carte${fini ? ' eteint' : ''}" data-id="${n.id}" id="item-note-${n.id}"><div class="ico">📝</div>
+        <div class="corps"><div class="titre">${echappe(n.titre || n.apercu.slice(0, 40) || 'Note')}</div><small>${n.lu && n.unique_lecture ? 'Contenu détruit' : echappe(n.apercu.slice(0, 90))}${n.longueur > 90 ? '…' : ''}</small>
+          <span class="badge">${etat}</span>${n.expire ? `<span class="badge">${n.expire > now ? 'expire le ' + dateFr(n.expire) : 'expirée'}</span>` : ''}${n.protege ? '<span class="badge">🔒</span>' : ''}</div>${trous('note', n.id)}</div>`;
+    }).join('') : '<p class="vide">Aucune note pour l\'instant.</p>';
+  };
+
+  // ----- Corbeille -----
+  const afficherCorbeille = () => {
+    const now = Date.now(), restants = (t) => Math.max(0, Math.ceil((t + 30 * 864e5 - now) / 864e5));
+    const el = [...(D.outils.transferts || []).filter(t => t.supprime).map(t => ({ type: 'transfert', id: t.id, nom: t.titre || 'Transfert du ' + dateFr(t.cree), i: '📦', quand: t.supprime })),
+      ...(D.outils.notes || []).filter(n => n.supprime).map(n => ({ type: 'note', id: n.id, nom: n.titre || n.apercu.slice(0, 40) || 'Note', i: '📝', quand: n.supprime }))].sort((a, b) => b.quand - a.quand);
+    $('#liste-corbeille').innerHTML = el.length ? el.map(x => `<div class="carte" id="item-corbeille-${x.id}"><div class="ico">${x.i}</div>
+      <div class="corps"><div class="titre">${echappe(x.nom)}</div><small>Supprimé définitivement dans ${pluriel(restants(x.quand), 'jour')}</small></div>
+      <button type="button" class="petit gris" data-restaurer="${x.type}:${x.id}">Restaurer</button>
+      <button type="button" class="petit" data-effacer="${x.type}:${x.id}" aria-label="Supprimer définitivement">🗑</button></div>`).join('') : '<p class="vide">La corbeille est vide.</p>';
+  };
+  $('#liste-corbeille').addEventListener('click', async (e) => {
+    const r = e.target.closest('[data-restaurer]'), x = e.target.closest('[data-effacer]');
+    if (r) { const [t, id] = r.dataset.restaurer.split(':'); if (await action({ action: t + '_restaurer', id })) toast('Restauré'); }
+    if (x && confirm('Supprimer définitivement ? Ce sera impossible à annuler.')) { const [t, id] = x.dataset.effacer.split(':'); if (await action({ action: t + '_effacer', id })) toast('Supprimé définitivement'); }
+  });
+
+  // ----- Liens courts (avec options avancées et statistiques) -----
+  const afficherCourts = () => {
+    const now = Date.now();
+    $('#liste-courts').innerHTML = D.courts.length ? D.courts.map(c => {
+      const fini = (c.expire && c.expire <= now) || (c.max_clics && c.clics >= c.max_clics);
+      const extra = [c.url_ios && '🍏 iPhone', c.url_android && '🤖 Android', c.expire && (c.expire > now ? 'expire le ' + dateFr(c.expire) : 'expiré'), c.max_clics && `max ${nb(c.max_clics)} clics`].filter(Boolean);
+      return `<div class="carte${fini ? ' eteint' : ''}" data-id="${echappe(c.code)}" id="item-court-${echappe(c.code)}"><div class="ico">${ico('lien')}</div>
+        <div class="corps"><div class="titre">landrypf.com/${echappe(c.code)}</div><small>${echappe(c.url)}</small>${extra.map(x => `<span class="badge">${x}</span>`).join('')}</div>
+        <span class="chiffre">${pluriel(c.clics, 'clic')}</span>${trous('court', c.code)}</div>`;
+    }).join('') : '<p class="vide">Aucun lien court pour l\'instant.</p>';
+  };
+  const fc = $('#form-court'); let courtEdite = null;
   fc.code.addEventListener('input', () => { fc.code.value = fc.code.value.toLowerCase().replace(/[^a-z0-9-]/g, ''); });
   $('#code-hasard').addEventListener('click', () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join(''); });
-  fc.addEventListener('submit', async (e) => { e.preventDefault(); const code = fc.code.value; if (await action({ action: 'court_ajouter', code, url: fc.url.value.trim() }, $('#err-court'))) { toast('Créé : landrypf.com/' + code); fermerForm('form-court'); } });
+  fc.addEventListener('reset', () => { courtEdite = null; fc.code.readOnly = false; $('#btn-court').textContent = 'Créer'; });
+  const editerCourt = (code) => {
+    const c = D.courts.find(x => x.code === code); if (!c) return;
+    $('[data-ouvre="form-court"]').click();
+    courtEdite = code; fc.code.value = c.code; fc.code.readOnly = true; fc.url.value = c.url;
+    fc.url_ios.value = c.url_ios || ''; fc.url_android.value = c.url_android || ''; fc.expire.value = versLocal(c.expire); fc.max_clics.value = c.max_clics || '';
+    if (c.url_ios || c.url_android || c.expire || c.max_clics) $('details', fc).open = true;
+    $('#btn-court').textContent = 'Enregistrer'; fc.url.focus();
+  };
+  fc.addEventListener('submit', async (e) => {
+    e.preventDefault(); const code = fc.code.value;
+    const corps = { action: 'court_ajouter', code, url: fc.url.value.trim(), url_ios: fc.url_ios.value.trim(), url_android: fc.url_android.value.trim(),
+      expire: depuisLocal(fc.expire.value), max_clics: fc.max_clics.value ? +fc.max_clics.value : null, remplacer: !!courtEdite };
+    if (await action(corps, $('#err-court'))) { toast(courtEdite ? 'Lien court modifié' : 'Créé : landrypf.com/' + code); fermerForm('form-court'); }
+  });
+  const DRAPEAUX = (cc) => /^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map(c => 127397 + c.charCodeAt(0))) + ' ' + cc : 'Inconnu';
+  const montrerStatsCourt = (code) => {
+    const lignes = (D.outils.clics || []).filter(x => x.code === code), jours = jours30(), parJour = Object.fromEntries(jours.map(j => [j, 0]));
+    const parApp = {}, parPays = {};
+    lignes.forEach(l => { if (l.jour in parJour) parJour[l.jour] += l.n; parApp[l.appareil] = (parApp[l.appareil] || 0) + l.n; parPays[l.pays] = (parPays[l.pays] || 0) + l.n; });
+    const total = Object.values(parJour).reduce((a, b) => a + b, 0), c = D.courts.find(x => x.code === code);
+    $('#stats-titre').textContent = 'landrypf.com/' + code;
+    $('#stats-total').textContent = `${pluriel(total, 'clic')} sur 30 jours · ${pluriel(c ? c.clics : 0, 'clic')} au total`;
+    const svg = $('#stats-graph'); $('#fen-stats').showModal();
+    const W = svg.clientWidth || 500, H = 170, bas = 20, haut = 8, max = Math.max(4, ...Object.values(parJour));
+    const larg = W / 30, barre = Math.max(2, larg - 2), y = (v) => H - bas - (v / max) * (H - bas - haut);
+    let s = `<line x1="0" x2="${W}" y1="${H - bas}" y2="${H - bas}" stroke="#E4DDD3"/><text x="0" y="${haut + 4}" font-size="11" fill="#666">${nb(max)}</text>`;
+    jours.forEach((j, i) => { const v = parJour[j]; if (v) { const h = H - bas - y(v); s += `<rect x="${i * larg + 1}" y="${y(v)}" width="${barre}" height="${h}" rx="3" fill="#B3212E"><title>${j.slice(8)}/${j.slice(5, 7)} : ${pluriel(v, 'clic')}</title></rect>`; } });
+    [0, 14, 29].forEach(i => { const [, m, d] = jours[i].split('-'); s += `<text x="${Math.min(W - 30, i * larg)}" y="${H - 5}" font-size="11" fill="#666">${d}/${m}</text>`; });
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = s;
+    const bloc = (titre, obj, nom) => { const l = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 6), m = Math.max(1, ...l.map(x => x[1]));
+      return `<div><b>${titre}</b><div class="barre-detail" style="margin-top:6px">${l.length ? l.map(([k, v]) => `<span>${nom(k)}<i style="width:${(v / m * 100).toFixed(0)}%"></i></span><span>${nb(v)}</span>`).join('') : '<span class="vide">Aucun clic</span>'}</div></div>`; };
+    $('#stats-details').innerHTML = bloc('Appareils', parApp, k => ({ mobile: '📱 Téléphone', ordi: '💻 Ordinateur', tablette: '📲 Tablette' })[k] || k) + bloc('Pays', parPays, DRAPEAUX);
+  };
+  $('#stats-fermer').addEventListener('click', () => $('#fen-stats').close());
+
+  // ----- Générateur de QR codes -----
+  const COULEURS_QR = ['#B3212E', '#0D4D3A', '#0E7C86', '#10264A', '#6B4423', '#14261F'];
+  let couleurQr = COULEURS_QR[0];
+  $('#qr-couleurs').innerHTML = COULEURS_QR.map(c => `<button type="button" data-couleur="${c}" style="background:${c}" aria-label="Couleur ${c}" aria-pressed="${c === couleurQr}"></button>`).join('')
+    + '<input type="color" id="qr-perso" value="#B3212E" aria-label="Autre couleur">';
+  const dessinerQrGen = () => {
+    const texte = $('#qr-texte-gen').value.trim();
+    if (!texte) { $('#qr-apercu').innerHTML = '<p class="vide">Écris un lien ou un texte.</p>'; return; }
+    try { $('#qr-apercu').innerHTML = QR.svg(texte, { couleur: couleurQr, tiare: $('#qr-tiare').checked }); }
+    catch { $('#qr-apercu').innerHTML = '<p class="erreur">Texte trop long pour un QR code.</p>'; }
+  };
+  $('#qr-couleurs').addEventListener('click', (e) => { const b = e.target.closest('[data-couleur]'); if (!b) return; couleurQr = b.dataset.couleur; $$('[data-couleur]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); dessinerQrGen(); });
+  $('#qr-perso').addEventListener('input', (e) => { couleurQr = e.target.value; $$('[data-couleur]').forEach(x => x.setAttribute('aria-pressed', 'false')); dessinerQrGen(); });
+  $('#qr-texte-gen').addEventListener('input', dessinerQrGen); $('#qr-tiare').addEventListener('change', dessinerQrGen);
+  const nomFichierQr = (t) => 'qr-' + (t.replace(/^https?:\/\/(www\.)?/, '').replace(/[^a-z0-9-]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'code');
+  const telecharger = (blob, nom) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nom; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+  $('#qr-png').addEventListener('click', async () => { const t = $('#qr-texte-gen').value.trim(); if (t) telecharger(await QR.png(t, { couleur: couleurQr, tiare: $('#qr-tiare').checked }, 1200), nomFichierQr(t) + '.png'); });
+  $('#qr-svg').addEventListener('click', () => { const t = $('#qr-texte-gen').value.trim(); if (t) telecharger(new Blob([QR.svg(t, { couleur: couleurQr, tiare: $('#qr-tiare').checked })], { type: 'image/svg+xml' }), nomFichierQr(t) + '.svg'); });
+  dessinerQrGen();
 
   const THEMES_LISTE = [['auto', 'Automatique', "Matari'i fin novembre, Noël, Nouvel An, Nouvel An chinois, Heiva en juillet, le 29 juin et ton anniversaire"], ['aucun', 'Aucun', 'Le site reste toujours le même'],
     ['heiva', 'Heiva', 'Fleurs, frise tapa et « Heiva i Tahiti ! »'], ['noel', 'Noël', 'Étoiles, guirlande de tiare et « Joyeux Noël »'], ['nouvel_an', 'Nouvel An', 'Confettis et « Bonne année »'],
@@ -1337,22 +1656,14 @@
   /* =====================================================================
      Menus ⋯ de chaque élément
      ===================================================================== */
-  const QR = $('#fen-qr'); let nomQr = 'qr';
+  const QR_FEN = $('#fen-qr'); let nomQr = 'qr';
   const montrerQr = (texte, nom) => {
-    nomQr = 'qr-' + nom.replace(/[^a-z0-9-]+/gi, '-').slice(0, 40);
-    $('#qr-texte').textContent = texte; $('#qr-zone').innerHTML = ''; QR.showModal();
-    const dessiner = () => new QRCode($('#qr-zone'), { text: texte, width: 720, height: 720, colorDark: '#B3212E', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
-    if (window.QRCode) return dessiner();
-    const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    s.onload = dessiner; s.onerror = () => { $('#qr-zone').textContent = 'Impossible de charger le générateur de QR code.'; }; document.head.appendChild(s);
+    nomQr = 'qr-' + String(nom).replace(/[^a-z0-9-]+/gi, '-').slice(0, 40);
+    $('#qr-texte').textContent = texte; $('#qr-zone').innerHTML = QR.svg(texte, { couleur: '#B3212E' }); $('#qr-zone').dataset.texte = texte; QR_FEN.showModal();
   };
-  $('#qr-fermer').addEventListener('click', () => QR.close());
-  $('#qr-telecharger').addEventListener('click', () => {
-    const c = $('#qr-zone canvas'); if (!c) return;
-    const m = 60, t = document.createElement('canvas'); t.width = c.width + 2 * m; t.height = c.height + 2 * m;
-    const x = t.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, t.width, t.height); x.drawImage(c, m, m);
-    const a = document.createElement('a'); a.href = t.toDataURL('image/png'); a.download = nomQr + '.png'; a.click();
-  });
+  $('#qr-fermer').addEventListener('click', () => QR_FEN.close());
+  $('#qr-telecharger').addEventListener('click', async () => telecharger(await QR.png($('#qr-zone').dataset.texte, { couleur: '#B3212E' }, 1200), nomQr + '.png'));
+  $('#qr-perso-lien').addEventListener('click', () => { $('#qr-texte-gen').value = $('#qr-zone').dataset.texte; QR_FEN.close(); aller('outils', 's-qr'); dessinerQrGen(); });
 
   const MENUS = {
     lien: (id, el) => { const l = D.liens.find(x => x.id === +id); const i = D.liens.indexOf(l); return [
@@ -1366,6 +1677,8 @@
       { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'lien_supprimer', id: l.id }, el, 'Lien') }]; },
     court: (code, el) => [
       { l: 'Copier le lien', f: () => copier(`${SITE}/${code}`) },
+      { l: 'Statistiques', f: () => montrerStatsCourt(code) },
+      { l: 'Modifier', f: () => editerCourt(code) },
       { l: 'QR code', f: () => montrerQr(`${SITE}/${code}`, code) },
       { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'court_supprimer', code }, el, 'Lien court') }],
     fichier: (id, el) => { const f = D.fichiers.find(x => x.id === id); return [
@@ -1376,6 +1689,16 @@
       f.type.startsWith('image/') && { l: 'Pivoter à droite ↻', f: () => pivoter(f.id, 90) },
       f.type.startsWith('image/') && { l: 'Pivoter à gauche ↺', f: () => pivoter(f.id, -90) },
       { l: 'Supprimer', danger: true, f: () => supprimer({ action: 'fichier_supprimer', id: f.id }, el, 'Fichier') }]; },
+    transfert: (id, el) => { const t = D.outils.transferts.find(x => x.id === id); return [
+      { l: 'Copier le lien', f: () => copier(`${SITE}/t/${id}`) },
+      { l: 'QR code', f: () => montrerQr(`${SITE}/t/${id}`, t.titre || id) },
+      { l: 'Ouvrir la page', f: () => window.open(`/t/${id}`, '_blank', 'noopener') },
+      { l: 'Historique des téléchargements', f: () => montrerHisto(t) },
+      { l: 'Mettre à la corbeille', danger: true, f: async () => { if (await action({ action: 'transfert_supprimer', id })) toast('Transfert mis à la corbeille (30 jours)'); } }]; },
+    note: (id) => [
+      { l: 'Copier le lien', f: () => copier(`${SITE}/n/${id}`) },
+      { l: 'QR code', f: () => montrerQr(`${SITE}/n/${id}`, 'note-' + id) },
+      { l: 'Mettre à la corbeille', danger: true, f: async () => { if (await action({ action: 'note_supprimer', id })) toast('Note mise à la corbeille (30 jours)'); } }],
     galerie: (id) => [
       { l: 'Légende', f: () => reglerFichier(id) },
       { l: 'Recadrer', f: () => { const f = D.fichiers.find(x => x.id === id); if (f) recadrer('f:' + id, f.url, true); } },
@@ -1413,7 +1736,9 @@
     if (!D) return [];
     const l = [];
     D.liens.forEach(x => l.push({ t: x.titre, s: 'Lien de la bio · ' + x.url, o: 'bio', sous: 's-liens', el: 'item-lien-' + x.id }));
-    D.courts.forEach(x => l.push({ t: 'landrypf.com/' + x.code, s: 'Lien court · ' + x.url, o: 'reglages', sous: 's-courts', el: 'item-court-' + x.code }));
+    D.courts.forEach(x => l.push({ t: 'landrypf.com/' + x.code, s: 'Lien court · ' + x.url, o: 'outils', sous: 's-courts', el: 'item-court-' + x.code }));
+    (D.outils.transferts || []).filter(x => !x.supprime).forEach(x => l.push({ t: x.titre || 'Transfert', s: 'Transfert · ' + x.fichiers.map(f => f.nom).join(', '), o: 'outils', sous: 's-transferts', el: 'item-transfert-' + x.id }));
+    (D.outils.notes || []).filter(x => !x.supprime).forEach(x => l.push({ t: x.titre || x.apercu.slice(0, 40), s: 'Note', o: 'outils', sous: 's-notes', el: 'item-note-' + x.id }));
     D.fichiers.forEach(x => l.push({ t: x.nom, s: 'Fichier · ' + (x.legende || taille(x.taille)), o: 'fichiers', sous: 's-fichiers', el: 'item-fichier-' + x.id }));
     D.contacts.forEach(x => l.push({ t: x.nom + ' : ' + x.message.slice(0, 60), s: 'Message · ' + dateFr(x.cree), o: 'messages', sous: 's-messages', el: 'item-contact-' + x.id }));
     D.attente.concat(D.valides).forEach(x => l.push({ t: x.nom + ' : ' + x.texte.slice(0, 60), s: "Livre d'or", o: 'messages', sous: 's-livre', el: 'item-mot-' + x.id }));
@@ -1476,7 +1801,7 @@
     if (!fleg.contains(document.activeElement)) { fleg.nom.value = D.legal.nom; fleg.email.value = D.legal.email; }
     if (!$('#s-musique').contains(document.activeElement)) playlist = D.playlist.map(p => ({ ...p }));
     afficherTableau(); afficherStats(); afficherLiens(); afficherStatuts(); afficherPlaylist(); afficherBlocs();
-    afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme();
+    afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme(); afficherTransferts(); afficherNotes(); afficherCorbeille();
     fdispo.querySelector(`[value="${D.disposition || 'infos'}"]`).checked = true;
     $(`#form-palette [value="${D.palette || 'auto'}"]`).checked = true;
     majPastilles();
