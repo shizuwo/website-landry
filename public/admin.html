@@ -302,6 +302,20 @@
       </form>
     </section>
 
+    <section data-onglet="bio" data-nom="Couleurs" id="s-couleurs">
+      <h2>Couleurs de la bio</h2>
+      <p class="aide">« Le ciel de Tahiti » change tout seul : lever rose, journée rouge, coucher doré, nuit bleue, aux vraies heures du soleil. Les autres thèmes restent fixes.</p>
+      <form id="form-palette" class="boite choix" novalidate>
+        <label><input type="radio" name="palette" value="auto"><span>Le ciel de Tahiti<small>Automatique selon l'heure (conseillé)</small></span></label>
+        <label><input type="radio" name="palette" value="lagon"><span>Lagon<small>Turquoise et blanc, frais et calme</small></span></label>
+        <label><input type="radio" name="palette" value="tifaifai"><span>Tifaifai<small>Le rouge et blanc d'origine, toute la journée</small></span></label>
+        <label><input type="radio" name="palette" value="tapa"><span>Tapa<small>Brun et beige, motifs gravés</small></span></label>
+        <label><input type="radio" name="palette" value="monoi"><span>Monoï<small>Doré et crème, très doux</small></span></label>
+        <label><input type="radio" name="palette" value="ocean"><span>Océan profond<small>Bleu nuit, bulles qui remontent</small></span></label>
+      </form>
+      <label class="interrupteur boite" style="margin-top:10px"><span>Suivre la météo<small>Fines gouttes quand il pleut à Papeete, lumière dorée par grand soleil</small></span><span class="bascule"><input type="checkbox" id="meteo-theme"><span></span></span></label>
+    </section>
+
     <section data-onglet="bio" data-nom="Liens" id="s-liens">
       <h2>Liens de la bio</h2>
       <p class="aide">Glisse avec ⠿ pour changer l'ordre. « Découvrir mon monde » reste toujours en dernier.</p>
@@ -509,6 +523,14 @@
       <h2>Thème saisonnier</h2>
       <p class="aide">Une petite touche festive sur le site (pluie de fleurs, d'étoiles ou de confettis, et un message).</p>
       <form id="form-theme" class="boite choix" novalidate></form>
+      <h3>Anniversaire et messages des fêtes</h3>
+      <p class="aide">Le jour de ton anniversaire, le site fait la fête. Les messages remplacent le texte par défaut (laisse vide pour le garder). Une semaine avant chaque fête, un petit « Heiva dans 5 jours » s'affiche.</p>
+      <form id="form-fetes" class="boite grille" novalidate>
+        <label>Ton anniversaire (jour et mois)<input name="anniversaire" type="date"></label>
+        <div id="messages-fetes" class="grille"></div>
+        <div class="ligne"><button>Enregistrer</button></div>
+        <p class="erreur" id="err-fetes" role="alert"></p>
+      </form>
     </section>
 
     <section data-onglet="reglages" data-nom="Mentions légales" id="s-legal">
@@ -1269,19 +1291,38 @@
   $('#code-hasard').addEventListener('click', () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; fc.code.value = Array.from(crypto.getRandomValues(new Uint8Array(5)), b => a[b % a.length]).join(''); });
   fc.addEventListener('submit', async (e) => { e.preventDefault(); const code = fc.code.value; if (await action({ action: 'court_ajouter', code, url: fc.url.value.trim() }, $('#err-court'))) { toast('Créé : landrypf.com/' + code); fermerForm('form-court'); } });
 
-  const THEMES_LISTE = [['auto', 'Automatique', 'Heiva en juillet, Noël en décembre, Nouvel An fin décembre'], ['aucun', 'Aucun', 'Le site reste toujours le même'],
-    ['heiva', 'Heiva', 'Pluie de fleurs et « Heiva i Tahiti ! »'], ['noel', 'Noël', 'Pluie d\'étoiles et « Joyeux Noël »'], ['nouvel_an', 'Nouvel An', 'Confettis et « Bonne année »']];
+  const THEMES_LISTE = [['auto', 'Automatique', "Matari'i fin novembre, Noël, Nouvel An, Nouvel An chinois, Heiva en juillet, le 29 juin et ton anniversaire"], ['aucun', 'Aucun', 'Le site reste toujours le même'],
+    ['heiva', 'Heiva', 'Fleurs, frise tapa et « Heiva i Tahiti ! »'], ['noel', 'Noël', 'Étoiles, guirlande de tiare et « Joyeux Noël »'], ['nouvel_an', 'Nouvel An', 'Confettis et « Bonne année »'],
+    ['matarii', "Matari'i", "Étoiles dorées, bio bleu nuit et « Matari'i i ni'a ! »"], ['nouvel_an_chinois', 'Nouvel An chinois', 'Lanternes, bio rouge et or'],
+    ['autonomie', "Fête de l'autonomie", 'Confettis rouge et blanc (29 juin)'], ['anniversaire', 'Mon anniversaire', "Confettis et « C'est l'anniversaire de Landry ! »"]];
+  const NOMS_FETES = Object.fromEntries(THEMES_LISTE.slice(2).map(([v, l]) => [v, l]));
   const ftheme = $('#form-theme');
   const afficherTheme = () => {
-    const actuel = D.theme_du_jour ? { heiva: 'Heiva', noel: 'Noël', nouvel_an: 'Nouvel An' }[D.theme_du_jour] : 'aucun pour l\'instant';
+    const actuel = D.theme_du_jour ? NOMS_FETES[D.theme_du_jour] : 'aucun pour l\'instant';
+    const ff = $('#form-fetes');
+    ff.anniversaire.value = D.anniversaire ? `2000-${D.anniversaire}` : '';
+    $('#messages-fetes').innerHTML = Object.entries(NOMS_FETES).map(([k, l]) => `<label>Message : ${echappe(l)}<input data-message="${k}" maxlength="60" value="${echappe((D.fete_messages || {})[k] || '')}"></label>`).join('');
     ftheme.innerHTML = THEMES_LISTE.map(([v, l, d]) => `<label><input type="radio" name="theme" value="${v}" ${D.theme === v ? 'checked' : ''}><span>${l}<small>${v === 'auto' ? d + ' (aujourd\'hui : ' + actuel + ')' : d}</small></span></label>`).join('');
   };
   ftheme.addEventListener('change', async (e) => { if (e.target.name === 'theme' && await action({ action: 'theme', valeur: e.target.value })) toast('Thème enregistré'); });
 
+  $('#form-palette').addEventListener('change', async (e) => {
+    if (e.target.name === 'palette' && await action({ action: 'palette', valeur: e.target.value })) toast('Couleurs enregistrées');
+  });
+  $('#meteo-theme').addEventListener('change', async (e) => {
+    if (await action({ action: 'meteo_theme', actif: e.target.checked })) toast(e.target.checked ? 'La bio suit la météo' : 'Météo coupée');
+  });
   const fdispo = $('#form-disposition');
   fdispo.addEventListener('change', async (e) => {
     if (e.target.name !== 'disposition') return;
     if (await action({ action: 'disposition', valeur: e.target.value })) { D.disposition = e.target.value; toast('Disposition enregistrée'); }
+  });
+
+  $('#form-fetes').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const v = e.target.anniversaire.value, messages = {};
+    $$('[data-message]').forEach(i => { if (i.value.trim()) messages[i.dataset.message] = i.value.trim(); });
+    if (await action({ action: 'fetes', anniversaire: v ? v.slice(5) : '', messages }, $('#err-fetes'))) toast('Fêtes enregistrées');
   });
 
   const fleg = $('#form-legal');
@@ -1441,6 +1482,8 @@
     afficherTableau(); afficherStats(); afficherLiens(); afficherStatuts(); afficherPlaylist(); afficherBlocs();
     afficherEmplacements(); afficherTextes(); afficherFichiers(); afficherMessages(); afficherCourts(); afficherTheme();
     fdispo.querySelector(`[value="${D.disposition || 'infos'}"]`).checked = true;
+    $(`#form-palette [value="${D.palette || 'auto'}"]`).checked = true;
+    $('#meteo-theme').checked = D.meteo_theme !== false;
     majPastilles();
   };
 

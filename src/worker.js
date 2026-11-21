@@ -25,10 +25,20 @@ const TEXTES_ACCUEIL = {
   c1_titre: 24, c1_texte: 160, c2_titre: 24, c2_texte: 160, c3_titre: 24, c3_texte: 160, c4_titre: 24, c4_texte: 160, c5_titre: 24, c5_texte: 160,
   soir1: 80, soir2: 80, soir3: 80, soir4: 80, fin_titre: 14, fin_texte: 200
 };
-const THEMES = new Set(['auto', 'aucun', 'heiva', 'noel', 'nouvel_an']);
+const THEMES = new Set(['auto', 'aucun', 'heiva', 'noel', 'nouvel_an', 'matarii', 'nouvel_an_chinois', 'autonomie', 'anniversaire']);
+const FETES_NOMS = { heiva: 'Heiva', noel: 'Noël', nouvel_an: 'Nouvel An', matarii: "Matari'i", nouvel_an_chinois: 'Nouvel An chinois', autonomie: "Fête de l'autonomie", anniversaire: "L'anniversaire de Landry" };
+// Nouvel An chinois : la date change chaque année
+const NOUVEL_AN_CHINOIS = { 2026: '02-17', 2027: '02-06', 2028: '01-26', 2029: '02-13', 2030: '02-03', 2031: '01-23', 2032: '02-11', 2033: '01-31', 2034: '02-19', 2035: '02-08' };
+const PALETTES = new Set(['auto', 'lagon', 'tifaifai', 'tapa', 'monoi', 'ocean']);
 // Thème saisonnier automatique selon la date à Tahiti
-function themeDuJour(t = Date.now()) {
-  const [, m, j] = new Date(t).toLocaleDateString('en-CA', { timeZone: 'Pacific/Tahiti' }).split('-').map(Number);
+function themeDuJour(t = Date.now(), anniv = '') {
+  const iso = new Date(t).toLocaleDateString('en-CA', { timeZone: 'Pacific/Tahiti' });
+  const [a, m, j] = iso.split('-').map(Number), mj = iso.slice(5);
+  if (anniv && mj === anniv) return 'anniversaire';
+  if (m === 6 && j === 29) return 'autonomie';
+  const nac = NOUVEL_AN_CHINOIS[a];
+  if (nac) { const d = (Date.parse(`${a}-${mj}`) - Date.parse(`${a}-${nac}`)) / 864e5; if (d >= 0 && d <= 2) return 'nouvel_an_chinois'; }
+  if (m === 11 && j >= 18) return 'matarii';   // Matari'i i ni'a : les Pléiades se lèvent, la saison de l'abondance commence
   if (m === 7) return 'heiva';
   if (m === 12 && j <= 26) return 'noel';
   if ((m === 12 && j >= 27) || (m === 1 && j <= 5)) return 'nouvel_an';
@@ -194,7 +204,7 @@ const fichierPublic = (f, now = Date.now()) => f && !f.mdp && (!f.expire || f.ex
 async function infos(env) {
   const [mauruuru, { results }] = await Promise.all([
     compteur(env, 'mauruuru'),
-    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email','disposition')").all()
+    env.DB.prepare("SELECT cle, valeur FROM reglages WHERE cle IN ('statut','statuts','statut_hasard','evt_titre','evt_date','evt_lien','livre_actif','contact_actif','banniere_active','banniere_texte','banniere_lien','musique_active','musique_id','musique_titre','musique_artiste','playlist','banniere_debut','banniere_fin','live_actif','live_lien','live_texte','theme','legal_nom','legal_email','disposition','anniversaire','fete_messages','bio_palette','bio_meteo')").all()
   ]);
   const r = Object.fromEntries(results.map(x => [x.cle, x.valeur]));
   const d = +r.evt_date || 0;
@@ -221,14 +231,23 @@ async function infos(env) {
   }
 
   const { results: blocs } = await env.DB.prepare('SELECT id, type, ref FROM blocs WHERE actif = 1 ORDER BY ordre, id').all();
-  const theme = r.theme && r.theme !== 'auto' ? (r.theme === 'aucun' ? '' : r.theme) : themeDuJour(now);
+  const anniv = /^\d{2}-\d{2}$/.test(r.anniversaire || '') ? r.anniversaire : '';
+  const theme = r.theme && r.theme !== 'auto' ? (r.theme === 'aucun' ? '' : r.theme) : themeDuJour(now, anniv);
+  const messages = lireJSON(r.fete_messages, {});
+  // La prochaine fête dans les 7 jours, pour le compte à rebours
+  let prochaine = null;
+  if (!r.theme || r.theme === 'auto') for (let k = 1; k <= 7; k++) {
+    const f = themeDuJour(now + k * 864e5, anniv);
+    if (f && f !== theme) { prochaine = { cle: f, nom: FETES_NOMS[f], jours: k }; break; }
+  }
   const live = actif(r.live_actif, false) ? { texte: r.live_texte || 'En direct', lien: r.live_lien || '' } : null;
 
   return json({
     mauruuru: mauruuru || 0, statut: r.statut || '', evenement, banniere, musique,
     statuts: actif(r.statut_hasard, false) ? lireJSON(r.statuts, []).filter(Boolean) : null,
     livre: actif(r.livre_actif), contact: actif(r.contact_actif),
-    live, theme, blocs, disposition: r.disposition === 'liens' ? 'liens' : 'infos', legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
+    live, theme, theme_texte: theme ? (messages[theme] || '') : '', prochaine, blocs,
+    palette: PALETTES.has(r.bio_palette) ? r.bio_palette : 'auto', meteo_theme: actif(r.bio_meteo), disposition: r.disposition === 'liens' ? 'liens' : 'infos', legal: { nom: r.legal_nom || 'Landry', email: r.legal_email || '' }
   }, { headers: { 'cache-control': 'public, max-age=15' } });
 }
 
@@ -536,7 +555,8 @@ async function adminLire(env) {
     blocs,
     playlist: (() => { const p = lireJSON(r.playlist, null); return Array.isArray(p) ? p : (r.musique_id ? [{ id: r.musique_id, titre: r.musique_titre || '', artiste: r.musique_artiste || '' }] : []); })(),
     live: { actif: actif(r.live_actif, false), lien: r.live_lien || '', texte: r.live_texte || '' },
-    theme: r.theme || 'auto', theme_du_jour: themeDuJour(), disposition: r.disposition === 'liens' ? 'liens' : 'infos', lien_avant: +r.lien_avant || 0,
+    theme: r.theme || 'auto', theme_du_jour: themeDuJour(Date.now(), r.anniversaire || ''), anniversaire: r.anniversaire || '', fete_messages: lireJSON(r.fete_messages, {}),
+    palette: PALETTES.has(r.bio_palette) ? r.bio_palette : 'auto', meteo_theme: actif(r.bio_meteo), disposition: r.disposition === 'liens' ? 'liens' : 'infos', lien_avant: +r.lien_avant || 0,
     legal: { nom: r.legal_nom || '', email: r.legal_email || '' },
     album_ouvert: !!r.album_mdp,
     accueil_textes: lireJSON(r.accueil_textes, {}),
@@ -707,6 +727,26 @@ async function adminEcrire(request, env) {
       break;
 
     // --- Disposition de la bio ---
+    // --- Thème de la bio (couleurs) ---
+    case 'palette':
+      if (!PALETTES.has(c.valeur)) return erreur('Thème inconnu.');
+      await ecrireReglage(env, 'bio_palette', c.valeur);
+      break;
+    case 'meteo_theme':
+      await ecrireReglage(env, 'bio_meteo', c.actif ? '1' : '0');
+      break;
+
+    // --- Fêtes : anniversaire et messages personnalisés ---
+    case 'fetes': {
+      const anniv = String(c.anniversaire || '');
+      if (anniv && !/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(anniv)) return erreur("La date d'anniversaire n'a pas l'air correcte.");
+      const msgs = {};
+      for (const k of Object.keys(FETES_NOMS)) { const v = nettoyer((c.messages || {})[k], 60); if (v) msgs[k] = v; }
+      await DB.batch([['anniversaire', anniv], ['fete_messages', JSON.stringify(msgs)]].map(([k, v]) =>
+        DB.prepare('INSERT INTO reglages (cle, valeur) VALUES (?, ?) ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur').bind(k, v)));
+      break;
+    }
+
     case 'disposition':
       if (!['infos', 'liens'].includes(c.valeur)) return erreur('Disposition inconnue.');
       await ecrireReglage(env, 'disposition', c.valeur);

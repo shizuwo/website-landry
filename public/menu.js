@@ -92,11 +92,41 @@
   const THEMES = {
     heiva: { texte: 'Heiva i Tahiti ! 🌺', objets: ['🌺', '🌼', '🌸', '🍃'] },
     noel: { texte: 'Joyeux Noël 🎄', objets: ['✨', '⭐', '❄️', '🎁'] },
-    nouvel_an: { texte: 'Bonne année ! 🎉', confettis: ['#B3212E', '#FFC93C', '#2EC4C6', '#FFFFFF', '#F26B38'] }
+    nouvel_an: { texte: 'Bonne année ! 🎉', confettis: ['#B3212E', '#FFC93C', '#2EC4C6', '#FFFFFF', '#F26B38'] },
+    matarii: { texte: "Matari'i i ni'a ! ✨", objets: ['✨', '⭐', '✦', '🌟'] },
+    nouvel_an_chinois: { texte: 'Bonne année du Cheval ! 🧧', objets: ['🧧', '🏮', '✨', '🍊'] },
+    autonomie: { texte: "Bonne fête de l'autonomie ! 🌺", confettis: ['#CE1126', '#FFFFFF', '#FFC93C', '#2EC4C6'] },
+    anniversaire: { texte: "C'est l'anniversaire de Landry ! 🎂", confettis: ['#B3212E', '#FFC93C', '#2EC4C6', '#FFFFFF', '#F59ACB'] }
   };
-  const appliquerTheme = (nom) => {
+  // Décor de fête : une guirlande en haut de chaque page, et sur la bio les couleurs de la fête
+  const SVG = (c) => `url("data:image/svg+xml,${encodeURIComponent(c)}")`;
+  const DECORS = {
+    // Heiva : frise tapa (triangles et losanges)
+    heiva: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="22"><rect width="40" height="22" fill="#5A3A22"/><path d="M0 0h40L20 12z" fill="#E9D3A8"/><path d="M20 14l4 4-4 4-4-4z" fill="#E9D3A8"/></svg>'), h: 22 },
+    // Noël : guirlande de tiare
+    noel: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="46" height="26"><path d="M0 4q23 14 46 0" stroke="#1F7A4D" stroke-width="3" fill="none"/><g transform="translate(23 12)" fill="#fff"><ellipse ry="6" rx="2.6"/><ellipse ry="6" rx="2.6" transform="rotate(72)"/><ellipse ry="6" rx="2.6" transform="rotate(144)"/><ellipse ry="6" rx="2.6" transform="rotate(216)"/><ellipse ry="6" rx="2.6" transform="rotate(288)"/><circle r="2" fill="#FFC93C"/></g></svg>'), h: 26 },
+    matarii: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="60" height="18"><rect width="60" height="18" fill="#0B1838"/><g fill="#FFD76A"><circle cx="10" cy="6" r="1.6"/><circle cx="16" cy="9" r="1.2"/><circle cx="13" cy="12" r="1"/><circle cx="40" cy="7" r="1.4"/><circle cx="48" cy="11" r="1"/></g></svg>'), h: 18,
+      bio: '--fond:#0B1838;--fonce:#060D22;--doux:#F3DFA2;--btn-texte:#0B1838;--btn-sous:#5A5A72' },
+    nouvel_an_chinois: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="44" height="26"><path d="M0 3q22 10 44 0" stroke="#C8102E" stroke-width="2" fill="none"/><ellipse cx="22" cy="15" rx="7" ry="8" fill="#C8102E"/><rect x="19" y="5" width="6" height="3" fill="#FFC93C"/><rect x="19" y="22" width="6" height="3" fill="#FFC93C"/></svg>'), h: 26,
+      bio: '--fond:#A50E22;--fonce:#6E0815;--doux:#FFE3A3;--btn-texte:#A50E22;--btn-sous:#7A4A2A' },
+    autonomie: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="14"><rect width="30" height="14" fill="#fff"/><rect width="30" height="4" fill="#CE1126"/><rect y="10" width="30" height="4" fill="#CE1126"/></svg>'), h: 14 },
+    anniversaire: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="48" height="24"><path d="M0 2q24 8 48 0" stroke="#fff" stroke-width="2" fill="none"/><path d="M8 5l6 14 6-12z" fill="#FFC93C"/><path d="M28 6l6 14 6-12z" fill="#2EC4C6"/></svg>'), h: 24 },
+    nouvel_an: { motif: SVG('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="16"><g fill="#FFC93C"><circle cx="6" cy="6" r="2"/><circle cx="20" cy="10" r="1.5"/><circle cx="33" cy="5" r="2"/></g></svg>'), h: 16 }
+  };
+  const decorer = (nom) => {
+    const d = DECORS[nom]; if (!d) return;
+    const st = document.createElement('style');
+    st.textContent = `.guirlande{position:fixed;left:0;right:0;top:0;height:${d.h}px;z-index:99;pointer-events:none;background:${d.motif} 0 0/auto 100% repeat-x;opacity:.95}`
+      + (d.bio ? `html.bio-fete[data-palette="auto"]{${d.bio}}` : '');
+    document.head.appendChild(st);
+    const g = document.createElement('div'); g.className = 'guirlande'; g.setAttribute('aria-hidden', 'true'); document.body.appendChild(g);
+    if (d.bio) document.documentElement.classList.add('bio-fete');
+  };
+  const appliquerTheme = (nom, texte) => {
     const th = THEMES[nom]; if (!th) return;
+    if (texte) th.texte = texte;
     document.documentElement.classList.add('theme-' + nom);
+    decorer(nom);
     const cleT = 'theme-vu:' + nom;
     try { if (sessionStorage.getItem(cleT)) return; sessionStorage.setItem(cleT, '1'); } catch {}
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -122,7 +152,21 @@
   };
 
   fetch('/api/infos').then(r => r.ok ? r.json() : null).then(d => {
-    if (d && d.theme) appliquerTheme(d.theme);
+    if (d && d.theme) appliquerTheme(d.theme, d.theme_texte);
+    // Compte à rebours : une petite étiquette « Heiva dans 5 jours » sous le menu
+    if (d && d.prochaine && !d.theme) {
+      const p = d.prochaine, cleP = 'bientot:' + p.cle;
+      let vu = false; try { vu = !!sessionStorage.getItem(cleP); sessionStorage.setItem(cleP, '1'); } catch {}
+      if (!vu) {
+        const st = document.createElement('style');
+        st.textContent = `.bientot{position:fixed;right:max(14px,3vw);top:96px;z-index:96;background:#fff;color:#B3212E;font:700 14px/1.2 "Instrument Sans",system-ui,sans-serif;padding:8px 14px;border-radius:999px;box-shadow:0 8px 20px rgba(0,0,0,.2);animation:bientot 6s ease forwards;pointer-events:none}
+          @keyframes bientot{0%{opacity:0;translate:0 -10px}10%,85%{opacity:1;translate:0 0}100%{opacity:0}}`;
+        document.head.appendChild(st);
+        const b = document.createElement('div'); b.className = 'bientot'; b.setAttribute('role', 'status');
+        b.textContent = `${p.nom} ${p.jours === 1 ? 'demain' : 'dans ' + p.jours + ' jours'} ✨`;
+        setTimeout(() => { document.body.appendChild(b); setTimeout(() => b.remove(), 6200); }, 1500);
+      }
+    }
     const b = d && d.banniere; if (!b || !b.texte) return;
     const cleB = 'banniere-fermee:' + b.texte;
     try { if (sessionStorage.getItem(cleB)) return; } catch {}
