@@ -577,6 +577,12 @@
       <div class="liste" id="liste-courts"></div>
     </section>
 
+    <section data-onglet="outils" data-nom="Convertir" id="s-convertir">
+      <h2>Convertisseur</h2>
+      <p class="aide">Vidéo → son, compresser, convertir, couper, GIF, photos en lot. Tout se fait sur ton appareil. <a href="/convertir.html" target="_blank" rel="noopener">Ouvrir en grand</a></p>
+      <iframe id="cadre-convertir" title="Convertisseur" loading="lazy" style="width:100%;border:0;min-height:520px;display:block" data-src="/convertir.html"></iframe>
+    </section>
+
     <section data-onglet="outils" data-nom="QR codes" id="s-qr">
       <h2>Générateur de QR codes</h2>
       <p class="aide">Pour n'importe quel lien ou texte. PNG pour les stories, SVG pour l'impression (net à toutes les tailles).</p>
@@ -1962,6 +1968,15 @@
   setInterval(() => { if (document.hidden && D && !enCours) { enCours = true; fetch('/api/admin/etat', { headers: { 'x-cle': cle } }).then(r => r.ok ? r.json() : null)
     .then(async d => { enCours = false; if (d && d.etat !== etatConnu) { const avant = D; await charger(); const l = nouveautes(avant, D); if (l.length) { nouveautesCachees += l.length; document.title = `(${nouveautesCachees}) ${TITRE}`; } } }).catch(() => { enCours = false; }); } }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { nouveautesCachees = 0; document.title = TITRE; rafraichir(); } });
+
+  // Convertisseur : chargé seulement quand on ouvre son sous-onglet, et le cadre suit la hauteur de la page
+  const cadreConv = $('#cadre-convertir');
+  new IntersectionObserver((es) => es.forEach(en => { if (en.isIntersecting && !cadreConv.src) cadreConv.src = cadreConv.dataset.src; })).observe(cadreConv);
+  addEventListener('message', (e) => {
+    if (e.origin !== location.origin || !e.data) return;
+    if (e.data.type === 'convertir-hauteur') cadreConv.style.height = Math.max(520, e.data.h + 8) + 'px';
+    if (e.data.type === 'convertir-recharger') charger();
+  });
 
   $('#connexion').addEventListener('submit', async (e) => {
     e.preventDefault(); cle = $('#cle').value; $('#erreur').textContent = '';

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Convertisseur · Admin Landry</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.ico">
+<style>
+  /* Même allure que l'admin : simple, lisible, pensé pour le téléphone */
+  :root { --rouge: #B3212E; --rouge-pale: #F6E3E1; --encre: #222; --doux: #6B625A; --trait: #E4DDD3; --fond: #F6F3EE; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 16px/1.5 system-ui, -apple-system, sans-serif; }
+  body.seul { padding: 16px; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 0 0 4px; }
+  .aide { color: var(--doux); font-size: .9rem; margin: 0 0 12px; }
+  .modes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .modes button { border: 0; border-radius: 999px; padding: 8px 14px; background: #EAE4DB; color: var(--encre); font: inherit; font-weight: 600; cursor: pointer; min-height: 40px; }
+  .modes button[aria-pressed="true"] { background: var(--encre); color: #fff; }
+  .boite { background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 1px 0 var(--trait); margin-bottom: 12px; }
+  .depot { display: block; border: 2px dashed #CFC6B4; border-radius: 14px; padding: 18px; text-align: center; cursor: pointer; }
+  .depot.survol { border-color: var(--rouge); background: var(--rouge-pale); }
+  .grille { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-top: 12px; }
+  label { display: grid; gap: 4px; font-weight: 600; font-size: .92rem; }
+  input, select { font: inherit; font-size: 16px; padding: .55rem .7rem; border: 1px solid #CCC; border-radius: 10px; background: #fff; width: 100%; }
+  button.principal, .resultat a, .resultat button { border: 0; border-radius: 10px; min-height: 44px; padding: 0 16px; background: var(--rouge); color: #fff; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .gris { background: #EAE4DB !important; color: var(--encre) !important; }
+  button:disabled { opacity: .5; cursor: default; }
+  :focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
+  .ligne { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  .apercu-source { width: 100%; max-height: 260px; border-radius: 10px; margin-top: 10px; background: #000; }
+  .fichiers { font-size: .9rem; color: var(--doux); margin-top: 8px; }
+  progress { width: 100%; height: 10px; }
+  .etat { font-size: .92rem; margin: 6px 0; }
+  .resultat { display: grid; gap: 10px; }
+  .resultat img, .resultat video { max-width: 100%; max-height: 320px; border-radius: 10px; }
+  .resultat audio { width: 100%; }
+  .erreur { color: var(--rouge); font-weight: 600; }
+  .lien-cree { background: var(--rouge-pale); padding: 8px 10px; border-radius: 8px; font-weight: 600; overflow-wrap: anywhere; }
+  .liste-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+  .liste-photos figure { margin: 0; font-size: .75rem; color: var(--doux); overflow-wrap: anywhere; }
+  .liste-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="titre-page">Convertisseur</h1>
+  <p class="aide">Tout se fait sur ton appareil : rien n'est envoyé tant que tu ne cliques pas sur « Ajouter » ou « Transfert ».</p>
+
+  <div class="modes" id="modes" role="group" aria-label="Que veux-tu faire ?"></div>
+
+  <div class="boite">
+    <p class="aide" id="explication" style="margin-top:0"></p>
+    <label class="depot" id="depot">
+      <input type="file" id="choix" hidden>
+      📎 <b id="depot-texte">Choisis un fichier</b> ou glisse-le ici
+    </label>
+    <div class="fichiers" id="infos-source"></div>
+    <video class="apercu-source" id="apercu-source" controls playsinline hidden></video>
+    <div class="grille" id="options"></div>
+    <div class="ligne">
+      <button class="principal" id="lancer" type="button" disabled>Convertir</button>
+      <button class="principal gris" id="annuler" type="button" hidden>Annuler</button>
+    </div>
+    <div id="suivi" hidden>
+      <p class="etat" id="etat"></p>
+      <progress id="barre" max="100" value="0"></progress>
+    </div>
+    <p class="erreur" id="erreur" role="alert"></p>
+  </div>
+
+  <div class="boite resultat" id="resultat" hidden></div>
+</main>
+
+<script src="/envoi.js"></script>
+<script>
+{
+  const $ = (s) => document.querySelector(s);
+  const echappe = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const taille = (o) => o < 1e6 ? Math.max(1, Math.round(o / 1e3)) + ' Ko' : o < 1e9 ? (o / 1e6).toFixed(1).replace('.', ',') + ' Mo' : (o / 1e9).toFixed(2).replace('.', ',') + ' Go';
+  const dansAdmin = window.parent !== window;
+  if (!dansAdmin) document.body.classList.add('seul');
+  const cle = (() => { try { return sessionStorage.getItem('cle') || localStorage.getItem('cle-admin') || ''; } catch { return ''; } })();
+  const SITE = location.origin;
+
+  /* ---------- Les 6 modes ---------- */
+  const MODES = {
+    son: { nom: '🎵 Vidéo → son', aide: "Garde seulement le son d'une vidéo (ou convertit un son), en MP3 ou M4A.", accepte: 'video/*,audio/*', ffmpeg: true },
+    compresser: { nom: '🗜️ Compresser', aide: 'Rend une vidéo plus légère pour l\'envoyer facilement.', accepte: 'video/*', ffmpeg: true },
+    convertir: { nom: '🔄 Convertir', aide: 'MOV, AVI, MKV, WebM → MP4 · WAV, M4A, OGG, FLAC → MP3.', accepte: 'video/*,audio/*,.mov,.mkv,.avi,.flac', ffmpeg: true },
+    couper: { nom: '✂️ Couper', aide: 'Garde seulement un passage d\'une vidéo ou d\'un son (rapide, sans perte de qualité).', accepte: 'video/*,audio/*', ffmpeg: true },
+    gif: { nom: '🎞️ GIF', aide: 'Transforme un passage de vidéo (10 s maximum) en GIF animé.', accepte: 'video/*', ffmpeg: true },
+    photos: { nom: '🖼️ Photos', aide: 'Convertit et redimensionne des photos en lot (HEIC, PNG, WebP, JPG). La position GPS est retirée.', accepte: 'image/*,.heic,.heif', ffmpeg: false, multiple: true }
+  };
+  let mode = 'son', fichiers = [], duree = 0;
+
+  const opts = {
+    son: () => `<label>Format<select id="o-format"><option value="mp3">MP3 (le plus courant)</option><option value="m4a">M4A (iPhone)</option></select></label>
+                <label>Qualité<select id="o-qualite"><option value="2">Haute</option><option value="5" selected>Moyenne</option><option value="7">Légère</option></select></label>`,
+    compresser: () => `<label>Qualité<select id="o-qualite"><option value="20">Haute</option><option value="25" selected>Moyenne</option><option value="30">Légère</option></select></label>
+                <label>Définition<select id="o-hauteur"><option value="1080">1080p</option><option value="720" selected>720p</option><option value="480">480p</option></select></label>
+                <p class="aide" id="estimation" style="grid-column:1/-1;margin:0"></p>`,
+    convertir: () => `<p class="aide" style="grid-column:1/-1;margin:0" id="cible"></p>`,
+    couper: () => `<label>Début (secondes)<input id="o-debut" type="number" min="0" step="0.1" value="0"></label>
+                <label>Fin (secondes)<input id="o-fin" type="number" min="0" step="0.1"></label>
+                <div class="ligne" style="grid-column:1/-1;margin:0"><button type="button" class="principal gris" id="prendre-debut">Début = position de la vidéo</button><button type="button" class="principal gris" id="prendre-fin">Fin = position de la vidéo</button></div>`,
+    gif: () => `<label>Début (secondes)<input id="o-debut" type="number" min="0" step="0.1" value="0"></label>
+                <label>Durée (secondes)<input id="o-duree" type="number" min="1" max="10" step="0.5" value="5"></label>
+                <label>Largeur<select id="o-largeur"><option value="320">320 px (léger)</option><option value="480" selected>480 px</option><option value="640">640 px</option></select></label>`,
+    photos: () => `<label>Format<select id="o-format"><option value="jpeg">JPG</option><option value="webp">WebP (plus léger)</option><option value="png">PNG</option></select></label>
+                <label>Plus grand côté<select id="o-cote"><option value="0">Taille d'origine</option><option value="2048">2048 px</option><option value="1080" selected>1080 px (Instagram)</option><option value="720">720 px</option></select></label>
+                <label>Qualité<select id="o-qualite"><option value="0.92">Haute</option><option value="0.85" selected>Moyenne</option><option value="0.75">Légère</option></select></label>`
+  };
+
+  const choisirMode = (m) => {
+    mode = m; fichiers = []; duree = 0;
+    $('#modes').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    $('#explication').textContent = MODES[m].aide;
+    $('#choix').accept = MODES[m].accepte; $('#choix').multiple = !!MODES[m].multiple; $('#choix').value = '';
+    $('#depot-texte').textContent = MODES[m].multiple ? 'Choisis des photos' : 'Choisis un fichier';
+    $('#options').innerHTML = opts[m](); $('#infos-source').textContent = ''; $('#apercu-source').hidden = true; $('#apercu-source').removeAttribute('src');
+    $('#lancer').disabled = true; $('#erreur').textContent = ''; $('#resultat').hidden = true;
+    brancherOptions(); hauteur();
+  };
+  $('#modes').innerHTML = Object.entries(MODES).map(([k, v]) => `<button type="button" data-mode="${k}">${v.nom}</button>`).join('');
+  $('#modes').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b) choisirMode(b.dataset.mode); });
+
+  const brancherOptions = () => {
+    const v = $('#apercu-source');
+    $('#prendre-debut')?.addEventListener('click', () => { $('#o-debut').value = v.currentTime.toFixed(1); });
+    $('#prendre-fin')?.addEventListener('click', () => { $('#o-fin').value = v.currentTime.toFixed(1); });
+    ['#o-qualite', '#o-hauteur'].forEach(s => $(s)?.addEventListener('change', estimer));
+  };
+  // Estimation de la taille après compression (approximative : selon le débit visé)
+  const estimer = () => {
+    if (mode !== 'compresser' || !duree || !$('#estimation')) return;
+    const debits = { 1080: { 20: 6, 25: 3.5, 30: 2 }, 720: { 20: 3.5, 25: 2, 30: 1.1 }, 480: { 20: 1.8, 25: 1, 30: .6 } };
+    const mbps = debits[$('#o-hauteur').value][$('#o-qualite').value] + .13;
+    $('#estimation').textContent = `Taille estimée : environ ${taille(mbps * 1e6 / 8 * duree)} (au lieu de ${taille(fichiers[0].size)}).`;
+  };
+
+  /* ---------- Choix du fichier ---------- */
+  const LIMITE = 500e6;
+  const recevoir = (liste) => {
+    fichiers = [...liste].slice(0, MODES[mode].multiple ? 50 : 1); $('#erreur').textContent = ''; $('#resultat').hidden = true;
+    if (!fichiers.length) return;
+    const gros = fichiers.find(f => f.size > LIMITE);
+    if (gros && MODES[mode].ffmpeg) { $('#erreur').textContent = `${gros.name} est trop lourd (500 Mo maximum ici).`; fichiers = []; $('#lancer').disabled = true; return; }
+    $('#infos-source').textContent = fichiers.length > 1 ? `${fichiers.length} photos · ${taille(fichiers.reduce((a, f) => a + f.size, 0))}` : `${fichiers[0].name} · ${taille(fichiers[0].size)}`;
+    const f = fichiers[0], v = $('#apercu-source');
+    if (MODES[mode].ffmpeg && (f.type.startsWith('video/') || f.type.startsWith('audio/') || /\.(mov|mkv|avi)$/i.test(f.name))) {
+      v.src = URL.createObjectURL(f); v.hidden = false;
+      v.onloadedmetadata = () => {
+        duree = isFinite(v.duration) ? v.duration : 0;
+        if (duree) $('#infos-source').textContent += ` · ${Math.floor(duree / 60)} min ${String(Math.round(duree % 60)).padStart(2, '0')} s`;
+        if ($('#o-fin') && duree) $('#o-fin').value = duree.toFixed(1);
+        estimer(); hauteur();
+      };
+      v.onerror = () => { v.hidden = true; hauteur(); };   // format que le navigateur ne lit pas (MKV, AVI…) : ffmpeg saura le lire
+    } else v.hidden = true;
+    if (mode === 'convertir') $('#cible').textContent = f.type.startsWith('audio/') || /\.(wav|flac|ogg|m4a)$/i.test(f.name) ? '→ sera converti en MP3.' : '→ sera converti en MP4 (lisible partout).';
+    $('#lancer').disabled = false; hauteur();
+  };
+  $('#choix').addEventListener('change', () => recevoir($('#choix').files));
+  const depot = $('#depot');
+  ['dragenter', 'dragover'].forEach(t => depot.addEventListener(t, (e) => { e.preventDefault(); depot.classList.add('survol'); }));
+  ['dragleave', 'drop'].forEach(t => depot.addEventListener(t, (e) => { e.preventDefault(); depot.classList.remove('survol'); }));
+  depot.addEventListener('drop', (e) => recevoir(e.dataTransfer.files));
+
+  /* ---------- ffmpeg (WebAssembly), chargé une seule fois ---------- */
+  const CORE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
+  let travailleur = null, pret = null, numero = 0;
+  const attentes = new Map();
+  const telechargerEnBlob = async (url, type, surProgres) => {
+    const r = await fetch(url); if (!r.ok) throw new Error('outil de conversion introuvable');
+    const total = +r.headers.get('content-length') || 0, lecteur = r.body.getReader(), morceaux = []; let recu = 0;
+    for (;;) { const { done, value } = await lecteur.read(); if (done) break; morceaux.push(value); recu += value.length; if (total) surProgres(recu / total); }
+    return URL.createObjectURL(new Blob(morceaux, { type }));
+  };
+  const demander = (type, data, transferts = []) => new Promise((ok, ko) => { const id = ++numero; attentes.set(id, { ok, ko }); travailleur.postMessage({ type, id, data }, transferts); });
+  const chargerFfmpeg = () => pret ||= (async () => {
+    etat('Préparation de l\'outil (environ 30 Mo, une seule fois)…', 0);
+    const coreURL = await telechargerEnBlob(CORE + 'ffmpeg-core.js', 'text/javascript', () => {});
+    const wasmURL = await telechargerEnBlob(CORE + 'ffmpeg-core.wasm', 'application/wasm', (p) => etat('Préparation de l\'outil (environ 30 Mo, une seule fois)…', p));
+    travailleur = new Worker('/convertir-worker.js');
+    travailleur.onmessage = (e) => {
+      const m = e.data;
+      if (m.type === 'progression') { if (m.progress >= 0 && m.progress <= 1) etat('Conversion en cours…', m.progress); return; }
+      if (m.type === 'journal') { journal.push(m.message); if (journal.length > 40) journal.shift(); return; }
+      const a = attentes.get(m.id); if (!a) return; attentes.delete(m.id);
+      m.type === 'erreur' ? a.ko(new Error(m.message)) : a.ok(m);
+    };
+    await demander('charger', { coreURL, wasmURL });
+  })().catch((e) => { pret = null; throw e; });
+  const journal = [];
+
+  /* ---------- Suivi ---------- */
+  const etat = (texte, p) => { $('#suivi').hidden = false; $('#etat').textContent = texte + (p != null ? ` ${Math.round(p * 100)} %` : ''); if (p != null) $('#barre').value = p * 100; else $('#barre').removeAttribute('value'); hauteur(); };
+  const nomSans = (n) => n.replace(/\.[^.]+$/, '');
+  let annule = false;
+  $('#annuler').addEventListener('click', () => {
+    annule = true;
+    if (travailleur) { travailleur.terminate(); travailleur = null; pret = null; attentes.forEach(a => a.ko(new Error('annulé'))); attentes.clear(); }
+  });
+
+  /* ---------- Conversion ---------- */
+  const extension = (f) => (f.name.match(/\.([a-z0-9]+)$/i) || [, 'bin'])[1].toLowerCase();
+  const lancerFfmpeg = async (f, args, sortie, type) => {
+    await chargerFfmpeg();
+    if (annule) throw new Error('annulé');
+    etat('Conversion en cours…', 0);
+    const entree = 'entree.' + extension(f);
+    const octets = await f.arrayBuffer();
+    const r = await demander('executer', { entree, octets, args: args(entree, sortie), sortie }, [octets]);
+    return new File([r.octets], sortie, { type });
+  };
+  const convertirMedia = async () => {
+    const f = fichiers[0], base = nomSans(f.name), q = $('#o-qualite')?.value;
+    const audioSeul = f.type.startsWith('audio/') || /\.(wav|flac|ogg|m4a|mp3)$/i.test(f.name);
+    if (mode === 'son') {
+      const fmt = $('#o-format').value;
+      return fmt === 'mp3'
+        ? lancerFfmpeg(f, (e, s) => ['-i', e, '-vn', '-c:a', 'libmp3lame', '-q:a', q, s], base + '.mp3', 'audio/mpeg')
+        : lancerFfmpeg(f, (e, s) => ['-i', e, '-vn', '-c:a', 'aac', '-b:a', { 2: '256k', 5: '160k', 7: '96k' }[q], s], base + '.m4a', 'audio/mp4');
+    }
+    if (mode === 'compresser') {
+      const h = $('#o-hauteur').value;
+      return lancerFfmpeg(f, (e, s) => ['-i', e, '-vf', `scale=-2:'min(${h},ih)'`, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', q, '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', s], base + '-compresse.mp4', 'video/mp4');
+    }
+    if (mode === 'convertir') {
+      return audioSeul
+        ? lancerFfmpeg(f, (e, s) => ['-i', e, '-vn', '-c:a', 'libmp3lame', '-q:a', '2', s], base + '.mp3', 'audio/mpeg')
+        : lancerFfmpeg(f, (e, s) => ['-i', e, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', s], base + '.mp4', 'video/mp4');
+    }
+    if (mode === 'couper') {
+      const d = Math.max(0, +$('#o-debut').value || 0), fin = +$('#o-fin').value || duree;   // fin vide = jusqu'au bout
+      if (fin && !(fin > d)) throw new Error('la fin doit être après le début');
+      const ext = extension(f);
+      return lancerFfmpeg(f, (e, s) => ['-ss', String(d), '-i', e, ...(fin ? ['-t', String(fin - d)] : []), '-c', 'copy', '-avoid_negative_ts', 'make_zero', s], `${base}-extrait.${ext}`, f.type || 'application/octet-stream');
+    }
+    if (mode === 'gif') {
+      const d = Math.max(0, +$('#o-debut').value || 0), t = Math.min(10, Math.max(1, +$('#o-duree').value || 5)), l = $('#o-largeur').value;
+      return lancerFfmpeg(f, (e, s) => ['-ss', String(d), '-t', String(t), '-i', e, '-filter_complex', `fps=12,scale=${l}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=bayer`, '-loop', '0', s], base + '.gif', 'image/gif');
+    }
+  };
+
+  /* ---------- Photos : dans le navigateur, sans ffmpeg ---------- */
+  let heic = null;
+  const lireImage = async (f) => {
+    try { return await createImageBitmap(f, { imageOrientation: 'from-image' }); }
+    catch (e) {
+      if (!/hei[cf]/i.test(f.type + f.name)) throw e;
+      // HEIC sur Android ou Windows : petit outil chargé seulement si besoin
+      heic ||= new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js'; s.onload = ok; s.onerror = ko; document.head.append(s); });
+      await heic;
+      return createImageBitmap(await window.heic2any({ blob: f, toType: 'image/jpeg', quality: 0.95 }));
+    }
+  };
+  const convertirPhotos = async () => {
+    const fmt = $('#o-format').value, cote = +$('#o-cote').value, q = +$('#o-qualite').value, sorties = [];
+    for (let i = 0; i < fichiers.length; i++) {
+      if (annule) throw new Error('annulé');
+      etat(`Photo ${i + 1} sur ${fichiers.length}…`, i / fichiers.length);
+      const img = await lireImage(fichiers[i]);
+      const k = cote ? Math.min(1, cote / Math.max(img.width, img.height)) : 1;
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext('2d'); if (fmt === 'jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); }
+      g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/' + fmt, q));   // le dessin sur canvas retire toutes les métadonnées (dont le GPS)
+      sorties.push(new File([blob], nomSans(fichiers[i].name) + '.' + (fmt === 'jpeg' ? 'jpg' : fmt), { type: blob.type }));
+    }
+    return sorties;
+  };
+
+  /* ---------- Résultat : télécharger, ajouter à mes fichiers, transfert ---------- */
+  const afficherResultat = (sorties) => {
+    const total = sorties.reduce((a, f) => a + f.size, 0), avant = fichiers.reduce((a, f) => a + f.size, 0);
+    const gain = avant ? Math.round((1 - total / avant) * 100) : 0;
+    const f = sorties[0], url = URL.createObjectURL(f);
+    const apercu = sorties.length > 1 ? `<div class="liste-photos">${sorties.map(s => `<figure><img src="${URL.createObjectURL(s)}" alt=""><figcaption>${echappe(s.name)} · ${taille(s.size)}</figcaption></figure>`).join('')}</div>`
+      : f.type.startsWith('video/') ? `<video src="${url}" controls playsinline></video>` : f.type.startsWith('audio/') ? `<audio src="${url}" controls></audio>`
+      : f.type.startsWith('image/') ? `<img src="${url}" alt="">` : '';
+    $('#resultat').innerHTML = `<b>✅ Terminé : ${sorties.length > 1 ? sorties.length + ' fichiers' : echappe(f.name)} · ${taille(total)}${gain > 0 ? ` (−${gain} %)` : ''}</b>${apercu}
+      <div class="ligne" style="margin:0"><button type="button" id="r-telecharger">⬇ Télécharger</button>
+      ${cle ? '<button type="button" class="gris" id="r-fichiers">Ajouter à mes fichiers</button><button type="button" class="gris" id="r-transfert">Envoyer dans un transfert</button>' : ''}</div>
+      <div id="r-etat"></div>`;
+    $('#resultat').hidden = false;
+    $('#r-telecharger').onclick = () => sorties.forEach((s, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(s); a.download = s.name; a.click(); }, i * 300));
+    const rEtat = (h) => { $('#r-etat').innerHTML = h; hauteur(); };
+    if ($('#r-fichiers')) $('#r-fichiers').onclick = async (e) => {
+      e.target.disabled = true; let n = 0;
+      try {
+        for (const s of sorties) {
+          if (s.size > 100e6) throw new Error(`${s.name} dépasse 100 Mo : utilise plutôt un transfert.`);
+          rEtat(`Envoi ${++n}/${sorties.length}…`);
+          const r = await fetch('/api/fichiers?' + new URLSearchParams({ nom: s.name }), { method: 'PUT', headers: { 'x-cle': cle, 'content-type': s.type || 'application/octet-stream' }, body: s });
+          const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.erreur || 'échec');
+        }
+        rEtat('✅ Ajouté à tes fichiers (onglet Fichiers).'); window.parent.postMessage({ type: 'convertir-recharger' }, location.origin);
+      } catch (x) { rEtat(`<span class="erreur">${echappe(x.message)}</span>`); e.target.disabled = false; }
+    };
+    if ($('#r-transfert')) $('#r-transfert').onclick = async (e) => {
+      e.target.disabled = true;
+      try {
+        rEtat('Création du transfert…');
+        const r = await fetch('/api/admin', { method: 'POST', headers: { 'x-cle': cle, 'content-type': 'application/json' },
+          body: JSON.stringify({ action: 'transfert_creer', titre: sorties.length > 1 ? 'Photos converties' : nomSans(f.name), expire: Date.now() + 7 * 864e5, max_dl: 10, notifier: true }) });
+        const d = await r.json(); if (!r.ok) throw new Error(d.erreur || 'échec');
+        let n = 0;
+        for (const s of sorties) { await Envoi.fichier(s, { base: '/api/admin/transfert/' + d.id, entetes: { 'x-cle': cle }, progression: (p) => rEtat(`Envoi ${n + 1}/${sorties.length}… ${Math.round(p * 100)} %`) }); n++; }
+        const lien = `${SITE}/t/${d.id}`;
+        try { await navigator.clipboard.writeText(lien); } catch {}
+        rEtat(`✅ Transfert prêt (7 jours, 10 téléchargements, modifiable dans Outils → Transferts). Lien copié :<div class="lien-cree">${echappe(lien)}</div>`);
+        window.parent.postMessage({ type: 'convertir-recharger' }, location.origin);
+      } catch (x) { rEtat(`<span class="erreur">${echappe(x.message)}</span>`); e.target.disabled = false; }
+    };
+    hauteur();
+  };
+
+  $('#lancer').addEventListener('click', async () => {
+    if (!fichiers.length) return;
+    annule = false; $('#erreur').textContent = ''; $('#resultat').hidden = true;
+    $('#lancer').disabled = true; $('#annuler').hidden = false;
+    try {
+      const r = mode === 'photos' ? await convertirPhotos() : [await convertirMedia()];
+      $('#suivi').hidden = true; afficherResultat(r);
+    } catch (e) {
+      $('#suivi').hidden = true;
+      $('#erreur').textContent = e.message === 'annulé' ? 'Conversion annulée.' : 'Oups : ' + e.message + '.';
+    }
+    $('#lancer').disabled = false; $('#annuler').hidden = true; hauteur();
+  });
+
+  // Dans l'admin, la page s'affiche dans un cadre qui suit sa hauteur
+  const hauteur = () => { if (dansAdmin) window.parent.postMessage({ type: 'convertir-hauteur', h: document.documentElement.scrollHeight }, location.origin); };
+  new ResizeObserver(hauteur).observe(document.body);
+  if (dansAdmin) $('#titre-page').hidden = true;
+  choisirMode('son');
+
+  // Auto-test : /convertir.html?test=convertir (ou gif, compresser…) fabrique une petite vidéo et la convertit
+  const test = new URLSearchParams(location.search).get('test');
+  // (le son a besoin d'un appui sur un bouton pour démarrer, d'où le bouton « Lancer l'auto-test »)
+  if (test && MODES[test]) { choisirMode(test); const b = document.createElement('button'); b.className = 'principal'; b.textContent = "Lancer l'auto-test"; $('#modes').after(b); b.onclick = async () => { b.remove();
+    const c = document.createElement('canvas'); c.width = 320; c.height = 240; const g = c.getContext('2d');
+    const flux = c.captureStream(15), son = new AudioContext(), osc = son.createOscillator(), dest = son.createMediaStreamDestination(); await son.resume();
+    osc.connect(dest); osc.start(); dest.stream.getAudioTracks().forEach(t => flux.addTrack(t));   // un petit « bip » pour tester le son
+    const rec = new MediaRecorder(flux, { mimeType: 'video/webm' }), morceaux = [];
+    rec.ondataavailable = (e) => morceaux.push(e.data);
+    let t = 0; const anim = setInterval(() => { g.fillStyle = `hsl(${t * 12},70%,50%)`; g.fillRect(0, 0, 320, 240); g.fillStyle = '#fff'; g.font = '48px sans-serif'; g.fillText('Test ' + t++, 60, 140); }, 66);
+    rec.start(); await new Promise(r => setTimeout(r, 2500)); rec.stop(); await new Promise(r => rec.onstop = r); clearInterval(anim);
+    osc.stop();
+    recevoir([new File(morceaux, 'test.webm', { type: 'video/webm' })]);
+    await new Promise(r => setTimeout(r, 800));
+    $('#lancer').click();
+  }; }
+}
+</script>
+</body>
+</html>
